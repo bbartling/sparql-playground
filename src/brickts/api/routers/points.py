@@ -24,6 +24,8 @@ def point_timeseries(
     limit: int | None = None,
     state: AppState = Depends(get_app_state),
 ):
+    if point_svc.get_point(state.graph.state.union, point_id) is None:
+        raise HTTPException(status_code=404, detail="unknown point")
     try:
         payload = ts_svc.read_point_timeseries(
             state.graph.state.union,

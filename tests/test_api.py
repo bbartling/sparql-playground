@@ -112,3 +112,28 @@ def test_mutations_enabled(settings: Settings, tmp_path: Path):
         client.post("/api/model/flush")
         assert settings.snapshot_path.exists()
         assert not list(settings.snapshot_path.parent.glob("*.tmp"))
+
+
+def test_timeseries_negative_cases(client: TestClient):
+    from rdflib import Literal
+
+    from brickts.graph.namespaces import BLDG, BRICK, RDF, REF
+
+    assert client.get("/api/points/NO_SUCH_POINT/timeseries").status_code == 404
+    assert (
+        client.post(
+            "/api/sparql", json={"query": "SELECT * WHERE { SERVICE <http://x/> { ?s ?p ?o } }"}
+        ).status_code
+        == 400
+    )
+
+    graph = client.app.state.ctx.graph
+    model = graph.state.model
+    model.add((BLDG.NO_REF_PT, RDF.type, BRICK.Temperature_Sensor))
+    model.add((BLDG.NO_REF_PT, BRICK.isPointOf, BLDG.AHU_1))
+    ref = next(model.objects(BLDG.AHU_1_DA_P, REF.hasExternalReference))
+    model.add((ref, REF.hasTimeseriesId, Literal("second-id")))
+    graph._state = graph._rebuild_union(model)
+
+    assert client.get("/api/points/NO_REF_PT/timeseries").status_code == 409
+    assert client.get("/api/points/AHU_1_DA_P/timeseries").status_code == 409
