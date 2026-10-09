@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import hashlib
 import json
@@ -63,7 +64,7 @@ def wide_csv_to_samples(
     return series, cell_count
 
 
-def bootstrap_dataset(
+async def bootstrap_dataset(
     store: SqliteTimeseriesStore,
     *,
     dataset_key: str,
@@ -73,16 +74,16 @@ def bootstrap_dataset(
     nrows: int | None = None,
 ) -> str:
     digest = _sha256_file(csv_path)
-    prev = store.ingest_log_get(dataset_key)
+    prev = await store.ingest_log_get(dataset_key)
     if prev and prev[0] == digest and not force:
         log.info("bootstrap skipped", extra={"dataset": dataset_key, "sha256": digest})
         return "skipped"
     mapping = load_mapping(mapping_path)
     series, cell_count = wide_csv_to_samples(csv_path, mapping, nrows=nrows)
     for tid, samples in series.items():
-        store.write(tid, samples)
+        await store.write(tid, samples)
     now = datetime.now(UTC).isoformat()
-    store.ingest_log_set(dataset_key, digest, cell_count, now)
+    await store.ingest_log_set(dataset_key, digest, cell_count, now)
     log.info(
         "bootstrap complete",
         extra={"dataset": dataset_key, "cells": cell_count, "sha256": digest},
@@ -90,7 +91,7 @@ def bootstrap_dataset(
     return "loaded"
 
 
-def bootstrap_all(
+async def bootstrap_all_async(
     settings: Settings, *, force: bool = False, nrows: int | None = None
 ) -> list[str]:
     store = SqliteTimeseriesStore(settings.db_path)
@@ -106,7 +107,7 @@ def bootstrap_all(
             if not mapping_path.is_absolute():
                 mapping_path = root / mapping_path
             results.append(
-                bootstrap_dataset(
+                await bootstrap_dataset(
                     store,
                     dataset_key=key,
                     csv_path=csv_path,
@@ -117,4 +118,11 @@ def bootstrap_all(
             )
         return results
     finally:
-        store.close()
+        await store.close()
+
+
+def bootstrap_all(
+    settings: Settings, *, force: bool = False, nrows: int | None = None
+) -> list[str]:
+    """Sync entry for CLI and tests; runs async store I/O via asyncio.run."""
+    return asyncio.run(bootstrap_all_async(settings, force=force, nrows=nrows))

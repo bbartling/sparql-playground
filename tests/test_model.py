@@ -34,25 +34,31 @@ def test_model_counts(union: Graph):
 
 
 def test_refs_and_store(project_root: Path, union: Graph, settings: Settings):
+    import asyncio
+
     bootstrap_from = __import__("brickts.ingest", fromlist=["bootstrap_all"]).bootstrap_all
     s = settings
     bootstrap_from(s)
-    store = SqliteTimeseriesStore(s.db_path)
-    ids = set()
-    for p in union.subjects(BRICK.isPointOf, None):
-        if not str(p).startswith(str(BLDG)):
-            continue
-        refs = list(union.objects(p, REF.hasExternalReference))
-        assert len(refs) == 1
-        ts_ids = list(union.objects(refs[0], REF.hasTimeseriesId))
-        assert len(ts_ids) == 1
-        db = list(union.objects(refs[0], REF.storedAt))
-        assert len(db) == 1
-        tid = str(ts_ids[0])
-        assert tid not in ids
-        ids.add(tid)
-        assert store.exists(tid)
-    store.close()
+
+    async def check() -> None:
+        store = SqliteTimeseriesStore(s.db_path)
+        ids: set[str] = set()
+        for p in union.subjects(BRICK.isPointOf, None):
+            if not str(p).startswith(str(BLDG)):
+                continue
+            refs = list(union.objects(p, REF.hasExternalReference))
+            assert len(refs) == 1
+            ts_ids = list(union.objects(refs[0], REF.hasTimeseriesId))
+            assert len(ts_ids) == 1
+            db = list(union.objects(refs[0], REF.storedAt))
+            assert len(db) == 1
+            tid = str(ts_ids[0])
+            assert tid not in ids
+            ids.add(tid)
+            assert await store.exists(tid)
+        await store.close()
+
+    asyncio.run(check())
 
 
 def test_mapping_no_csv_literals(project_root: Path, union: Graph):

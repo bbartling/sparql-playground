@@ -8,11 +8,11 @@ router = APIRouter(prefix="/api/timeseries", tags=["timeseries"])
 
 
 @router.post("/query")
-def batch_timeseries(body: TimeseriesBatchRequest, state: AppState = Depends(get_app_state)):
+async def batch_timeseries(body: TimeseriesBatchRequest, state: AppState = Depends(get_app_state)):
     out = []
     for q in body.queries:
         try:
-            payload = ts_svc.read_point_timeseries(
+            payload = await ts_svc.read_point_timeseries(
                 state.graph.state.union,
                 state.stores,
                 q.point_id,

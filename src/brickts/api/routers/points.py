@@ -17,7 +17,7 @@ def get_point(point_id: str, state: AppState = Depends(get_app_state)):
 
 
 @router.get("/{point_id}/timeseries", response_model=TimeseriesOut)
-def point_timeseries(
+async def point_timeseries(
     point_id: str,
     start: int | None = None,
     end: int | None = None,
@@ -27,7 +27,7 @@ def point_timeseries(
     if point_svc.get_point(state.graph.state.union, point_id) is None:
         raise HTTPException(status_code=404, detail="unknown point")
     try:
-        payload = ts_svc.read_point_timeseries(
+        payload = await ts_svc.read_point_timeseries(
             state.graph.state.union,
             state.stores,
             point_id,

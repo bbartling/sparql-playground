@@ -1,6 +1,6 @@
 # brickts — Brick timeseries SPARQL tutorial
 
-Near-production tutorial for the [Brick timeseries storage pattern](https://docs.brickschema.org/metadata/timeseries-storage.html): an RDF model is the **only** path from a logical point to historian data. This repo uses **SQLite** (long/narrow `samples(timeseries_id, ts, value)`) as a TSDB stand-in behind a `TimeseriesStore` protocol, so you can later swap in TimescaleDB, InfluxDB, or a site historian without changing the HTTP API or SPARQL surface.
+Near-production tutorial for the [Brick timeseries storage pattern](https://docs.brickschema.org/metadata/timeseries-storage.html): an RDF model is the **only** path from a logical point to historian data. This repo uses **async SQLite** ([aiosqlite](https://github.com/OMnilight/aiosqlite), long/narrow `samples(timeseries_id, ts, value)`) as a TSDB stand-in behind an async `TimeseriesStore` protocol, so you can later swap in TimescaleDB, InfluxDB, or a site historian without changing the HTTP API or SPARQL surface. SPARQL evaluation stays on **rdflib** in a thread pool — only timeseries I/O is async.
 
 **Scope:** `BUILDING_50` / `AHU_1` only (83 points, 46 zones, ~35k rows of 5-minute data).
 

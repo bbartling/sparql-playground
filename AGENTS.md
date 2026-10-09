@@ -3,7 +3,7 @@
 A tutorial that is also near-production. It hosts a **Brick RDF model** and queries
 **timeseries through the model** (Brick ref-schema, <https://docs.brickschema.org/metadata/timeseries-storage.html>).
 FastAPI serves a read-only SPARQL endpoint, point lookups by class or tag, timeseries
-JSON, Open-FDD fault applicability, and a static SPARQL UI. SQLite stands in for a real TSDB.
+JSON, Open-FDD fault applicability, and a static SPARQL UI. **Async SQLite (aiosqlite)** stands in for a real TSDB on the HTTP path; SPARQL/rdflib runs in a thread pool.
 
 - **Build plan (start here if the app is not built yet):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
@@ -14,7 +14,7 @@ JSON, Open-FDD fault applicability, and a static SPARQL UI. SQLite stands in for
 data/<BUILDING>/<EQUIP>/history_wide.csv ──(brickts bootstrap, uses model/points/*.csv)──▶ TimeseriesStore (SQLite: samples(timeseries_id, ts, value))
 model/site.ttl + model/points/*.csv ──(brickts model build)──▶ model/building_50.ttl ──▶ GraphService (model + Brick ontology)
 HTTP ─▶ routers ─▶ services ─▶ GraphService (SPARQL)  ─▶ point ─ref:hasExternalReference─▶ TimeseriesReference
-                                                      ─ref:hasTimeseriesId + ref:storedAt─▶ Database node ─▶ store registry ─▶ TimeseriesStore.read()
+                                                      ─ref:hasTimeseriesId + ref:storedAt─▶ Database node ─▶ store registry ─▶ await TimeseriesStore.read()
 ```
 
 ## Commands

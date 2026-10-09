@@ -1,3 +1,4 @@
+import asyncio
 import csv
 from pathlib import Path
 
@@ -6,24 +7,23 @@ from brickts.settings import Settings
 from brickts.store.sqlite import SqliteTimeseriesStore
 
 
-def test_bootstrap_idempotent(settings: Settings, sample_csv: Path, project_root: Path):
-    mapping = project_root / "model/points/BUILDING_50__AHU_1.csv"
+async def _bootstrap_idempotent(settings: Settings, sample_csv: Path, mapping: Path) -> None:
     store = SqliteTimeseriesStore(settings.db_path)
-    r1 = bootstrap_dataset(
+    r1 = await bootstrap_dataset(
         store,
         dataset_key="BUILDING_50/AHU_1",
         csv_path=sample_csv,
         mapping_path=mapping,
     )
     assert r1 == "loaded"
-    r2 = bootstrap_dataset(
+    r2 = await bootstrap_dataset(
         store,
         dataset_key="BUILDING_50/AHU_1",
         csv_path=sample_csv,
         mapping_path=mapping,
     )
     assert r2 == "skipped"
-    r3 = bootstrap_dataset(
+    r3 = await bootstrap_dataset(
         store,
         dataset_key="BUILDING_50/AHU_1",
         csv_path=sample_csv,
@@ -31,7 +31,12 @@ def test_bootstrap_idempotent(settings: Settings, sample_csv: Path, project_root
         force=True,
     )
     assert r3 == "loaded"
-    store.close()
+    await store.close()
+
+
+def test_bootstrap_idempotent(settings: Settings, sample_csv: Path, project_root: Path):
+    mapping = project_root / "model/points/BUILDING_50__AHU_1.csv"
+    asyncio.run(_bootstrap_idempotent(settings, sample_csv, mapping))
 
 
 def test_all_columns_mapped(settings: Settings, sample_csv: Path, project_root: Path):
@@ -44,6 +49,10 @@ def test_all_columns_mapped(settings: Settings, sample_csv: Path, project_root: 
     assert len(mapped) == 83
     assert set(cols) == mapped
     bootstrap_all(settings)
-    store = SqliteTimeseriesStore(settings.db_path)
-    assert len(store.series_ids()) >= 1
-    store.close()
+
+    async def check_ids() -> None:
+        store = SqliteTimeseriesStore(settings.db_path)
+        assert len(await store.series_ids()) >= 1
+        await store.close()
+
+    asyncio.run(check_ids())

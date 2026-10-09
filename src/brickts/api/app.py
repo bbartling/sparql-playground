@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from brickts.api.deps import AppState
 from brickts.api.routers import equipment, faults, health, model, points, sparql, timeseries
 from brickts.graph.service import GraphService
-from brickts.ingest import bootstrap_all
+from brickts.ingest import bootstrap_all_async
 from brickts.logging import configure_logging
 from brickts.settings import Settings
 from brickts.store.registry import build_store_registry
@@ -30,7 +30,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         graph = GraphService(settings)
         stores = build_store_registry(graph.state.union, settings)
         if settings.bootstrap_on_startup:
-            bootstrap_all(settings)
+            await bootstrap_all_async(settings)
             stores = build_store_registry(graph.state.union, settings)
         sem = asyncio.Semaphore(settings.sparql_max_concurrency)
         app.state.ctx = AppState(settings=settings, graph=graph, stores=stores)
@@ -55,7 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if graph.dirty:
                 graph.serialize_atomic()
             for store in stores.values():
-                store.close()
+                await store.close()
 
     app = FastAPI(title="brickts", lifespan=lifespan)
     static_dir = Path(__file__).resolve().parent.parent / "static"

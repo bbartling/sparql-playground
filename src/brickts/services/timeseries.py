@@ -39,7 +39,7 @@ def resolve_timeseries_id(union: Graph, point_id: str) -> str:
     return ids[0]
 
 
-def read_point_timeseries(
+async def read_point_timeseries(
     union: Graph,
     stores: dict[str, TimeseriesStore],
     point_id: str,
@@ -51,14 +51,14 @@ def read_point_timeseries(
 ) -> TimeseriesPayload:
     ts_id = resolve_timeseries_id(union, point_id)
     store = _pick_store(union, stores, point_id)
-    if not store.exists(ts_id):
+    if not await store.exists(ts_id):
         raise TimeseriesNotFound(ts_id)
     eff_limit = limit
     truncated = False
     if eff_limit is None or eff_limit > max_rows:
         eff_limit = max_rows + 1
         truncated = True
-    samples = store.read(ts_id, start=start, end=end, limit=eff_limit)
+    samples = await store.read(ts_id, start=start, end=end, limit=eff_limit)
     if len(samples) > max_rows:
         samples = samples[:max_rows]
         truncated = True
