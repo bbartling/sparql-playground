@@ -29,12 +29,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         graph = GraphService(settings)
         stores = build_store_registry(graph.state.union, settings)
-        if settings.bootstrap_on_startup:
-            await bootstrap_all_async(settings)
-            stores = build_store_registry(graph.state.union, settings)
         sem = asyncio.Semaphore(settings.sparql_max_concurrency)
-        app.state.ctx = AppState(settings=settings, graph=graph, stores=stores)
+        ctx = AppState(
+            settings=settings,
+            graph=graph,
+            stores=stores,
+            ready=not settings.bootstrap_on_startup,
+        )
+        app.state.ctx = ctx
         app.state.sparql_sem = sem
+
+        async def bootstrap_bg() -> None:
+            try:
+                await bootstrap_all_async(settings)
+                ctx.stores = build_store_registry(graph.state.union, settings)
+                ctx.ready = True
+                log.info("bootstrap complete")
+            except Exception as exc:  # noqa: BLE001 - surface in /health
+                ctx.bootstrap_error = str(exc)
+                log.exception("bootstrap failed")
+
+        boot_task = None
+        if settings.bootstrap_on_startup:
+            boot_task = asyncio.create_task(bootstrap_bg())
+            ctx.bootstrap_task = boot_task
 
         async def flusher():
             while True:
@@ -50,11 +68,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            if boot_task:
+                boot_task.cancel()
             if task:
                 task.cancel()
             if graph.dirty:
                 graph.serialize_atomic()
-            for store in stores.values():
+            for store in ctx.stores.values():
                 await store.close()
 
     app = FastAPI(title="brickts", lifespan=lifespan)

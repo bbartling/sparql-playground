@@ -14,11 +14,7 @@ def _unit_uri(unit: str) -> URIRef | None:
     return UNIT[unit]
 
 
-def render_model(site_path: Path, points_csv: Path, db_node: str = "timeseries_db") -> Graph:
-    g = Graph()
-    g.parse(site_path, format="turtle")
-    db_iri = BLDG[db_node]
-
+def _add_points_csv(g: Graph, points_csv: Path, db_iri) -> None:
     with points_csv.open(newline="") as f:
         for row in csv.DictReader(f):
             point_iri = BLDG[row["point_id"]]
@@ -35,6 +31,19 @@ def render_model(site_path: Path, points_csv: Path, db_node: str = "timeseries_d
             g.add((ref, RDF.type, REF.TimeseriesReference))
             g.add((ref, REF.hasTimeseriesId, Literal(row["timeseries_id"])))
             g.add((ref, REF.storedAt, db_iri))
+
+
+def render_model(
+    site_path: Path,
+    points_csv: Path | list[Path],
+    db_node: str = "timeseries_db",
+) -> Graph:
+    g = Graph()
+    g.parse(site_path, format="turtle")
+    db_iri = BLDG[db_node]
+    paths = [points_csv] if isinstance(points_csv, Path) else list(points_csv)
+    for path in paths:
+        _add_points_csv(g, path, db_iri)
     return g
 
 

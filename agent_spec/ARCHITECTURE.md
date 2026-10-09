@@ -21,4 +21,4 @@ with an explicit operator request, and record the change here with a date.
 | A14 | No auth system. Mutation endpoints are disabled unless `BRICKTS_ALLOW_MUTATIONS=true` (403 otherwise). Docs say LAN/dev only. | Operator: no auth system, don't overbuild. |
 | A15 | UI = static HTML/JS/CSS served by FastAPI at `/ui` (`/` redirects there). Plain `<textarea>` editor and inline-SVG plot. **No CDN and no Node build.** | Works offline. Lightweight. |
 | A16 | Logging: stdlib `logging` with a small JSON formatter (`BRICKTS_LOG_JSON=true`) plus request-log middleware. No extra deps. | Structured logs without new services. |
-| A17 | Data scope: `data/BUILDING_50/AHU_1/` only. The source zip contains AHU_1, AHU_2, chillers, boilers, ~50 VAVs, and weather (313 MB). The assignment says "one site, one AHU", so AHU_1 is the AHU (21.7 MB CSV, under GitHub's 50 MB limit, no LFS). | Reported as an open question. |
+| A17 | Data scope: `data/BUILDING_50/AHU_1/` and `AHU_2/` (each history CSV under 50 MB, no LFS). Source zip also has chillers/boilers/VAVs/weather; those stay out of the tutorial repo. | Two AHUs for equipment selection + fault applicability demos. |

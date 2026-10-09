@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Analyst demo: list faults, resolve FC1 roles via Brick API, run open-fdd FC1."""
+"""Analyst demo: list faults, SPARQL-resolve roles, run open-fdd rules via API."""
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 import httpx
@@ -32,6 +33,7 @@ def fetch_series(client: httpx.Client, point: dict) -> pd.Series:
 
 
 def run_fc1(client: httpx.Client, equipment_id: str) -> None:
+    """Legacy helper used by tests: resolve FC1 roles then run_rule locally."""
     roles = {
         "duct-static-pressure": find_one(
             client, equipment_id, brick_class="Supply_Air_Static_Pressure_Sensor"
@@ -59,12 +61,34 @@ def run_fc1(client: httpx.Client, equipment_id: str) -> None:
     print(intervals)
 
 
+def run_via_api(client: httpx.Client, equipment_id: str, rule_id: str) -> None:
+    lesson = client.get(f"/api/equipment/{equipment_id}/faults/{rule_id}/lesson")
+    lesson.raise_for_status()
+    print(json.dumps(lesson.json(), indent=2)[:2000])
+    r = client.post(f"/api/equipment/{equipment_id}/faults/{rule_id}/run")
+    r.raise_for_status()
+    body = r.json()
+    print(
+        body["status"],
+        body.get("fault_hours"),
+        body.get("fault_pct"),
+        body.get("sample_count"),
+        body.get("fault_sample_count"),
+    )
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base-url", default="http://127.0.0.1:8000")
     p.add_argument("--equipment", required=True)
+    p.add_argument("--rule", default="FC1", help="open-fdd rule id (default FC1)")
+    p.add_argument(
+        "--local-fc1",
+        action="store_true",
+        help="resolve FC1 roles via points API and run open-fdd locally (legacy)",
+    )
     args = p.parse_args()
-    with httpx.Client(base_url=args.base_url, timeout=120.0) as client:
+    with httpx.Client(base_url=args.base_url, timeout=300.0) as client:
         faults = client.get(
             f"/api/equipment/{args.equipment}/faults", params={"include_generic": True}
         )
@@ -73,8 +97,11 @@ def main() -> int:
         print(f"Applicable faults ({len(applicable)}):")
         for f in applicable:
             print(f"  {f['rule_id']}: {f['title']}")
-        print("--- FC1 ---")
-        run_fc1(client, args.equipment)
+        print(f"--- {args.rule} ---")
+        if args.local_fc1:
+            run_fc1(client, args.equipment)
+        else:
+            run_via_api(client, args.equipment, args.rule)
     return 0
 
 

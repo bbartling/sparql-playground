@@ -54,6 +54,19 @@ def test_fc1_points(client: TestClient):
     assert len(r3.json()["points"]) == 1
 
 
+def test_fault_lesson_and_run_fc1(client: TestClient):
+    lesson = client.get("/api/equipment/AHU_1/faults/FC1/lesson")
+    assert lesson.status_code == 200
+    body = lesson.json()
+    assert body["rule_id"] == "FC1"
+    assert body["lessons"]
+    assert body["lessons"][0]["query"]
+    run = client.post("/api/equipment/AHU_1/faults/FC1/run", params={"limit": 500})
+    assert run.status_code == 200, run.text
+    assert run.json()["rule_id"] == "FC1"
+    assert run.json()["bindings"]
+
+
 def test_timeseries_and_errors(client: TestClient, settings: Settings):
     pt = client.get(
         "/api/equipment/AHU_1/points", params={"brick_class": "Supply_Air_Static_Pressure_Sensor"}

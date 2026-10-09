@@ -45,7 +45,7 @@ uv run pytest -q
 
 ## How to add data (new CSV, same or new equipment)
 
-1. Put the CSV at `data/<BUILDING>/<EQUIP>/history_wide.csv`. It needs a `timestamp_utc` column plus value columns.
+1. Put the CSV at `data/<BUILDING>/<EQUIP>/history_wide.csv`. It needs a `timestamp_utc` column plus value columns. Tutorial site ships `AHU_1` and `AHU_2`.
 2. Author `model/points/<BUILDING>__<EQUIP>.csv` with columns
    `source_column,point_id,label,brick_class,unit,owner_id,openfdd_role,timeseries_id,notes`.
    Generate ids with the UUIDv5 rule in ARCHITECTURE A3 and freeze them in the file.

@@ -24,21 +24,26 @@ def test_model_counts(union: Graph):
     ahuis = [
         s for s in union.subjects(RDF.type, BRICK.Air_Handler_Unit) if str(s).startswith(str(BLDG))
     ]
-    assert len(ahuis) == 1
+    assert len(ahuis) == 2
     points = [
         s
         for s in union.subjects(RDF.type, None)
         if str(s).startswith(str(BLDG)) and (s, BRICK.isPointOf, None) in union
     ]
-    assert len(points) == 83
+    assert len(points) == 118
 
 
-def test_refs_and_store(project_root: Path, union: Graph, settings: Settings):
+def test_refs_and_store(project_root: Path, settings: Settings):
     import asyncio
+
+    from brickts.graph.ontology import load_brick_ontology
 
     bootstrap_from = __import__("brickts.ingest", fromlist=["bootstrap_all"]).bootstrap_all
     s = settings
     bootstrap_from(s)
+    union = Graph()
+    union.parse(s.model_path, format="turtle")
+    union = union + load_brick_ontology()
 
     async def check() -> None:
         store = SqliteTimeseriesStore(s.db_path)

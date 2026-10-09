@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?ahu ?label WHERE {
+  ?ahu a/(rdfs:subClassOf|owl:equivalentClass)* brick:Air_Handler_Unit .
+  FILTER(STRSTARTS(STR(?ahu), "https://example.org/openfdd/BUILDING_50#"))
+  OPTIONAL { ?ahu rdfs:label ?label }
+}
+ORDER BY ?ahu

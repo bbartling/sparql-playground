@@ -1,5 +1,5 @@
 body {
-  font-family: system-ui, sans-serif;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   margin: 0;
   background: #0f172a;
   color: #e2e8f0;
@@ -7,10 +7,15 @@ body {
 header {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #334155;
+  background: linear-gradient(120deg, #0f172a 0%, #1e293b 55%, #0b3b4a 100%);
 }
 .sub {
   color: #94a3b8;
   margin: 0.25rem 0 0;
+  max-width: 52rem;
+}
+.toolbar {
+  margin-top: 0.75rem;
 }
 main {
   display: grid;
@@ -23,20 +28,52 @@ main {
     grid-template-columns: 1fr;
   }
 }
-textarea {
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+label {
+  display: block;
+  margin-top: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+.row label {
+  margin-top: 0;
+}
+textarea,
+.lesson {
   width: 100%;
   box-sizing: border-box;
-  font-family: ui-monospace, monospace;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
   background: #1e293b;
   color: #f8fafc;
   border: 1px solid #475569;
   border-radius: 6px;
   padding: 0.5rem;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+.lesson {
+  max-height: 220px;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
 }
 button,
 select {
   margin-top: 0.5rem;
   margin-right: 0.5rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+}
+button:hover {
+  border-color: #38bdf8;
 }
 table {
   width: 100%;
@@ -65,4 +102,10 @@ tr.clickable {
 }
 tr.clickable:hover {
   background: #1e293b;
+}
+#validate-meta,
+#rule-meta,
+#meta {
+  color: #94a3b8;
+  font-size: 0.85rem;
 }

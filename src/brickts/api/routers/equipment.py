@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from brickts.api.deps import AppState, get_app_state
-from brickts.api.schemas import FaultOut, PointOut
+from brickts.api.schemas import FaultOut, PointOut, RoleBindingOut, RuleRunOut
 from brickts.services import faults as fault_svc
 from brickts.services import points as point_svc
+from brickts.services import rules as rule_svc
 
 router = APIRouter(prefix="/api/equipment", tags=["equipment"])
 
@@ -69,3 +70,75 @@ def equipment_faults(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return [FaultOut(**r.__dict__) for r in rows]
+
+
+@router.get("/{equipment_id}/faults/{rule_id}/lesson")
+def fault_lesson(
+    equipment_id: str,
+    rule_id: str,
+    state: AppState = Depends(get_app_state),
+):
+    from open_fdd.rules import RULES
+
+    rule = next((r for r in RULES if r.id == rule_id), None)
+    if rule is None:
+        raise HTTPException(status_code=404, detail="unknown rule")
+    try:
+        point_svc.validate_equipment_id(equipment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="unknown equipment") from exc
+    roles = list(getattr(rule, "required_roles", ()) or ())
+    lessons = []
+    for role in roles:
+        try:
+            q = rule_svc.role_lesson_query(equipment_id, role)
+            bindings = rule_svc.resolve_role_bindings(state.graph.state.union, equipment_id, [role])
+            lessons.append(
+                {
+                    "role": role,
+                    "query": q,
+                    "binding": RoleBindingOut(**bindings[0].__dict__).model_dump(),
+                }
+            )
+        except ValueError as exc:
+            lessons.append({"role": role, "query": None, "error": str(exc)})
+    return {
+        "rule_id": rule_id,
+        "title": getattr(rule, "title", rule_id),
+        "equation": getattr(rule, "equation", ""),
+        "summary": getattr(rule, "summary", ""),
+        "required_roles": roles,
+        "lessons": lessons,
+    }
+
+
+@router.post("/{equipment_id}/faults/{rule_id}/run", response_model=RuleRunOut)
+async def run_fault_rule(
+    equipment_id: str,
+    rule_id: str,
+    limit: int | None = Query(default=None, ge=1, le=500000),
+    state: AppState = Depends(get_app_state),
+):
+    if not state.ready:
+        raise HTTPException(status_code=503, detail="timeseries bootstrap still running")
+    try:
+        result = await rule_svc.run_equipment_rule(
+            state.graph.state.union,
+            state.stores,
+            equipment_id=equipment_id,
+            rule_id=rule_id,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return RuleRunOut(
+        rule_id=result.rule_id,
+        equipment_id=result.equipment_id,
+        status=result.status,
+        fault_hours=result.fault_hours,
+        fault_pct=result.fault_pct,
+        sample_count=result.sample_count,
+        fault_sample_count=result.fault_sample_count,
+        bindings=[RoleBindingOut(**b.__dict__) for b in result.bindings],
+        evidence=result.evidence,
+    )

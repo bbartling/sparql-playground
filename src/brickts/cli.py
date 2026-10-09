@@ -22,13 +22,16 @@ def _settings(root: Path | None = None) -> Settings:
 def cmd_model_build(args: argparse.Namespace) -> int:
     s = _settings()
     site = s.site_model_path
-    mapping = s.points_dir / "BUILDING_50__AHU_1.csv"
     if args.mapping:
-        mapping = Path(args.mapping)
+        mappings: list[Path] = [Path(args.mapping)]
+    else:
+        mappings = sorted(s.points_dir.glob("*.csv"))
+        if not mappings:
+            raise SystemExit(f"no mapping CSVs in {s.points_dir}")
     out = s.model_path
-    g = render_model(site, mapping)
+    g = render_model(site, mappings)
     write_turtle(g, out)
-    print(f"Wrote {out} ({len(g)} triples)")
+    print(f"Wrote {out} ({len(g)} triples) from {len(mappings)} mapping file(s)")
     return 0
 
 

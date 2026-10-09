@@ -2,7 +2,7 @@
 
 Near-production tutorial for the [Brick timeseries storage pattern](https://docs.brickschema.org/metadata/timeseries-storage.html): an RDF model is the **only** path from a logical point to historian data. This repo uses **async SQLite** ([aiosqlite](https://github.com/OMnilight/aiosqlite), long/narrow `samples(timeseries_id, ts, value)`) as a TSDB stand-in behind an async `TimeseriesStore` protocol, so you can later swap in TimescaleDB, InfluxDB, or a site historian without changing the HTTP API or SPARQL surface. SPARQL evaluation stays on **rdflib** in a thread pool — only timeseries I/O is async.
 
-**Scope:** `BUILDING_50` / `AHU_1` only (83 points, 46 zones, ~35k rows of 5-minute data).
+**Scope:** `BUILDING_50` with `AHU_1` and `AHU_2` (points + parts modeled; 5-minute historian CSVs under 50 MB each).
 
 ## Architecture
 
@@ -22,22 +22,22 @@ uv run brickts model build
 uv run brickts validate --shacl
 uv run brickts bootstrap          # idempotent; --force to reload
 uv run brickts serve              # http://127.0.0.1:8000/ui
-uv run python scripts/analyst_client.py --base-url http://127.0.0.1:8000 --equipment AHU_1
+uv run python scripts/analyst_client.py --base-url http://127.0.0.1:8000 --equipment AHU_1 --rule FC1
 uv run pytest -q && uv run ruff check .
 ```
 
-Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`).
+Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`). Docker/Render must bind `0.0.0.0` and honor `$PORT` (the image does).
 
 ## AI / human modeling workflow
 
-1. Author equipment and locations in `model/site.ttl` (Site, Building, Floors, AHU, parts, zones, Database node).
-2. Author `model/points/BUILDING_50__AHU_1.csv` (`source_column`, `point_id`, Brick class, QUDT unit, owner, Open-FDD role, frozen UUIDv5 `timeseries_id`).
-3. `uv run brickts model build` → committed `model/building_50.ttl` with `ref:TimeseriesReference` on every point.
-4. `uv run brickts bootstrap` loads wide CSV into SQLite using the mapping (never query by CSV column name in app code).
+1. Author equipment and locations in `model/site.ttl` (Site, Building, Floors, AHUs, parts, zones, Database node).
+2. Author `model/points/BUILDING_50__AHU_*.csv` (`source_column`, `point_id`, Brick class, QUDT unit, owner, Open-FDD role, frozen UUIDv5 `timeseries_id`).
+3. `uv run brickts model build` merges every `model/points/*.csv` into committed `model/building_50.ttl` with `ref:TimeseriesReference` on every point.
+4. `uv run brickts bootstrap` loads wide CSVs into SQLite using the mappings (never query by CSV column name in app code).
 
 ## UI
 
-Static SPARQL editor at `/ui` — presets from `src/brickts/sparql/examples/`, same read-only `/api/sparql` as automation clients, table results, CSV/JSON export, click a point row to plot recent samples.
+Static tutorial at `/ui` — SPARQL presets, **View RDF model** (`/api/model/ttl` plain Turtle in a new tab), **Validate model**, equipment + Open-FDD rule picker with role SPARQL lessons, and **Run rule** (resolves Brick roles → timeseries → `open_fdd.rules.run_rule`). Click a point row to plot recent samples.
 
 ![SPARQL UI](docs/ui.png)
 

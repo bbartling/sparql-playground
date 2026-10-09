@@ -1,0 +1,70 @@
+col,point_name,unit,point_role,vav_id,floor,slot_path
+50ahu2aalrm,bld_50_AHU_2 50Ahu2Aalrm,,ahu_point,,,building_x/vav/unknown/point_x
+bld_p_setpoint_inwc,bld_50_AHU_2 AHU2 BLD-P SetPoint,in/wc,ahu_point,,,building_x/vav/unknown/point_x
+bld_pressure_inwc,bld_50_AHU_2 AHU2 BLD-Pressure,in/wc,ahu_point,,,building_x/vav/unknown/point_x
+chw_valve_pct,bld_50_AHU_2 AHU2 CHW-Valve,%,chw_valve,,,building_x/vav/unknown/point_x
+da_p_inwc,bld_50_AHU_2 AHU2 DA-P,in/wc,ahu_point,,,building_x/vav/unknown/point_x
+da_p_setpoint_inwc,bld_50_AHU_2 AHU2 DA-P SetPoint,in/wc,ahu_point,,,building_x/vav/unknown/point_x
+dat_reset_f,bld_50_AHU_2 AHU2 DAT Reset,°F,discharge_air_temp,,,building_x/vav/unknown/point_x
+dat_x1_f,bld_50_AHU_2 AHU2 DAT X1,°F,discharge_air_temp,,,building_x/vav/unknown/point_x
+dat_x2_f,bld_50_AHU_2 AHU2 DAT X2,°F,discharge_air_temp,,,building_x/vav/unknown/point_x
+dat_y1_f,bld_50_AHU_2 AHU2 DAT Y1,°F,discharge_air_temp,,,building_x/vav/unknown/point_x
+dat_y2_f,bld_50_AHU_2 AHU2 DAT Y2,°F,discharge_air_temp,,,building_x/vav/unknown/point_x
+discharge_air_temp_f,bld_50_AHU_2 AHU2 DA-T,°F,discharge_air_temp,,,building_x/vav/unknown/point_x
+dischargeair_alarm,bld_50_AHU_2 DischargeAir Alarm,,discharge_air_temp,,,building_x/vav/unknown/point_x
+ex_dmpr_pos_fan_enable_pct,bld_50_AHU_2 Ex Dmpr Pos Fan Enable,%,damper,,,building_x/vav/unknown/point_x
+lowdapalarm,bld_50_AHU_2 LowDapAlarm,,ahu_point,,,building_x/vav/unknown/point_x
+mad_c_pct,bld_50_AHU_2 AHU2 MAD-C,%,ahu_point,,,building_x/vav/unknown/point_x
+mixed_air_temp_f,bld_50_AHU_2 AHU2 MA-T,°F,mixed_air_temp,,,building_x/vav/unknown/point_x
+oa_minimum_position_pct,bld_50_AHU_2 OA Minimum Position,%,ahu_point,,,building_x/vav/unknown/point_x
+occ_c,bld_50_AHU_2 AHU2 OCC-C,,ahu_point,,,building_x/vav/unknown/point_x
+outside_air_temp_f,bld_50_AHU_2 AHU2 OA-T,°F,outside_air_temp,,,building_x/vav/unknown/point_x
+return_air_temp_f,bld_50_AHU_2 AHU2 RA-T,°F,return_air_temp,,,building_x/vav/unknown/point_x
+return_fan_speed_pct,bld_50_AHU_2 AHU2 RF-VFD,%,return_fan,,,building_x/vav/unknown/point_x
+return_fan_status,bld_50_AHU_2 AHU2 RF-S,,ahu_point,,,building_x/vav/unknown/point_x
+returnfan,bld_50_AHU_2 ReturnFan,,ahu_point,,,building_x/vav/unknown/point_x
+returnfanaalrm,bld_50_AHU_2 ReturnFanAalrm,,ahu_point,,,building_x/vav/unknown/point_x
+returnfanstatus,bld_50_AHU_2 ReturnFanStatus,,ahu_point,,,building_x/vav/unknown/point_x
+rf_c,bld_50_AHU_2 AHU2 RF-C,,ahu_point,,,building_x/vav/unknown/point_x
+roomname_c_drivers_bmsnetwork_commercial_site_points_bld_50_ahu_2_equip,bld_50_AHU_2 RoomName,@C.Drivers.bmsNetwork.commercial_site.points.bld_50_AHU_2.equip,ahu_point,,,building_x/vav/unknown/point_x
+sf_c,bld_50_AHU_2 AHU2 SF-C,,ahu_point,,,building_x/vav/unknown/point_x
+supply_fan_speed_pct,bld_50_AHU_2 AHU2 SF-VFD,%,supply_fan,,,building_x/vav/unknown/point_x
+supply_fan_status,bld_50_AHU_2 AHU2 SF-S,,ahu_point,,,building_x/vav/unknown/point_x
+supplyfan,bld_50_AHU_2 SupplyFan,,ahu_point,,,building_x/vav/unknown/point_x
+supplyfanalarm,bld_50_AHU_2 SupplyFanAlarm,,ahu_point,,,building_x/vav/unknown/point_x
+supplyfanstatus,bld_50_AHU_2 SupplyfanStatus,,ahu_point,,,building_x/vav/unknown/point_x
+title,bld_50_AHU_2 Title,,ahu_point,,,building_x/vav/unknown/point_x
+tstat,bld_50_AHU_2 Tstat,,ahu_point,,,building_x/vav/unknown/point_x
+unoccupied_cool_setpt_f,bld_50_AHU_2 Unoccupied Cool Setpt,°F,ahu_point,,,building_x/vav/unknown/point_x
+zone_t50_fifth_floor_vav_501_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_501,Fifth Floor,building_x/vav/vav_501/point_x
+zone_t50_fifth_floor_vav_502_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_502,Fifth Floor,building_x/vav/vav_502/point_x
+zone_t50_fifth_floor_vav_514_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_514,Fifth Floor,building_x/vav/vav_514/point_x
+zone_t50_fifth_floor_vav_517_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_517,Fifth Floor,building_x/vav/vav_517/point_x
+zone_t50_fifth_floor_vav_524_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_524,Fifth Floor,building_x/vav/vav_524/point_x
+zone_t50_fifth_floor_vav_525_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_525,Fifth Floor,building_x/vav/vav_525/point_x
+zone_t50_fifth_floor_vav_528_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_528,Fifth Floor,building_x/vav/vav_528/point_x
+zone_t50_fifth_floor_vav_529_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_529,Fifth Floor,building_x/vav/vav_529/point_x
+zone_t50_fifth_floor_vavh_513_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_513,Fifth Floor,building_x/vav/vavh_513/point_x
+zone_t50_fifth_floor_vavh_515_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_515,Fifth Floor,building_x/vav/vavh_515/point_x
+zone_t50_fifth_floor_vavh_527_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_527,Fifth Floor,building_x/vav/vavh_527/point_x
+zone_t50_fifth_floor_vavh_530_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_530,Fifth Floor,building_x/vav/vavh_530/point_x
+zone_t50_fourth_floor_vav_413_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_413,Fourth Floor,building_x/vav/vav_413/point_x
+zone_t50_fourth_floor_vav_414_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_414,Fourth Floor,building_x/vav/vav_414/point_x
+zone_t50_fourth_floor_vavh_410_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_410,Fourth Floor,building_x/vav/vavh_410/point_x
+zone_t50_fourth_floor_vavh_412_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_412,Fourth Floor,building_x/vav/vavh_412/point_x
+zone_t50_fourth_floor_vavh_417_space_temp_f,SpaceTemp,°F,zone_temp,VAVH_417,Fourth Floor,building_x/vav/vavh_417/point_x
+zone_t50_fourth_floor_vavh_417_space_temp_f_2,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_417,Fourth Floor,building_x/vav/vavh_417/point_x
+zone_t50_fourth_floor_vavm_411_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVM_411,Fourth Floor,building_x/vav/vavm_411/point_x
+zone_t50_nan_pt7018_space_temp_f,bld_50_AHU_2 AHU2 ZN-T,°F,zone_temp,,,building_x/vav/unknown/point_x
+zone_t50_sixth_floor_vav_50_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_50,Sixth Floor,building_x/vav/vav_50/point_x
+zone_t50_sixth_floor_vav_601_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_601,Sixth Floor,building_x/vav/vav_601/point_x
+zone_t50_sixth_floor_vav_603_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_603,Sixth Floor,building_x/vav/vav_603/point_x
+zone_t50_sixth_floor_vav_604_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_604,Sixth Floor,building_x/vav/vav_604/point_x
+zone_t50_sixth_floor_vav_605_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_605,Sixth Floor,building_x/vav/vav_605/point_x
+zone_t50_sixth_floor_vav_606_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_606,Sixth Floor,building_x/vav/vav_606/point_x
+zone_t50_sixth_floor_vav_607_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_607,Sixth Floor,building_x/vav/vav_607/point_x
+zone_t50_sixth_floor_vav_608_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_608,Sixth Floor,building_x/vav/vav_608/point_x
+zone_t50_sixth_floor_vav_614_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_614,Sixth Floor,building_x/vav/vav_614/point_x
+zone_t50_sixth_floor_vav_615_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAV_615,Sixth Floor,building_x/vav/vav_615/point_x
+zone_t50_sixth_floor_vavh_602_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_602,Sixth Floor,building_x/vav/vavh_602/point_x
+zone_t50_sixth_floor_vavh_616_space_temp_f,bld_100_BOILERS_PUMPS SpaceTemp,°F,zone_temp,VAVH_616,Sixth Floor,building_x/vav/vavh_616/point_x

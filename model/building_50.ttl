@@ -278,9 +278,270 @@ bldg:AHU_1_Unocc_Clg_SP a brick:Unoccupied_Air_Temperature_Cooling_Setpoint ;
             ref:hasTimeseriesId "1df248b8-74f0-5eb2-8643-9c3847895d83" ;
             ref:storedAt bldg:timeseries_db ] .
 
-bldg:Floor_2 a brick:Floor ;
-    rdfs:label "Second Floor" ;
-    brick:isPartOf bldg:Building_50 .
+bldg:AHU_2_Alarm a brick:Alarm ;
+    rdfs:label "50Ahu2Aalrm" ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "afeb532c-20a8-5f82-a9b6-a6a197ebfde5" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_BLD_P a brick:Building_Air_Static_Pressure_Sensor ;
+    rdfs:label "AHU2 BLD-Pressure" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "59eb637b-a4e9-559b-a812-764b73a3db73" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_BLD_P_SP a brick:Building_Air_Static_Pressure_Setpoint ;
+    rdfs:label "AHU2 BLD-P SetPoint" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "9d9ac29b-70dd-58dc-8f07-5af6962bbc10" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_CHW_Valve_Cmd a brick:Valve_Position_Command ;
+    rdfs:label "AHU2 CHW-Valve" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_2_CHW_Valve ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "4ea00c41-dad6-5e68-a596-ee427ce5cbd6" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DAT_Reset_OAT_High a brick:Outside_Air_Temperature_High_Reset_Setpoint ;
+    rdfs:label "AHU2 DAT X2" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "9d7f8ff2-1ecf-5d1d-8411-b8832605d23e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DAT_Reset_OAT_Low a brick:Outside_Air_Temperature_Low_Reset_Setpoint ;
+    rdfs:label "AHU2 DAT X1" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d142e024-fa84-5fc8-9589-837b9e9afa6b" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DAT_Reset_SAT_High a brick:Supply_Air_Temperature_High_Reset_Setpoint ;
+    rdfs:label "AHU2 DAT Y1" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1ace7cff-9e4b-55dd-b053-45b9ba5dd61e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DAT_Reset_SAT_Low a brick:Supply_Air_Temperature_Low_Reset_Setpoint ;
+    rdfs:label "AHU2 DAT Y2" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "4c493942-15f5-5d4f-8161-71177e865fc6" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DAT_SP a brick:Supply_Air_Temperature_Setpoint ;
+    rdfs:label "AHU2 DAT Reset" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "19b4ea4c-650f-5ace-ae20-999f07070d2a" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DA_Alarm a brick:Supply_Air_Temperature_Alarm ;
+    rdfs:label "DischargeAir Alarm" ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "eb5690f4-01a1-5ada-9843-9617cc042e87" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DA_P a brick:Supply_Air_Static_Pressure_Sensor ;
+    rdfs:label "AHU2 DA-P" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "f8a0d594-2fff-567a-9853-71ba66233eba" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DA_P_SP a brick:Supply_Air_Static_Pressure_Setpoint ;
+    rdfs:label "AHU2 DA-P SetPoint" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "0c281cac-4d5e-5892-9456-bb9d1038fae8" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_DA_T a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "AHU2 DA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7ff57cec-853c-56ad-88a7-41eb52dae051" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_EA_Damper_Fan_Enable_Pos a brick:Damper_Position_Setpoint ;
+    rdfs:label "Ex Dmpr Pos Fan Enable" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_2_EA_Damper ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "40e40aab-84ba-5bd6-934b-46d226aaa56e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_Low_DA_P_Alarm a brick:Pressure_Alarm ;
+    rdfs:label "LowDapAlarm" ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "6182b8d0-9067-5fa9-b412-31c679a79bad" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_MA_T a brick:Mixed_Air_Temperature_Sensor ;
+    rdfs:label "AHU2 MA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "6c34e8ca-1e24-5ace-b45d-933919013d5e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_OA_Damper_Cmd a brick:Damper_Position_Command ;
+    rdfs:label "AHU2 MAD-C" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_2_OA_Damper ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "2073d880-261d-56fc-9d27-655ae5b1e90d" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_OA_Damper_Min_Pos a brick:Min_Position_Setpoint_Limit ;
+    rdfs:label "OA Minimum Position" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_2_OA_Damper ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "639ea789-6a1d-57d3-b335-064eef478408" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_OA_T a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "AHU2 OA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d92093bf-eb08-52ed-b73e-6b830d36630f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_Occ_Cmd a brick:Occupancy_Command ;
+    rdfs:label "AHU2 OCC-C" ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "129c2b07-cc64-5610-b8e9-7bb17a059aca" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RA_T a brick:Return_Air_Temperature_Sensor ;
+    rdfs:label "AHU2 RA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "e54ba6a3-dac8-53a0-a65b-8393fdac31d1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RF_Alarm a brick:Alarm ;
+    rdfs:label "ReturnFanAalrm" ;
+    brick:isPointOf bldg:AHU_2_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "22fa0ebd-0f7e-5609-8670-687e8bac21c1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RF_Cmd a brick:Start_Stop_Command ;
+    rdfs:label "AHU2 RF-C" ;
+    brick:isPointOf bldg:AHU_2_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1633cab7-8c12-508c-80a8-a22e517397e2" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RF_OnOff_Status a brick:Fan_On_Off_Status ;
+    rdfs:label "ReturnFanStatus" ;
+    brick:isPointOf bldg:AHU_2_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "a3ab8836-b0a5-5226-b594-6f9b7f480508" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RF_Run_Status a brick:Start_Stop_Status ;
+    rdfs:label "ReturnFan" ;
+    brick:isPointOf bldg:AHU_2_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "b899b48c-5d8f-5d43-8ea5-f1d191ef0190" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RF_Speed_Cmd a brick:Fan_Speed_Command ;
+    rdfs:label "AHU2 RF-VFD" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_2_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d4f00be6-e169-57d1-b4f1-92dd57cf4913" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_RF_Status a brick:Fan_Status ;
+    rdfs:label "AHU2 RF-S" ;
+    brick:isPointOf bldg:AHU_2_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "ee891253-5459-53af-b9ae-ef764834006f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_SF_Alarm a brick:Alarm ;
+    rdfs:label "SupplyFanAlarm" ;
+    brick:isPointOf bldg:AHU_2_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1429220d-16f8-5b98-b589-f49e0e4ae726" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_SF_Cmd a brick:Start_Stop_Command ;
+    rdfs:label "AHU2 SF-C" ;
+    brick:isPointOf bldg:AHU_2_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "9222d590-1106-5a42-bb70-974ad316c24e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_SF_OnOff_Status a brick:Fan_On_Off_Status ;
+    rdfs:label "SupplyfanStatus" ;
+    brick:isPointOf bldg:AHU_2_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "4a519bc4-a32d-5e93-9c00-576bc21dcbd3" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_SF_Run_Status a brick:Start_Stop_Status ;
+    rdfs:label "SupplyFan" ;
+    brick:isPointOf bldg:AHU_2_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "b175d818-09fe-5101-b20c-b823a3e9e9f5" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_SF_Speed_Cmd a brick:Fan_Speed_Command ;
+    rdfs:label "AHU2 SF-VFD" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_2_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "cb64c038-15b1-53f8-bda7-02844fb305d5" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_SF_Status a brick:Fan_Status ;
+    rdfs:label "AHU2 SF-S" ;
+    brick:isPointOf bldg:AHU_2_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "4bac9a08-337e-5f6b-a577-fa044776ab05" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_Tstat_Status a brick:Thermostat_Status ;
+    rdfs:label "Tstat" ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "88db876c-6f81-57dc-b02f-0f69c38f5d7e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_2_Unocc_Clg_SP a brick:Unoccupied_Air_Temperature_Cooling_Setpoint ;
+    rdfs:label "Unoccupied Cool Setpt" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_2 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "483b982a-d515-5e90-b9e7-df244571587b" ;
+            ref:storedAt bldg:timeseries_db ] .
 
 bldg:Site a brick:Site ;
     rdfs:label "BUILDING_50 tutorial site" ;
@@ -293,6 +554,11 @@ bldg:Zone_AHU_1_ZN_T a brick:Zone_Air_Temperature_Sensor ;
     ref:hasExternalReference [ a ref:TimeseriesReference ;
             ref:hasTimeseriesId "508f538e-825f-53f7-92fc-036e7e0a5afa" ;
             ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_AHU_2 a brick:HVAC_Zone ;
+    rdfs:label "Zone AHU 2" ;
+    brick:isFedBy bldg:AHU_2 ;
+    brick:isPartOf bldg:Floor_2 .
 
 bldg:Zone_VAVFC_125_ZN_T a brick:Zone_Air_Temperature_Sensor ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -672,6 +938,20 @@ bldg:AHU_1_EA_Damper a brick:Exhaust_Damper ;
     brick:hasPoint bldg:AHU_1_EA_Damper_Fan_Enable_Pos ;
     brick:isPartOf bldg:AHU_1 .
 
+bldg:AHU_2_CHW_Valve a brick:Chilled_Water_Valve ;
+    rdfs:label "CHW Valve" ;
+    brick:hasPoint bldg:AHU_2_CHW_Valve_Cmd ;
+    brick:isPartOf bldg:AHU_2 .
+
+bldg:AHU_2_EA_Damper a brick:Exhaust_Damper ;
+    rdfs:label "Exhaust Air Damper" ;
+    brick:hasPoint bldg:AHU_2_EA_Damper_Fan_Enable_Pos ;
+    brick:isPartOf bldg:AHU_2 .
+
+bldg:Floor_2 a brick:Floor ;
+    rdfs:label "Second Floor" ;
+    brick:isPartOf bldg:Building_50 .
+
 bldg:Zone_AHU_1 a brick:HVAC_Zone ;
     rdfs:label "Zone AHU 1" ;
     brick:hasPoint bldg:Zone_AHU_1_ZN_T ;
@@ -948,6 +1228,12 @@ bldg:AHU_1_OA_Damper a brick:Outside_Damper ;
         bldg:AHU_1_OA_Damper_Min_Pos ;
     brick:isPartOf bldg:AHU_1 .
 
+bldg:AHU_2_OA_Damper a brick:Outside_Damper ;
+    rdfs:label "Outside Air Damper" ;
+    brick:hasPoint bldg:AHU_2_OA_Damper_Cmd,
+        bldg:AHU_2_OA_Damper_Min_Pos ;
+    brick:isPartOf bldg:AHU_2 .
+
 bldg:Zone_VAV_107 a brick:HVAC_Zone ;
     rdfs:label "Zone VAV 107" ;
     brick:hasPoint bldg:Zone_VAV_107_ZN_T,
@@ -955,16 +1241,12 @@ bldg:Zone_VAV_107 a brick:HVAC_Zone ;
     brick:isFedBy bldg:AHU_1 ;
     brick:isPartOf bldg:Floor_1 .
 
-unit:IN_H2O a qudt:Unit .
-
 bldg:Building_50 a brick:Building ;
     rdfs:label "BUILDING_50" ;
     brick:hasPart bldg:Floor_1,
         bldg:Floor_2,
         bldg:Floor_3 ;
     brick:isPartOf bldg:Site .
-
-unit:PERCENT a qudt:Unit .
 
 bldg:AHU_1_Return_Fan a brick:Return_Fan ;
     rdfs:label "Return Fan" ;
@@ -986,9 +1268,62 @@ bldg:AHU_1_Supply_Fan a brick:Supply_Fan ;
         bldg:AHU_1_SF_Status ;
     brick:isPartOf bldg:AHU_1 .
 
+bldg:AHU_2_Return_Fan a brick:Return_Fan ;
+    rdfs:label "Return Fan" ;
+    brick:hasPoint bldg:AHU_2_RF_Alarm,
+        bldg:AHU_2_RF_Cmd,
+        bldg:AHU_2_RF_OnOff_Status,
+        bldg:AHU_2_RF_Run_Status,
+        bldg:AHU_2_RF_Speed_Cmd,
+        bldg:AHU_2_RF_Status ;
+    brick:isPartOf bldg:AHU_2 .
+
+bldg:AHU_2_Supply_Fan a brick:Supply_Fan ;
+    rdfs:label "Supply Fan" ;
+    brick:hasPoint bldg:AHU_2_SF_Alarm,
+        bldg:AHU_2_SF_Cmd,
+        bldg:AHU_2_SF_OnOff_Status,
+        bldg:AHU_2_SF_Run_Status,
+        bldg:AHU_2_SF_Speed_Cmd,
+        bldg:AHU_2_SF_Status ;
+    brick:isPartOf bldg:AHU_2 .
+
+unit:IN_H2O a qudt:Unit .
+
+unit:PERCENT a qudt:Unit .
+
 bldg:Floor_1 a brick:Floor ;
     rdfs:label "First Floor" ;
     brick:isPartOf bldg:Building_50 .
+
+bldg:AHU_2 a brick:Air_Handler_Unit ;
+    rdfs:label "AHU_2" ;
+    brick:feeds bldg:Zone_AHU_2 ;
+    brick:hasPart bldg:AHU_2_CHW_Valve,
+        bldg:AHU_2_EA_Damper,
+        bldg:AHU_2_OA_Damper,
+        bldg:AHU_2_Return_Fan,
+        bldg:AHU_2_Supply_Fan ;
+    brick:hasPoint bldg:AHU_2_Alarm,
+        bldg:AHU_2_BLD_P,
+        bldg:AHU_2_BLD_P_SP,
+        bldg:AHU_2_DAT_Reset_OAT_High,
+        bldg:AHU_2_DAT_Reset_OAT_Low,
+        bldg:AHU_2_DAT_Reset_SAT_High,
+        bldg:AHU_2_DAT_Reset_SAT_Low,
+        bldg:AHU_2_DAT_SP,
+        bldg:AHU_2_DA_Alarm,
+        bldg:AHU_2_DA_P,
+        bldg:AHU_2_DA_P_SP,
+        bldg:AHU_2_DA_T,
+        bldg:AHU_2_Low_DA_P_Alarm,
+        bldg:AHU_2_MA_T,
+        bldg:AHU_2_OA_T,
+        bldg:AHU_2_Occ_Cmd,
+        bldg:AHU_2_RA_T,
+        bldg:AHU_2_Tstat_Status,
+        bldg:AHU_2_Unocc_Clg_SP ;
+    brick:isLocatedIn bldg:Building_50 .
 
 bldg:Floor_3 a brick:Floor ;
     rdfs:label "Third Floor" ;

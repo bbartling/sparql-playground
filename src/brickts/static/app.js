@@ -1,4 +1,5 @@
 let lastJson = null;
+let currentEquipment = "";
 
 async function loadPresets() {
   const res = await fetch("/api/sparql/examples");
@@ -17,6 +18,46 @@ async function loadPresets() {
   sel.addEventListener("change", () => {
     document.getElementById("query").value = sel.value;
   });
+}
+
+async function loadEquipment() {
+  const res = await fetch("/api/equipment");
+  const data = await res.json();
+  const sel = document.getElementById("equipment");
+  sel.innerHTML = "";
+  for (const eq of data.equipment || []) {
+    if (!/^AHU_/i.test(eq.equipment_id)) continue;
+    const opt = document.createElement("option");
+    opt.value = eq.equipment_id;
+    opt.textContent = eq.label || eq.equipment_id;
+    sel.appendChild(opt);
+  }
+  currentEquipment = sel.value;
+  sel.addEventListener("change", async () => {
+    currentEquipment = sel.value;
+    await loadFaults();
+  });
+  await loadFaults();
+}
+
+async function loadFaults() {
+  const sel = document.getElementById("fault-rule");
+  sel.innerHTML = "";
+  if (!currentEquipment) return;
+  const res = await fetch(
+    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults?include_generic=true`
+  );
+  if (!res.ok) return;
+  const faults = await res.json();
+  const applicable = faults.filter((f) => f.applicable && !f.generic);
+  const rest = faults.filter((f) => !f.applicable || f.generic);
+  for (const f of [...applicable, ...rest]) {
+    const opt = document.createElement("option");
+    opt.value = f.rule_id;
+    opt.textContent = `${f.rule_id} — ${f.title}${f.applicable ? "" : " (missing roles)"}`;
+    opt.disabled = !f.applicable;
+    sel.appendChild(opt);
+  }
 }
 
 function renderTable(bindings, vars) {
@@ -111,6 +152,75 @@ function download(name, text, type) {
   a.click();
 }
 
+document.getElementById("view-ttl").addEventListener("click", () => {
+  window.open("/api/model/ttl", "_blank", "noopener,noreferrer");
+});
+
+document.getElementById("validate-model").addEventListener("click", async () => {
+  const meta = document.getElementById("validate-meta");
+  meta.textContent = "Validating…";
+  const res = await fetch("/api/model/validate?shacl=false");
+  const data = await res.json();
+  const bad = (data.checks || []).filter((c) => c.count > 0 && String(c.check).startsWith("missing"));
+  meta.textContent = bad.length
+    ? `Issues: ${bad.map((c) => `${c.check}=${c.count}`).join(", ")}`
+    : `OK · ${data.checks.length} checks clean`;
+});
+
+document.getElementById("load-lesson").addEventListener("click", async () => {
+  const rule = document.getElementById("fault-rule").value;
+  const box = document.getElementById("lesson");
+  if (!currentEquipment || !rule) return;
+  const res = await fetch(
+    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults/${encodeURIComponent(rule)}/lesson`
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    box.hidden = false;
+    box.textContent = data.detail || JSON.stringify(data);
+    return;
+  }
+  const first = (data.lessons || []).find((l) => l.query);
+  if (first?.query) {
+    document.getElementById("query").value = first.query;
+  }
+  box.hidden = false;
+  box.textContent = [
+    `${data.rule_id}: ${data.title}`,
+    data.summary || "",
+    data.equation || "",
+    "",
+    "Required roles → Brick SPARQL lessons:",
+    ...(data.lessons || []).map((l) =>
+      l.error ? `  ${l.role}: ERROR ${l.error}` : `  ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})`
+    ),
+    "",
+    "Tip: Run the loaded SPARQL, then click Run rule.",
+  ].join("\n");
+});
+
+document.getElementById("run-rule").addEventListener("click", async () => {
+  const rule = document.getElementById("fault-rule").value;
+  const meta = document.getElementById("rule-meta");
+  const out = document.getElementById("rule-result");
+  meta.textContent = "Running rule…";
+  out.hidden = true;
+  const res = await fetch(
+    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults/${encodeURIComponent(rule)}/run`,
+    { method: "POST" }
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    meta.textContent = "";
+    document.getElementById("error").hidden = false;
+    document.getElementById("error").textContent = data.detail || JSON.stringify(data);
+    return;
+  }
+  meta.textContent = `${data.status} · fault_hours=${data.fault_hours} · samples=${data.sample_count}`;
+  out.hidden = false;
+  out.textContent = JSON.stringify(data, null, 2);
+});
+
 document.getElementById("run").addEventListener("click", runQuery);
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.key === "Enter") runQuery();
@@ -127,4 +237,4 @@ document.getElementById("dl-csv").addEventListener("click", () => {
   download("sparql.csv", [vars.join(","), ...rows].join("\n"), "text/csv");
 });
 
-loadPresets();
+Promise.all([loadPresets(), loadEquipment()]);

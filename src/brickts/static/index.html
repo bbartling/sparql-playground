@@ -8,15 +8,35 @@
   <body>
     <header>
       <h1>Brick timeseries SPARQL tutorial</h1>
-      <p class="sub">Read-only SPARQL against the Brick model + ontology union.</p>
+      <p class="sub">
+        Read-only SPARQL against the Brick model + ontology. Resolve Open-FDD roles through the
+        graph, then run rules on timeseries.
+      </p>
+      <div class="toolbar">
+        <button id="view-ttl" type="button">View RDF model (new tab)</button>
+        <button id="validate-model" type="button">Validate model</button>
+        <span id="validate-meta"></span>
+      </div>
     </header>
     <main>
       <section class="editor">
-        <label for="preset">Presets</label>
+        <div class="row">
+          <label for="equipment">Equipment</label>
+          <select id="equipment"></select>
+          <label for="fault-rule">Open-FDD rule</label>
+          <select id="fault-rule"></select>
+        </div>
+        <div class="actions">
+          <button id="load-lesson" type="button">Load role SPARQL lesson</button>
+          <button id="run-rule" type="button">Run rule</button>
+          <span id="rule-meta"></span>
+        </div>
+        <pre id="lesson" class="lesson" hidden></pre>
+        <label for="preset">SPARQL presets</label>
         <select id="preset"></select>
         <textarea id="query" rows="14" spellcheck="false"></textarea>
         <div class="actions">
-          <button id="run" type="button">Run (Ctrl+Enter)</button>
+          <button id="run" type="button">Run SPARQL (Ctrl+Enter)</button>
           <span id="meta"></span>
         </div>
       </section>
@@ -27,6 +47,7 @@
           <button id="dl-csv" type="button" disabled>Download CSV</button>
           <button id="dl-json" type="button" disabled>Download JSON</button>
         </div>
+        <pre id="rule-result" class="lesson" hidden></pre>
         <div id="plot" class="plot"></div>
       </section>
     </main>

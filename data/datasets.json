@@ -4,5 +4,11 @@
     "equipment": "AHU_1",
     "csv": "data/BUILDING_50/AHU_1/history_wide.csv",
     "mapping": "model/points/BUILDING_50__AHU_1.csv"
+  },
+  {
+    "building": "BUILDING_50",
+    "equipment": "AHU_2",
+    "csv": "data/BUILDING_50/AHU_2/history_wide.csv",
+    "mapping": "model/points/BUILDING_50__AHU_2.csv"
   }
 ]

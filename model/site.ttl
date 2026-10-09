@@ -57,6 +57,38 @@ bldg:AHU_1_CHW_Valve a brick:Chilled_Water_Valve ;
   rdfs:label "CHW Valve" ;
   brick:isPartOf bldg:AHU_1 .
 
+bldg:AHU_2 a brick:Air_Handler_Unit ;
+  rdfs:label "AHU_2" ;
+  brick:isLocatedIn bldg:Building_50 ;
+  brick:hasPart bldg:AHU_2_Supply_Fan, bldg:AHU_2_Return_Fan, bldg:AHU_2_OA_Damper,
+    bldg:AHU_2_EA_Damper, bldg:AHU_2_CHW_Valve .
+
+bldg:AHU_2_Supply_Fan a brick:Supply_Fan ;
+  rdfs:label "Supply Fan" ;
+  brick:isPartOf bldg:AHU_2 .
+
+bldg:AHU_2_Return_Fan a brick:Return_Fan ;
+  rdfs:label "Return Fan" ;
+  brick:isPartOf bldg:AHU_2 .
+
+bldg:AHU_2_OA_Damper a brick:Outside_Damper ;
+  rdfs:label "Outside Air Damper" ;
+  brick:isPartOf bldg:AHU_2 .
+
+bldg:AHU_2_EA_Damper a brick:Exhaust_Damper ;
+  rdfs:label "Exhaust Air Damper" ;
+  brick:isPartOf bldg:AHU_2 .
+
+bldg:AHU_2_CHW_Valve a brick:Chilled_Water_Valve ;
+  rdfs:label "CHW Valve" ;
+  brick:isPartOf bldg:AHU_2 .
+
+bldg:Zone_AHU_2 a brick:HVAC_Zone ;
+  rdfs:label "Zone AHU 2" ;
+  brick:isPartOf bldg:Floor_2 ;
+  brick:isFedBy bldg:AHU_2 .
+bldg:AHU_2 brick:feeds bldg:Zone_AHU_2 .
+
 bldg:timeseries_db a ref:Database, brick:Database ;
   rdfs:label "SQLite timeseries store (tutorial stand-in for a TSDB)" ;
   bts:backend "sqlite" ;
