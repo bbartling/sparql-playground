@@ -22,8 +22,17 @@ uv run brickts model build
 uv run brickts validate --shacl
 uv run brickts bootstrap          # idempotent; --force to reload
 uv run brickts serve              # http://127.0.0.1:8000/ui
-uv run python scripts/analyst_client.py --base-url http://127.0.0.1:8000 --equipment AHU_1 --rule FC1
+uv run python scripts/sparql_tutorial.py --base-url http://127.0.0.1:8000
+uv run python scripts/analyst_client.py --base-url http://127.0.0.1:8000 --equipment AHU_1 --rule FC1 --local-fc1
 uv run pytest -q && uv run ruff check .
+```
+
+Against the Render deploy:
+
+```bash
+uv run python scripts/sparql_tutorial.py --base-url https://sparql-playground.onrender.com
+uv run python scripts/analyst_client.py --base-url https://sparql-playground.onrender.com \
+  --equipment AHU_1 --rule FC1 --local-fc1
 ```
 
 Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`). Docker/Render must bind `0.0.0.0` and honor `$PORT` (the image does).
@@ -37,7 +46,7 @@ Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`).
 
 ## UI
 
-Static tutorial at `/ui` — SPARQL presets, **View RDF model** (`/api/model/ttl` plain Turtle in a new tab), **Validate model**, equipment + Open-FDD rule picker with role SPARQL lessons, and **Run rule** (resolves Brick roles → timeseries → `open_fdd.rules.run_rule`). Click a point row to plot recent samples.
+Static tutorial at `/ui` (also the target of `/`) — SPARQL presets + quick buttons, **View RDF model** (`/api/model/ttl`), **Validate model**, equipment + Open-FDD rule menus that only **pre-populate role SPARQL**, result table + raw API JSON. Fault evaluation stays local via `scripts/analyst_client.py`. Click a point row to plot recent samples.
 
 ![SPARQL UI](docs/ui.png)
 

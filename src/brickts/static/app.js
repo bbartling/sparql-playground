@@ -1,23 +1,65 @@
 let lastJson = null;
 let currentEquipment = "";
+let currentLesson = null;
+
+const QUICK = [
+  { id: "list_ahus", label: "List AHUs" },
+  { id: "list_points", label: "List points" },
+  { id: "ahu_points_refs", label: "Points + refs" },
+  { id: "databases", label: "Databases" },
+  { id: "equipment_tree", label: "Equipment tree" },
+  { id: "class_counts", label: "Class counts" },
+  { id: "missing_refs", label: "Missing refs" },
+  { id: "zones_fed", label: "Zones fed" },
+];
+
+function setQuery(text) {
+  document.getElementById("query").value = text || "";
+}
+
+function showLessonText(lines) {
+  const box = document.getElementById("lesson");
+  box.hidden = false;
+  box.textContent = lines.join("\n");
+}
 
 async function loadPresets() {
   const res = await fetch("/api/sparql/examples");
   const data = await res.json();
   const sel = document.getElementById("preset");
   sel.innerHTML = "";
+  const byId = {};
   for (const ex of data.examples) {
+    byId[ex.id] = ex;
     const opt = document.createElement("option");
-    opt.value = ex.query;
+    opt.value = ex.id;
+    opt.dataset.query = ex.query;
     opt.textContent = ex.title;
     sel.appendChild(opt);
   }
-  if (data.examples.length) {
-    document.getElementById("query").value = data.examples[0].query;
+  if (data.examples.length && !document.getElementById("query").value) {
+    setQuery(data.examples[0].query);
   }
   sel.addEventListener("change", () => {
-    document.getElementById("query").value = sel.value;
+    const opt = sel.selectedOptions[0];
+    if (opt) setQuery(opt.dataset.query);
   });
+
+  const quick = document.getElementById("quick-buttons");
+  quick.innerHTML = "";
+  for (const q of QUICK) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ghost";
+    btn.textContent = q.label;
+    btn.addEventListener("click", () => {
+      const ex = byId[q.id];
+      if (!ex) return;
+      sel.value = q.id;
+      setQuery(ex.query);
+    });
+    quick.appendChild(btn);
+  }
 }
 
 async function loadEquipment() {
@@ -42,21 +84,75 @@ async function loadEquipment() {
 
 async function loadFaults() {
   const sel = document.getElementById("fault-rule");
+  const roleSel = document.getElementById("role-lesson");
   sel.innerHTML = "";
+  roleSel.innerHTML = "";
+  currentLesson = null;
   if (!currentEquipment) return;
+
   const res = await fetch(
-    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults?include_generic=true`
+    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults?include_generic=false`
   );
   if (!res.ok) return;
   const faults = await res.json();
-  const applicable = faults.filter((f) => f.applicable && !f.generic);
-  const rest = faults.filter((f) => !f.applicable || f.generic);
-  for (const f of [...applicable, ...rest]) {
+  const applicable = faults.filter((f) => f.applicable);
+  for (const f of applicable) {
     const opt = document.createElement("option");
     opt.value = f.rule_id;
-    opt.textContent = `${f.rule_id} — ${f.title}${f.applicable ? "" : " (missing roles)"}`;
-    opt.disabled = !f.applicable;
+    opt.textContent = `${f.rule_id} — ${f.title}`;
     sel.appendChild(opt);
+  }
+  if (!applicable.length) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No role-based rules applicable";
+    sel.appendChild(opt);
+    return;
+  }
+  sel.onchange = () => loadFaultLesson(sel.value);
+  await loadFaultLesson(sel.value);
+}
+
+async function loadFaultLesson(ruleId) {
+  const roleSel = document.getElementById("role-lesson");
+  roleSel.innerHTML = "";
+  currentLesson = null;
+  if (!currentEquipment || !ruleId) return;
+
+  const res = await fetch(
+    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults/${encodeURIComponent(ruleId)}/lesson`
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    showLessonText([data.detail || JSON.stringify(data)]);
+    return;
+  }
+  currentLesson = data;
+  const lessons = (data.lessons || []).filter((l) => l.query);
+  for (const l of lessons) {
+    const opt = document.createElement("option");
+    opt.value = l.role;
+    opt.textContent = `${l.role} → ${l.binding?.point_id || "?"}`;
+    roleSel.appendChild(opt);
+  }
+  showLessonText([
+    `${data.rule_id}: ${data.title}`,
+    data.summary || "",
+    data.equation ? `Equation: ${data.equation}` : "",
+    "",
+    "This menu only pre-fills SPARQL. Run Open-FDD locally with scripts/analyst_client.py.",
+    "",
+    "Roles:",
+    ...lessons.map((l) => `  ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})`),
+  ].filter((x) => x !== undefined));
+
+  if (lessons.length) {
+    setQuery(lessons[0].query);
+    roleSel.onchange = () => {
+      const role = roleSel.value;
+      const hit = lessons.find((l) => l.role === role);
+      if (hit?.query) setQuery(hit.query);
+    };
   }
 }
 
@@ -90,6 +186,10 @@ function renderTable(bindings, vars) {
   }
 }
 
+function showApiJson(payload) {
+  document.getElementById("api-json").textContent = JSON.stringify(payload, null, 2);
+}
+
 async function runQuery() {
   const q = document.getElementById("query").value;
   document.getElementById("error").hidden = true;
@@ -100,10 +200,13 @@ async function runQuery() {
     body: JSON.stringify({ query: q }),
   });
   const payload = await res.json();
+  showApiJson(payload);
   if (!res.ok) {
     document.getElementById("error").hidden = false;
     document.getElementById("error").textContent = payload.detail || JSON.stringify(payload);
     document.getElementById("meta").textContent = "";
+    document.getElementById("dl-csv").disabled = true;
+    document.getElementById("dl-json").disabled = true;
     return;
   }
   lastJson = payload;
@@ -141,7 +244,7 @@ async function plotPoint(pointId) {
   const scaleX = (x) => pad + ((x - minX) / (maxX - minX || 1)) * (w - 2 * pad);
   const scaleY = (y) => h - pad - ((y - minY) / (maxY - minY || 1)) * (h - 2 * pad);
   const pts = samples.map((s) => `${scaleX(s.ts)},${scaleY(s.value)}`).join(" ");
-  document.getElementById("plot").innerHTML = `<svg width="${w}" height="${h}"><polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${pts}"/></svg><p>${pointId} (${samples.length} samples)</p>`;
+  document.getElementById("plot").innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${pts}"/></svg><p>${pointId} · ${samples.length} samples via GET /api/points/…/timeseries</p>`;
 }
 
 function download(name, text, type) {
@@ -161,69 +264,21 @@ document.getElementById("validate-model").addEventListener("click", async () => 
   meta.textContent = "Validating…";
   const res = await fetch("/api/model/validate?shacl=false");
   const data = await res.json();
-  const bad = (data.checks || []).filter((c) => c.count > 0 && String(c.check).startsWith("missing"));
+  showApiJson(data);
+  const bad = (data.checks || []).filter(
+    (c) => c.count > 0 && String(c.check).startsWith("missing")
+  );
   meta.textContent = bad.length
     ? `Issues: ${bad.map((c) => `${c.check}=${c.count}`).join(", ")}`
-    : `OK · ${data.checks.length} checks clean`;
-});
-
-document.getElementById("load-lesson").addEventListener("click", async () => {
-  const rule = document.getElementById("fault-rule").value;
-  const box = document.getElementById("lesson");
-  if (!currentEquipment || !rule) return;
-  const res = await fetch(
-    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults/${encodeURIComponent(rule)}/lesson`
-  );
-  const data = await res.json();
-  if (!res.ok) {
-    box.hidden = false;
-    box.textContent = data.detail || JSON.stringify(data);
-    return;
-  }
-  const first = (data.lessons || []).find((l) => l.query);
-  if (first?.query) {
-    document.getElementById("query").value = first.query;
-  }
-  box.hidden = false;
-  box.textContent = [
-    `${data.rule_id}: ${data.title}`,
-    data.summary || "",
-    data.equation || "",
-    "",
-    "Required roles → Brick SPARQL lessons:",
-    ...(data.lessons || []).map((l) =>
-      l.error ? `  ${l.role}: ERROR ${l.error}` : `  ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})`
-    ),
-    "",
-    "Tip: Run the loaded SPARQL, then click Run rule.",
-  ].join("\n");
-});
-
-document.getElementById("run-rule").addEventListener("click", async () => {
-  const rule = document.getElementById("fault-rule").value;
-  const meta = document.getElementById("rule-meta");
-  const out = document.getElementById("rule-result");
-  meta.textContent = "Running rule…";
-  out.hidden = true;
-  const res = await fetch(
-    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults/${encodeURIComponent(rule)}/run`,
-    { method: "POST" }
-  );
-  const data = await res.json();
-  if (!res.ok) {
-    meta.textContent = "";
-    document.getElementById("error").hidden = false;
-    document.getElementById("error").textContent = data.detail || JSON.stringify(data);
-    return;
-  }
-  meta.textContent = `${data.status} · fault_hours=${data.fault_hours} · samples=${data.sample_count}`;
-  out.hidden = false;
-  out.textContent = JSON.stringify(data, null, 2);
+    : `OK · ${(data.checks || []).length} checks clean`;
 });
 
 document.getElementById("run").addEventListener("click", runQuery);
 document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey && e.key === "Enter") runQuery();
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    runQuery();
+  }
 });
 document.getElementById("dl-json").addEventListener("click", () => {
   if (lastJson) download("sparql.json", JSON.stringify(lastJson, null, 2), "application/json");

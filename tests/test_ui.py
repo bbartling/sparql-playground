@@ -13,8 +13,14 @@ def test_ui(settings: Settings):
         assert html.status_code == 200
         assert "SPARQL" in html.text
         assert "View RDF model" in html.text
+        assert "API JSON" in html.text
+        assert "Run rule" not in html.text
+        root = client.get("/", follow_redirects=False)
+        assert root.status_code in (301, 302, 303, 307, 308)
+        assert root.headers.get("location", "").endswith("/ui")
         js = client.get("/static/app.js")
         assert js.status_code == 200
+        assert "Run rule" not in js.text
         ttl = client.get("/api/model/ttl")
         assert ttl.status_code == 200
         assert "text/turtle" in ttl.headers.get("content-type", "")

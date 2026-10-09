@@ -2,55 +2,94 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>brickts SPARQL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>brickts · SPARQL tutorial</title>
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <header>
-      <h1>Brick timeseries SPARQL tutorial</h1>
+      <p class="brand">brickts</p>
+      <h1>Brick SPARQL playground</h1>
       <p class="sub">
-        Read-only SPARQL against the Brick model + ontology. Resolve Open-FDD roles through the
-        graph, then run rules on timeseries.
+        Read-only SPARQL against a Brick model + ontology. Use the menus to
+        <em>pre-populate</em> queries that resolve Open-FDD roles through the graph.
+        Fault crunching stays local — run
+        <code>scripts/analyst_client.py</code> / <code>scripts/sparql_tutorial.py</code>
+        against this API from your machine.
       </p>
       <div class="toolbar">
-        <button id="view-ttl" type="button">View RDF model (new tab)</button>
-        <button id="validate-model" type="button">Validate model</button>
-        <span id="validate-meta"></span>
+        <button id="view-ttl" type="button" class="ghost">View RDF model</button>
+        <button id="validate-model" type="button" class="ghost">Validate model</button>
+        <span id="validate-meta" class="muted"></span>
       </div>
     </header>
+
     <main>
-      <section class="editor">
-        <div class="row">
-          <label for="equipment">Equipment</label>
-          <select id="equipment"></select>
-          <label for="fault-rule">Open-FDD rule</label>
-          <select id="fault-rule"></select>
+      <section class="panel query-panel">
+        <h2>Build a query</h2>
+        <p class="hint">Pick equipment and a fault rule — each role loads a SPARQL lesson into the editor. Or use a catalog preset.</p>
+
+        <div class="controls">
+          <div class="field">
+            <label for="equipment">Equipment</label>
+            <select id="equipment"></select>
+          </div>
+          <div class="field">
+            <label for="fault-rule">Open-FDD rule → SPARQL lesson</label>
+            <select id="fault-rule"></select>
+          </div>
+          <div class="field">
+            <label for="role-lesson">Role query</label>
+            <select id="role-lesson"></select>
+          </div>
+          <div class="field">
+            <label for="preset">Catalog preset</label>
+            <select id="preset"></select>
+          </div>
         </div>
+
+        <div class="quick" id="quick-buttons"></div>
+
+        <div id="lesson" class="lesson" hidden></div>
+
+        <label for="query">SPARQL</label>
+        <textarea id="query" rows="16" spellcheck="false"></textarea>
         <div class="actions">
-          <button id="load-lesson" type="button">Load role SPARQL lesson</button>
-          <button id="run-rule" type="button">Run rule</button>
-          <span id="rule-meta"></span>
-        </div>
-        <pre id="lesson" class="lesson" hidden></pre>
-        <label for="preset">SPARQL presets</label>
-        <select id="preset"></select>
-        <textarea id="query" rows="14" spellcheck="false"></textarea>
-        <div class="actions">
-          <button id="run" type="button">Run SPARQL (Ctrl+Enter)</button>
-          <span id="meta"></span>
+          <button id="run" type="button" class="primary">Run SPARQL</button>
+          <span class="kbd">Ctrl+Enter</span>
+          <span id="meta" class="muted"></span>
         </div>
       </section>
-      <section class="results">
+
+      <section class="panel results-panel">
+        <h2>Response</h2>
         <div id="error" class="error" hidden></div>
-        <table id="table"><thead></thead><tbody></tbody></table>
-        <div class="downloads">
-          <button id="dl-csv" type="button" disabled>Download CSV</button>
-          <button id="dl-json" type="button" disabled>Download JSON</button>
+
+        <h3>Result table</h3>
+        <p class="hint">Click a row with a <code>point</code> binding to plot recent samples from the timeseries API.</p>
+        <div class="table-wrap">
+          <table id="table"><thead></thead><tbody></tbody></table>
         </div>
-        <pre id="rule-result" class="lesson" hidden></pre>
+        <div class="actions">
+          <button id="dl-csv" type="button" class="ghost" disabled>Download CSV</button>
+          <button id="dl-json" type="button" class="ghost" disabled>Download JSON</button>
+        </div>
+
+        <h3>API JSON</h3>
+        <p class="hint">Exact <code>POST /api/sparql</code> payload shape automation clients receive.</p>
+        <pre id="api-json" class="code-box">Run a query to see the API response here.</pre>
+
         <div id="plot" class="plot"></div>
       </section>
     </main>
+
+    <footer>
+      <span>Endpoints:</span>
+      <code>/api/sparql</code>
+      <code>/api/model/ttl</code>
+      <code>/api/equipment/…/faults/…/lesson</code>
+      <code>/health</code>
+    </footer>
     <script src="/static/app.js"></script>
   </body>
 </html>
