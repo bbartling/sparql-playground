@@ -1,0 +1,11 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX tag: <https://brickschema.org/schema/BrickTag#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?point ?label WHERE {
+  ?point a ?cls .
+  ?cls brick:hasAssociatedTag tag:Supply , tag:Air , tag:Static , tag:Pressure , tag:Setpoint .
+  FILTER(STRSTARTS(STR(?point), STR(bldg:)))
+  OPTIONAL { ?point rdfs:label ?label }
+}

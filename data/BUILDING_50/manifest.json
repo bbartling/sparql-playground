@@ -1,0 +1,10 @@
+{
+  "schema_version": "openfdd_package_v1",
+  "building_id": "BUILDING_50",
+  "grid_minutes": 5,
+  "timezone": "UTC",
+  "notes": "TADCO BUILDING_50 cleaned historian + nested weather. site_id=COMMERCIAL_SITE_A",
+  "site_id": "COMMERCIAL_SITE_A",
+  "weather": "weather/history_wide.csv",
+  "weather_location_id": "WX_SITE_01"
+}

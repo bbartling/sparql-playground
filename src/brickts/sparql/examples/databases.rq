@@ -1,0 +1,16 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX bts: <https://example.org/openfdd/brickts#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?db ?label ?backend WHERE {
+  {
+    ?db a ref:Database .
+  } UNION {
+    ?db a brick:Database .
+  }
+  FILTER(STRSTARTS(STR(?db), STR(bldg:)))
+  OPTIONAL { ?db rdfs:label ?label }
+  OPTIONAL { ?db bts:backend ?backend }
+}

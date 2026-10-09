@@ -1,0 +1,1080 @@
+@prefix bldg: <https://example.org/openfdd/BUILDING_50#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix bts: <https://example.org/openfdd/brickts#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ref: <https://brickschema.org/schema/Brick/ref#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+
+bldg:AHU_1_Alarm a brick:Alarm ;
+    rdfs:label "50Ahu1Aalrm" ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "51ab8172-138d-553b-9679-d5506a15e585" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_BLD_P a brick:Building_Air_Static_Pressure_Sensor ;
+    rdfs:label "AHU1 BLD-Pressure" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "9ece1a32-7670-5187-827b-0dc1b84bdebc" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_BLD_P_SP a brick:Building_Air_Static_Pressure_Setpoint ;
+    rdfs:label "AHU1 BLD-P SetPoint" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "e210c333-2555-5df9-908d-4395581eece1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_CHW_Valve_Cmd a brick:Valve_Position_Command ;
+    rdfs:label "AHU1 CHW-Valve" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_1_CHW_Valve ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "0b523418-bf4a-5e6f-973e-74fec7210da0" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DAT_Reset_OAT_High a brick:Outside_Air_Temperature_High_Reset_Setpoint ;
+    rdfs:label "AHU1 DAT X2" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "bda4f167-b622-5f57-837f-9731be58656c" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DAT_Reset_OAT_Low a brick:Outside_Air_Temperature_Low_Reset_Setpoint ;
+    rdfs:label "AHU1 DAT X1" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "e15b8775-75b0-5705-90f7-97124ea3f012" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DAT_Reset_SAT_High a brick:Supply_Air_Temperature_High_Reset_Setpoint ;
+    rdfs:label "AHU1 DAT Y1" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d5ccbb62-26d3-56e2-a3dd-8c8d7abc466e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DAT_Reset_SAT_Low a brick:Supply_Air_Temperature_Low_Reset_Setpoint ;
+    rdfs:label "AHU1 DAT Y2" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "a8b64eb1-708a-549a-ad90-38a18fa3ebc4" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DAT_SP a brick:Supply_Air_Temperature_Setpoint ;
+    rdfs:label "AHU1 DAT Reset" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "0d2cd4db-c9e9-59c2-b660-76ac646ff9b0" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DA_Alarm a brick:Supply_Air_Temperature_Alarm ;
+    rdfs:label "DischargeAir Alarm" ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "fcfccd90-3c14-5c17-af45-918ac38f68d8" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DA_P a brick:Supply_Air_Static_Pressure_Sensor ;
+    rdfs:label "AHU1 DA-P" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "52422584-9894-50bd-9696-2fbb8b062518" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DA_P_SP a brick:Supply_Air_Static_Pressure_Setpoint ;
+    rdfs:label "AHU1 DA-P SetPoint" ;
+    brick:hasUnit unit:IN_H2O ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "761c2b61-4982-5157-bc66-2010cf6e2a47" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_DA_T a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "AHU1 DA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "a9c6cc54-3904-556d-bea0-2aedf2c3b274" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_EA_Damper_Fan_Enable_Pos a brick:Damper_Position_Setpoint ;
+    rdfs:label "Ex Dmpr Pos Fan Enable" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_1_EA_Damper ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d52b1b7b-e130-5fe6-aa70-6f7b131c9724" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_Emergency_Override a brick:Status ;
+    rdfs:label "HU_50" ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7b9dd5aa-e820-5b46-9b14-6d133d6c1b52" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_Low_DA_P_Alarm a brick:Pressure_Alarm ;
+    rdfs:label "LowDapAlarm" ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "18d93a8d-0d0a-5c4f-8b92-61aae37719c1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_MA_T a brick:Mixed_Air_Temperature_Sensor ;
+    rdfs:label "AHU1 MA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "51dc4226-ef79-5269-88a1-acc35d462236" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_OA_Damper_Cmd a brick:Damper_Position_Command ;
+    rdfs:label "AHU1 MAD-C" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_1_OA_Damper ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "df48c9b5-a95c-5eb4-a769-9c5515a135d3" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_OA_Damper_Min_Pos a brick:Min_Position_Setpoint_Limit ;
+    rdfs:label "OA Minimum Position" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_1_OA_Damper ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "53adf936-4ab7-545a-b22b-a74c6017cf00" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_OA_T a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "AHU1 OA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "bf422925-1e2d-598d-9069-3b0f17d49c48" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_Occ_Cmd a brick:Occupancy_Command ;
+    rdfs:label "AHU1 OCC-C" ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1e2e7fb6-6f6a-5256-94dc-4540b66734f5" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RA_T a brick:Return_Air_Temperature_Sensor ;
+    rdfs:label "AHU1 RA-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "c69fdc46-903e-5395-ba9a-15f7ce64d044" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RF_Alarm a brick:Alarm ;
+    rdfs:label "ReturnFanAalrm" ;
+    brick:isPointOf bldg:AHU_1_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1b26c50d-20da-5f6f-847a-9015176c7ee8" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RF_Cmd a brick:Start_Stop_Command ;
+    rdfs:label "AHU1 RF-C" ;
+    brick:isPointOf bldg:AHU_1_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "e7fd062a-972f-5c59-96b8-5e1208674878" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RF_OnOff_Status a brick:Fan_On_Off_Status ;
+    rdfs:label "ReturnFanStatus" ;
+    brick:isPointOf bldg:AHU_1_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "b349ce1c-ff18-509d-bda1-1b7cf40fda66" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RF_Run_Status a brick:Start_Stop_Status ;
+    rdfs:label "ReturnFan" ;
+    brick:isPointOf bldg:AHU_1_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "2e080ed4-4a03-54f2-b6a4-79d5db39549d" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RF_Speed_Cmd a brick:Fan_Speed_Command ;
+    rdfs:label "AHU1 RF-VFD" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_1_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1cda7363-ed7d-5d86-89f7-0d803564df21" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_RF_Status a brick:Fan_Status ;
+    rdfs:label "AHU1 RF-S" ;
+    brick:isPointOf bldg:AHU_1_Return_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1100cfd8-0736-517a-a049-23dffb9b0a9e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_SF_Alarm a brick:Alarm ;
+    rdfs:label "SupplyFanAlarm" ;
+    brick:isPointOf bldg:AHU_1_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "a410d5b3-5b9c-50b6-9493-376a86adeaef" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_SF_Cmd a brick:Start_Stop_Command ;
+    rdfs:label "AHU1 SF-C" ;
+    brick:isPointOf bldg:AHU_1_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "34ce2e32-8907-5b4e-bf05-e8257424c58f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_SF_OnOff_Status a brick:Fan_On_Off_Status ;
+    rdfs:label "SupplyfanStatus" ;
+    brick:isPointOf bldg:AHU_1_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "f317e693-1c6b-5f4f-9a5e-bc4b1b7e8b57" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_SF_Run_Status a brick:Start_Stop_Status ;
+    rdfs:label "SupplyFan" ;
+    brick:isPointOf bldg:AHU_1_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "c39bd5f4-7bca-548f-8df0-dc8b56e240de" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_SF_Speed_Cmd a brick:Fan_Speed_Command ;
+    rdfs:label "AHU1 SF-VFD" ;
+    brick:hasUnit unit:PERCENT ;
+    brick:isPointOf bldg:AHU_1_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "579cb2e9-7254-580f-97f3-aec0674e28c3" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_SF_Status a brick:Fan_Status ;
+    rdfs:label "AHU1 SF-S" ;
+    brick:isPointOf bldg:AHU_1_Supply_Fan ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "9ebf80dd-7821-510b-b2c0-cd0151e093c9" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_Tstat_Status a brick:Thermostat_Status ;
+    rdfs:label "Tstat" ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "0b2696f8-2ba9-5bc0-8a28-5d9a9528451b" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_Unocc_Clg_SP a brick:Unoccupied_Air_Temperature_Cooling_Setpoint ;
+    rdfs:label "Unoccupied Cool Setpt" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1df248b8-74f0-5eb2-8643-9c3847895d83" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Floor_2 a brick:Floor ;
+    rdfs:label "Second Floor" ;
+    brick:isPartOf bldg:Building_50 .
+
+bldg:Site a brick:Site ;
+    rdfs:label "BUILDING_50 tutorial site" ;
+    brick:hasPart bldg:Building_50 .
+
+bldg:Zone_AHU_1_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "AHU1 ZN-T" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_AHU_1 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "508f538e-825f-53f7-92fc-036e7e0a5afa" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVFC_125_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVFC_125 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d96937b0-a1a2-544c-bdd0-f37098423d40" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVHM_110_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVHM_110 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "878b437e-1cbe-5879-8ecd-f421800bb6b9" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_102_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_102 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "c702ed8b-34e6-5401-ab62-25ad08757c86" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_122_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_122 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "c1de8e29-02e5-5001-9177-6fd055d6ff93" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D302_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D302 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "4fa4020d-396a-5d29-a657-52ea8a445e5c" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D306_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D306 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "2280406d-c67a-52cb-b648-c84b150cdacf" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D311_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D311 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "dbfc9981-a1cb-5753-8fd7-fd4914426895" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D313_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D313 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "52c996ae-e4c5-5f59-b150-3ba85adb8dad" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D316_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D316 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "e61d99e9-2e3d-5eea-af62-44165759edb2" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D319_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D319 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "f18e0ac8-6627-5aa4-8628-6bd0ca4de86f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D324_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D324 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "a883e62a-a8fd-572e-9e03-378772ab9250" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D325_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D325 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1b8c84cb-8486-5dcb-a623-8993f186969e" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVH_2D326_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVH_2D326 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "f1f279e9-f32c-5c56-a97e-8fab7a76b992" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAVM_123_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAVM_123 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1fae4b2c-1f58-5b5e-a38c-6b5b6283a4e1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_100_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_100 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7d4b5fc8-d164-5caf-99ff-2c8ff6d8023d" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_104_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_104 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "61d60ed8-c35a-50f6-9eed-66ae893794a5" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_105_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_105 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "58c880a1-8dc1-54c3-9885-3fbf8f50d77c" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_107_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_107 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "fc5fa8dd-fb9e-5795-aee7-0c10418d032c" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_107_ZN_T_2 a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_107 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7789d19a-61f5-5760-8767-13f2871799b4" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_111_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_111 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "29ece6b7-29e8-502f-aef6-e0ed1c75febd" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_116_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_116 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "0e4c15b0-0412-5dcb-b8d7-031d054328b1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_120_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_120 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7a1cfd58-3a2f-5c77-ad9d-c3cbb48eac2b" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_121_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_121 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "fd433428-89e3-5910-a7f9-eb236e120be8" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_124_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_124 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "52647c32-7ace-5828-a550-727898dbabef" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D301_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D301 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7a503a48-ee48-5937-81ba-6fff13b6fa2f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D303_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D303 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "fdc86c34-7d31-5d8a-982f-7d431dea69d2" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D304_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D304 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "72a4a9cc-f7cc-598e-a786-7e6937241b96" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D305_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D305 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "738fee39-ceb0-55a7-9bf5-a5c1082e86f1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D307_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D307 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "aa79ca09-cfdf-5ed6-9b53-22e0841ebc42" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D308_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D308 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "6bac5be8-97db-5a70-8f94-75d83e7a087f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D309_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D309 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "9820cab7-4565-59be-a309-e6e871044c91" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D310_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D310 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "79da2001-5a64-5ac7-b3f9-2cda56fe0a76" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D312_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D312 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1be54f62-7df5-525a-a10e-5ff03a4c3fb9" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D314_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D314 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "6d23360c-99cd-58e6-8abe-da9cce470eb2" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D315_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D315 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "29d4e903-b591-5f2e-834e-1794e83a838b" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D317_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D317 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "1215f833-3379-5959-aed2-bd669497ca5b" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D318_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D318 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "6a79ff27-8bea-5946-bc9e-579256b2b766" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D320_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D320 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7170a7cb-e3e3-5416-b3f1-96f9e1849627" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D321_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D321 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "fb9cbcb8-005a-52d9-906c-6fa836411b39" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D322_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D322 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "a1bba15e-19ba-5fc3-aa53-fc854b95da89" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D323_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D323 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "7111547a-8a35-5494-be62-82af611118da" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D327_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D327 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "31784498-d792-5f7b-83ed-36b30c0f69c7" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D328_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D328 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "8fc6ab7a-9a9a-5f38-b02d-885242317cd1" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D329_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D329 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "d5923291-2c62-5ae0-af33-bbc0fa4bca3c" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D330_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D330 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "c7e5a210-255d-5107-a847-6cff1d2ac6f6" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:Zone_VAV_2D331_ZN_T a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    brick:hasUnit unit:DEG_F ;
+    brick:isPointOf bldg:Zone_VAV_2D331 ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "eb36b194-e2f6-5875-bf54-b66083d1d60f" ;
+            ref:storedAt bldg:timeseries_db ] .
+
+bldg:AHU_1_CHW_Valve a brick:Chilled_Water_Valve ;
+    rdfs:label "CHW Valve" ;
+    brick:hasPoint bldg:AHU_1_CHW_Valve_Cmd ;
+    brick:isPartOf bldg:AHU_1 .
+
+bldg:AHU_1_EA_Damper a brick:Exhaust_Damper ;
+    rdfs:label "Exhaust Air Damper" ;
+    brick:hasPoint bldg:AHU_1_EA_Damper_Fan_Enable_Pos ;
+    brick:isPartOf bldg:AHU_1 .
+
+bldg:Zone_AHU_1 a brick:HVAC_Zone ;
+    rdfs:label "Zone AHU 1" ;
+    brick:hasPoint bldg:Zone_AHU_1_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAVFC_125 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVFC 125" ;
+    brick:hasPoint bldg:Zone_VAVFC_125_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAVHM_110 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVHM 110" ;
+    brick:hasPoint bldg:Zone_VAVHM_110_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAVH_102 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 102" ;
+    brick:hasPoint bldg:Zone_VAVH_102_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAVH_122 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 122" ;
+    brick:hasPoint bldg:Zone_VAVH_122_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAVH_2D302 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D302" ;
+    brick:hasPoint bldg:Zone_VAVH_2D302_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D306 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D306" ;
+    brick:hasPoint bldg:Zone_VAVH_2D306_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D311 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D311" ;
+    brick:hasPoint bldg:Zone_VAVH_2D311_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D313 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D313" ;
+    brick:hasPoint bldg:Zone_VAVH_2D313_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D316 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D316" ;
+    brick:hasPoint bldg:Zone_VAVH_2D316_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D319 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D319" ;
+    brick:hasPoint bldg:Zone_VAVH_2D319_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D324 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D324" ;
+    brick:hasPoint bldg:Zone_VAVH_2D324_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D325 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D325" ;
+    brick:hasPoint bldg:Zone_VAVH_2D325_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVH_2D326 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVH 2D326" ;
+    brick:hasPoint bldg:Zone_VAVH_2D326_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAVM_123 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAVM 123" ;
+    brick:hasPoint bldg:Zone_VAVM_123_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_100 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 100" ;
+    brick:hasPoint bldg:Zone_VAV_100_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_104 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 104" ;
+    brick:hasPoint bldg:Zone_VAV_104_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_105 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 105" ;
+    brick:hasPoint bldg:Zone_VAV_105_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_111 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 111" ;
+    brick:hasPoint bldg:Zone_VAV_111_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_116 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 116" ;
+    brick:hasPoint bldg:Zone_VAV_116_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_120 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 120" ;
+    brick:hasPoint bldg:Zone_VAV_120_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_121 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 121" ;
+    brick:hasPoint bldg:Zone_VAV_121_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_124 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 124" ;
+    brick:hasPoint bldg:Zone_VAV_124_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+bldg:Zone_VAV_2D301 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D301" ;
+    brick:hasPoint bldg:Zone_VAV_2D301_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D303 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D303" ;
+    brick:hasPoint bldg:Zone_VAV_2D303_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D304 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D304" ;
+    brick:hasPoint bldg:Zone_VAV_2D304_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D305 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D305" ;
+    brick:hasPoint bldg:Zone_VAV_2D305_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D307 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D307" ;
+    brick:hasPoint bldg:Zone_VAV_2D307_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D308 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D308" ;
+    brick:hasPoint bldg:Zone_VAV_2D308_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D309 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D309" ;
+    brick:hasPoint bldg:Zone_VAV_2D309_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D310 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D310" ;
+    brick:hasPoint bldg:Zone_VAV_2D310_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D312 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D312" ;
+    brick:hasPoint bldg:Zone_VAV_2D312_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D314 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D314" ;
+    brick:hasPoint bldg:Zone_VAV_2D314_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D315 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D315" ;
+    brick:hasPoint bldg:Zone_VAV_2D315_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D317 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D317" ;
+    brick:hasPoint bldg:Zone_VAV_2D317_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D318 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D318" ;
+    brick:hasPoint bldg:Zone_VAV_2D318_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D320 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D320" ;
+    brick:hasPoint bldg:Zone_VAV_2D320_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D321 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D321" ;
+    brick:hasPoint bldg:Zone_VAV_2D321_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D322 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D322" ;
+    brick:hasPoint bldg:Zone_VAV_2D322_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D323 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D323" ;
+    brick:hasPoint bldg:Zone_VAV_2D323_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D327 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D327" ;
+    brick:hasPoint bldg:Zone_VAV_2D327_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D328 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D328" ;
+    brick:hasPoint bldg:Zone_VAV_2D328_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D329 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D329" ;
+    brick:hasPoint bldg:Zone_VAV_2D329_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D330 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D330" ;
+    brick:hasPoint bldg:Zone_VAV_2D330_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:Zone_VAV_2D331 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 2D331" ;
+    brick:hasPoint bldg:Zone_VAV_2D331_ZN_T ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_3 .
+
+bldg:AHU_1_OA_Damper a brick:Outside_Damper ;
+    rdfs:label "Outside Air Damper" ;
+    brick:hasPoint bldg:AHU_1_OA_Damper_Cmd,
+        bldg:AHU_1_OA_Damper_Min_Pos ;
+    brick:isPartOf bldg:AHU_1 .
+
+bldg:Zone_VAV_107 a brick:HVAC_Zone ;
+    rdfs:label "Zone VAV 107" ;
+    brick:hasPoint bldg:Zone_VAV_107_ZN_T,
+        bldg:Zone_VAV_107_ZN_T_2 ;
+    brick:isFedBy bldg:AHU_1 ;
+    brick:isPartOf bldg:Floor_1 .
+
+unit:IN_H2O a qudt:Unit .
+
+bldg:Building_50 a brick:Building ;
+    rdfs:label "BUILDING_50" ;
+    brick:hasPart bldg:Floor_1,
+        bldg:Floor_2,
+        bldg:Floor_3 ;
+    brick:isPartOf bldg:Site .
+
+unit:PERCENT a qudt:Unit .
+
+bldg:AHU_1_Return_Fan a brick:Return_Fan ;
+    rdfs:label "Return Fan" ;
+    brick:hasPoint bldg:AHU_1_RF_Alarm,
+        bldg:AHU_1_RF_Cmd,
+        bldg:AHU_1_RF_OnOff_Status,
+        bldg:AHU_1_RF_Run_Status,
+        bldg:AHU_1_RF_Speed_Cmd,
+        bldg:AHU_1_RF_Status ;
+    brick:isPartOf bldg:AHU_1 .
+
+bldg:AHU_1_Supply_Fan a brick:Supply_Fan ;
+    rdfs:label "Supply Fan" ;
+    brick:hasPoint bldg:AHU_1_SF_Alarm,
+        bldg:AHU_1_SF_Cmd,
+        bldg:AHU_1_SF_OnOff_Status,
+        bldg:AHU_1_SF_Run_Status,
+        bldg:AHU_1_SF_Speed_Cmd,
+        bldg:AHU_1_SF_Status ;
+    brick:isPartOf bldg:AHU_1 .
+
+bldg:Floor_1 a brick:Floor ;
+    rdfs:label "First Floor" ;
+    brick:isPartOf bldg:Building_50 .
+
+bldg:Floor_3 a brick:Floor ;
+    rdfs:label "Third Floor" ;
+    brick:isPartOf bldg:Building_50 .
+
+unit:DEG_F a qudt:Unit .
+
+bldg:AHU_1 a brick:Air_Handler_Unit ;
+    rdfs:label "AHU_1" ;
+    brick:feeds bldg:Zone_AHU_1,
+        bldg:Zone_VAVFC_125,
+        bldg:Zone_VAVHM_110,
+        bldg:Zone_VAVH_102,
+        bldg:Zone_VAVH_122,
+        bldg:Zone_VAVH_2D302,
+        bldg:Zone_VAVH_2D306,
+        bldg:Zone_VAVH_2D311,
+        bldg:Zone_VAVH_2D313,
+        bldg:Zone_VAVH_2D316,
+        bldg:Zone_VAVH_2D319,
+        bldg:Zone_VAVH_2D324,
+        bldg:Zone_VAVH_2D325,
+        bldg:Zone_VAVH_2D326,
+        bldg:Zone_VAVM_123,
+        bldg:Zone_VAV_100,
+        bldg:Zone_VAV_104,
+        bldg:Zone_VAV_105,
+        bldg:Zone_VAV_107,
+        bldg:Zone_VAV_111,
+        bldg:Zone_VAV_116,
+        bldg:Zone_VAV_120,
+        bldg:Zone_VAV_121,
+        bldg:Zone_VAV_124,
+        bldg:Zone_VAV_2D301,
+        bldg:Zone_VAV_2D303,
+        bldg:Zone_VAV_2D304,
+        bldg:Zone_VAV_2D305,
+        bldg:Zone_VAV_2D307,
+        bldg:Zone_VAV_2D308,
+        bldg:Zone_VAV_2D309,
+        bldg:Zone_VAV_2D310,
+        bldg:Zone_VAV_2D312,
+        bldg:Zone_VAV_2D314,
+        bldg:Zone_VAV_2D315,
+        bldg:Zone_VAV_2D317,
+        bldg:Zone_VAV_2D318,
+        bldg:Zone_VAV_2D320,
+        bldg:Zone_VAV_2D321,
+        bldg:Zone_VAV_2D322,
+        bldg:Zone_VAV_2D323,
+        bldg:Zone_VAV_2D327,
+        bldg:Zone_VAV_2D328,
+        bldg:Zone_VAV_2D329,
+        bldg:Zone_VAV_2D330,
+        bldg:Zone_VAV_2D331 ;
+    brick:hasPart bldg:AHU_1_CHW_Valve,
+        bldg:AHU_1_EA_Damper,
+        bldg:AHU_1_OA_Damper,
+        bldg:AHU_1_Return_Fan,
+        bldg:AHU_1_Supply_Fan ;
+    brick:hasPoint bldg:AHU_1_Alarm,
+        bldg:AHU_1_BLD_P,
+        bldg:AHU_1_BLD_P_SP,
+        bldg:AHU_1_DAT_Reset_OAT_High,
+        bldg:AHU_1_DAT_Reset_OAT_Low,
+        bldg:AHU_1_DAT_Reset_SAT_High,
+        bldg:AHU_1_DAT_Reset_SAT_Low,
+        bldg:AHU_1_DAT_SP,
+        bldg:AHU_1_DA_Alarm,
+        bldg:AHU_1_DA_P,
+        bldg:AHU_1_DA_P_SP,
+        bldg:AHU_1_DA_T,
+        bldg:AHU_1_Emergency_Override,
+        bldg:AHU_1_Low_DA_P_Alarm,
+        bldg:AHU_1_MA_T,
+        bldg:AHU_1_OA_T,
+        bldg:AHU_1_Occ_Cmd,
+        bldg:AHU_1_RA_T,
+        bldg:AHU_1_Tstat_Status,
+        bldg:AHU_1_Unocc_Clg_SP ;
+    brick:isLocatedIn bldg:Building_50 .
+
+bldg:timeseries_db a brick:Database,
+        ref:Database ;
+    rdfs:label "SQLite timeseries store (tutorial stand-in for a TSDB)" ;
+    bts:backend "sqlite" ;
+    bts:connectionEnv "BRICKTS_DB_PATH" ;
+    bts:schemaDescription "samples(timeseries_id TEXT, ts INTEGER epoch-s UTC, value REAL)" .
+
