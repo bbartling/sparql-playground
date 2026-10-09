@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?zone ?label WHERE {
+  bldg:AHU_1 brick:feeds ?zone .
+  ?zone a brick:HVAC_Zone .
+  OPTIONAL { ?zone rdfs:label ?label }
+}
+ORDER BY ?zone

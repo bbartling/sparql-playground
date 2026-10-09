@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?point ?ref WHERE {
+  ?point ref:hasExternalReference ?ref .
+  FILTER(STRSTARTS(STR(?point), STR(bldg:)))
+  FILTER NOT EXISTS { ?ref ref:storedAt ?db }
+}

@@ -1,0 +1,13 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?point ?label ?ts ?db WHERE {
+  ?point brick:isPointOf bldg:AHU_1 .
+  OPTIONAL { ?point rdfs:label ?label }
+  ?point ref:hasExternalReference ?ref .
+  ?ref ref:hasTimeseriesId ?ts .
+  ?ref ref:storedAt ?db .
+}
+ORDER BY ?point

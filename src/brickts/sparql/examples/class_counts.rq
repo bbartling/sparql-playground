@@ -1,0 +1,12 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?class (COUNT(?point) AS ?n) WHERE {
+  ?point a ?class .
+  ?class (rdfs:subClassOf|owl:equivalentClass)* brick:Point .
+  FILTER(STRSTARTS(STR(?point), STR(bldg:)))
+}
+GROUP BY ?class
+ORDER BY DESC(?n)

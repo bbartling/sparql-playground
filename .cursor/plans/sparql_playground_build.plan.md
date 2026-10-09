@@ -4,46 +4,46 @@ overview: "Build a near-production tutorial app in this repo. BUILDING_50 AHU_1 
 todos:
   - id: s0-data
     content: "S0 Data — unzip /home/ben/Downloads/BUILDING_50_openfdd.zip to /tmp/b50. Copy BUILDING_50/manifest.json and AHU_1/{history_wide.csv,columns.csv,column_map.json,fdd_faults.csv,fdd_events.csv} to data/BUILDING_50/. Write data/datasets.json. Add var/ and *.sqlite* to .gitignore"
-    status: pending
+    status: completed
   - id: s1-scaffold
     content: "S1 Scaffold — pyproject (deps already added via uv add), [project.scripts] brickts=brickts.cli:main, ruff config, settings.py (pydantic-settings, BRICKTS_ prefix), logging.py (JSON)"
-    status: pending
+    status: completed
   - id: s2-store
     content: "S2 TimeseriesStore Protocol + SqliteTimeseriesStore (WAL, WITHOUT ROWID PK(timeseries_id,ts), parameterized, upsert) + registry by Database IRI/bts:backend"
-    status: pending
+    status: completed
   - id: s3-model
     content: "S3 Model — model/site.ttl (Site, Building, Floors, AHU_1, parts, 46 zones, Database node). model/points/BUILDING_50__AHU_1.csv (83 rows, table below). brickts model build → model/building_50.ttl. SHACL validate"
-    status: pending
+    status: completed
   - id: s4-ingest
     content: "S4 Bootstrap/ingest — wide CSV → long rows via the mapping CSV; idempotent via ingest_log sha256; --force; optional startup bootstrap"
-    status: pending
+    status: completed
   - id: s5-graph
     content: "S5 GraphService — model + cached Brick ontology union; copy-on-write mutations under a lock; atomic snapshot; periodic flusher; validation SPARQL checks"
-    status: pending
+    status: completed
   - id: s6-sparql-guard
     content: "S6 Read-only SPARQL guard — query forms allowlist; reject update/SERVICE/FROM; length cap, row cap, timeout, semaphore"
-    status: pending
+    status: completed
   - id: s7-api
     content: "S7 FastAPI — /health, /api/sparql (+examples), /api/equipment, points by class/tags, timeseries, faults, model validate/ttl, gated mutations, lifespan flush"
-    status: pending
+    status: completed
   - id: s8-faults
     content: "S8 Fault applicability from open_fdd.rules.RULES + ROLE_REQUIREMENTS role→Brick table"
-    status: pending
+    status: completed
   - id: s9-ui
     content: "S9 Static SPARQL UI at /ui — textarea, Ctrl+Enter, presets, table, errors, count/timing, CSV/JSON download, click point → SVG plot"
-    status: pending
+    status: completed
   - id: s10-client
     content: "S10 scripts/analyst_client.py — faults list, then class/tag lookup of DSP/DSP-SP/SF speed, timeseries, open_fdd run_rule FC1, print summary"
-    status: pending
+    status: completed
   - id: s11-tests
     content: "S11 pytest suite (list below) + ruff clean"
-    status: pending
+    status: completed
   - id: s12-docs-ops
     content: "S12 README tutorial (+screenshot docs/ui.png), refresh AGENTS.md, Dockerfile + compose.yaml, .github/workflows/ci.yml"
-    status: pending
+    status: completed
   - id: s13-ship
     content: "S13 Run bootstrap + serve + client end-to-end. Commit on feature/brick-timeseries-tutorial, push, PR to develop. Report: branch, PR URL, tree, tests, FC1 summary, open questions"
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -173,20 +173,34 @@ bldg:AHU_1 brick:hasPoint bldg:AHU_1_DA_P .
 
 ```python
 ALLOWED = {"SelectQuery", "AskQuery", "ConstructQuery", "DescribeQuery"}
+
+
 def prepare(text: str, s: Settings) -> Query:
-    if len(text) > s.sparql_max_query_chars: raise SparqlRejected("query too long")
-    try: parsed = parseQuery(text)
+    if len(text) > s.sparql_max_query_chars:
+        raise SparqlRejected("query too long")
+    try:
+        parsed = parseQuery(text)
     except ParseException as e:
-        try: parseUpdate(text); raise SparqlRejected("updates are not allowed")
-        except ParseException: raise SparqlSyntaxError(str(e)) from e
+        try:
+            parseUpdate(text)
+            raise SparqlRejected("updates are not allowed")
+        except ParseException:
+            raise SparqlSyntaxError(str(e)) from e
     q = parsed[1]
-    if q.name not in ALLOWED: raise SparqlRejected(f"{q.name} not allowed")
-    if q.get("datasetClause"): raise SparqlRejected("FROM / FROM NAMED not allowed")
-    if _contains(parsed, "ServiceGraphPattern"): raise SparqlRejected("SERVICE not allowed")
+    if q.name not in ALLOWED:
+        raise SparqlRejected(f"{q.name} not allowed")
+    if q.get("datasetClause"):
+        raise SparqlRejected("FROM / FROM NAMED not allowed")
+    if _contains(parsed, "ServiceGraphPattern"):
+        raise SparqlRejected("SERVICE not allowed")
     query = translateQuery(parsed)
-    if query.algebra.name == "SelectQuery":   # cap rows; fallback: truncate while iterating
-        query.algebra.p = CompValue("Slice", p=query.algebra.p, start=0, length=s.sparql_max_rows + 1)
+    if query.algebra.name == "SelectQuery":  # cap rows; fallback: truncate while iterating
+        query.algebra.p = CompValue(
+            "Slice", p=query.algebra.p, start=0, length=s.sparql_max_rows + 1
+        )
     return query
+
+
 # router: async with sem: await asyncio.wait_for(run_in_threadpool(state.union.query, query), timeout)
 # 400 syntax/forbidden, 504 timeout; response = SPARQL 1.1 JSON results + meta{row_count,truncated,elapsed_ms}
 ```
@@ -195,20 +209,21 @@ def prepare(text: str, s: Settings) -> Query:
 
 ```python
 ROLE_REQUIREMENTS = {  # role -> (brick class, optional owner class)
-  "duct-static-pressure": ("Supply_Air_Static_Pressure_Sensor", None),
-  "duct-static-pressure-sp": ("Supply_Air_Static_Pressure_Setpoint", None),
-  "fan-cmd": ("Fan_Speed_Command", "Supply_Fan"), "fan-status": ("Fan_Status", "Supply_Fan"),
-  "return-fan-cmd": ("Fan_Speed_Command", "Return_Fan"),
-  "discharge-air-temp": ("Supply_Air_Temperature_Sensor", None),
-  "discharge-air-temp-sp": ("Supply_Air_Temperature_Setpoint", None),
-  "mixed-air-temp": ("Mixed_Air_Temperature_Sensor", None),
-  "return-air-temp": ("Return_Air_Temperature_Sensor", None),
-  "outside-air-temp": ("Outside_Air_Temperature_Sensor", None),
-  "outside-air-damper": ("Damper_Position_Command", "Outside_Damper"),
-  "cooling-valve": ("Valve_Position_Command", "Chilled_Water_Valve"),
-  "heating-valve": ("Valve_Position_Command", "Hot_Water_Valve"),
-  "occupied": ("Occupancy_Command", None),
-  "web-outside-air-temp": ("Outside_Air_Temperature_Sensor", "Weather_Station"),
+    "duct-static-pressure": ("Supply_Air_Static_Pressure_Sensor", None),
+    "duct-static-pressure-sp": ("Supply_Air_Static_Pressure_Setpoint", None),
+    "fan-cmd": ("Fan_Speed_Command", "Supply_Fan"),
+    "fan-status": ("Fan_Status", "Supply_Fan"),
+    "return-fan-cmd": ("Fan_Speed_Command", "Return_Fan"),
+    "discharge-air-temp": ("Supply_Air_Temperature_Sensor", None),
+    "discharge-air-temp-sp": ("Supply_Air_Temperature_Setpoint", None),
+    "mixed-air-temp": ("Mixed_Air_Temperature_Sensor", None),
+    "return-air-temp": ("Return_Air_Temperature_Sensor", None),
+    "outside-air-temp": ("Outside_Air_Temperature_Sensor", None),
+    "outside-air-damper": ("Damper_Position_Command", "Outside_Damper"),
+    "cooling-valve": ("Valve_Position_Command", "Chilled_Water_Valve"),
+    "heating-valve": ("Valve_Position_Command", "Hot_Water_Valve"),
+    "occupied": ("Occupancy_Command", None),
+    "web-outside-air-temp": ("Outside_Air_Temperature_Sensor", "Weather_Station"),
 }  # unmapped role -> rule not applicable, reason "no Brick mapping for role"
 ROLE_ASK = """ASK {
   ?point (brick:isPointOf|^brick:hasPoint) ?owner .

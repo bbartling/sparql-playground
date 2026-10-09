@@ -1,0 +1,68 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #334155;
+}
+.sub {
+  color: #94a3b8;
+  margin: 0.25rem 0 0;
+}
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+@media (max-width: 960px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+button,
+select {
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+th,
+td {
+  border: 1px solid #334155;
+  padding: 0.25rem 0.4rem;
+  word-break: break-all;
+}
+.error {
+  color: #fecaca;
+  background: #7f1d1d;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+.plot svg {
+  background: #1e293b;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+}
+tr.clickable {
+  cursor: pointer;
+}
+tr.clickable:hover {
+  background: #1e293b;
+}

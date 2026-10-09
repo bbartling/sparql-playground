@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?parent ?child ?childLabel WHERE {
+  ?child brick:isPartOf ?parent .
+  FILTER(STRSTARTS(STR(?child), STR(bldg:)))
+  OPTIONAL { ?child rdfs:label ?childLabel }
+}
+ORDER BY ?parent ?child

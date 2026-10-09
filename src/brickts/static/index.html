@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>brickts SPARQL</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Brick timeseries SPARQL tutorial</h1>
+      <p class="sub">Read-only SPARQL against the Brick model + ontology union.</p>
+    </header>
+    <main>
+      <section class="editor">
+        <label for="preset">Presets</label>
+        <select id="preset"></select>
+        <textarea id="query" rows="14" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="run" type="button">Run (Ctrl+Enter)</button>
+          <span id="meta"></span>
+        </div>
+      </section>
+      <section class="results">
+        <div id="error" class="error" hidden></div>
+        <table id="table"><thead></thead><tbody></tbody></table>
+        <div class="downloads">
+          <button id="dl-csv" type="button" disabled>Download CSV</button>
+          <button id="dl-json" type="button" disabled>Download JSON</button>
+        </div>
+        <div id="plot" class="plot"></div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,340 @@
+@prefix bldg: <https://example.org/openfdd/BUILDING_50#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ref: <https://brickschema.org/schema/Brick/ref#> .
+@prefix bts: <https://example.org/openfdd/brickts#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+
+unit:DEG_F a qudt:Unit .
+unit:IN_H2O a qudt:Unit .
+unit:PERCENT a qudt:Unit .
+
+bldg:Site a brick:Site ;
+  rdfs:label "BUILDING_50 tutorial site" ;
+  brick:hasPart bldg:Building_50 .
+
+bldg:Building_50 a brick:Building ;
+  rdfs:label "BUILDING_50" ;
+  brick:isPartOf bldg:Site ;
+  brick:hasPart bldg:Floor_1, bldg:Floor_2, bldg:Floor_3 .
+
+bldg:Floor_1 a brick:Floor ;
+  rdfs:label "First Floor" ;
+  brick:isPartOf bldg:Building_50 .
+
+bldg:Floor_2 a brick:Floor ;
+  rdfs:label "Second Floor" ;
+  brick:isPartOf bldg:Building_50 .
+
+bldg:Floor_3 a brick:Floor ;
+  rdfs:label "Third Floor" ;
+  brick:isPartOf bldg:Building_50 .
+
+bldg:AHU_1 a brick:Air_Handler_Unit ;
+  rdfs:label "AHU_1" ;
+  brick:isLocatedIn bldg:Building_50 ;
+  brick:hasPart bldg:AHU_1_Supply_Fan, bldg:AHU_1_Return_Fan, bldg:AHU_1_OA_Damper,
+    bldg:AHU_1_EA_Damper, bldg:AHU_1_CHW_Valve .
+
+bldg:AHU_1_Supply_Fan a brick:Supply_Fan ;
+  rdfs:label "Supply Fan" ;
+  brick:isPartOf bldg:AHU_1 .
+
+bldg:AHU_1_Return_Fan a brick:Return_Fan ;
+  rdfs:label "Return Fan" ;
+  brick:isPartOf bldg:AHU_1 .
+
+bldg:AHU_1_OA_Damper a brick:Outside_Damper ;
+  rdfs:label "Outside Air Damper" ;
+  brick:isPartOf bldg:AHU_1 .
+
+bldg:AHU_1_EA_Damper a brick:Exhaust_Damper ;
+  rdfs:label "Exhaust Air Damper" ;
+  brick:isPartOf bldg:AHU_1 .
+
+bldg:AHU_1_CHW_Valve a brick:Chilled_Water_Valve ;
+  rdfs:label "CHW Valve" ;
+  brick:isPartOf bldg:AHU_1 .
+
+bldg:timeseries_db a ref:Database, brick:Database ;
+  rdfs:label "SQLite timeseries store (tutorial stand-in for a TSDB)" ;
+  bts:backend "sqlite" ;
+  bts:connectionEnv "BRICKTS_DB_PATH" ;
+  bts:schemaDescription "samples(timeseries_id TEXT, ts INTEGER epoch-s UTC, value REAL)" .
+
+bldg:Zone_AHU_1 a brick:HVAC_Zone ;
+  rdfs:label "Zone AHU 1" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_AHU_1 .
+
+bldg:Zone_VAVFC_125 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVFC 125" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVFC_125 .
+
+bldg:Zone_VAVHM_110 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVHM 110" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVHM_110 .
+
+bldg:Zone_VAVH_102 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 102" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_102 .
+
+bldg:Zone_VAVH_122 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 122" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_122 .
+
+bldg:Zone_VAVH_2D302 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D302" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D302 .
+
+bldg:Zone_VAVH_2D306 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D306" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D306 .
+
+bldg:Zone_VAVH_2D311 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D311" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D311 .
+
+bldg:Zone_VAVH_2D313 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D313" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D313 .
+
+bldg:Zone_VAVH_2D316 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D316" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D316 .
+
+bldg:Zone_VAVH_2D319 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D319" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D319 .
+
+bldg:Zone_VAVH_2D324 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D324" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D324 .
+
+bldg:Zone_VAVH_2D325 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D325" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D325 .
+
+bldg:Zone_VAVH_2D326 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVH 2D326" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVH_2D326 .
+
+bldg:Zone_VAVM_123 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAVM 123" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAVM_123 .
+
+bldg:Zone_VAV_100 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 100" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_100 .
+
+bldg:Zone_VAV_104 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 104" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_104 .
+
+bldg:Zone_VAV_105 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 105" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_105 .
+
+bldg:Zone_VAV_107 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 107" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_107 .
+
+bldg:Zone_VAV_111 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 111" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_111 .
+
+bldg:Zone_VAV_116 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 116" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_116 .
+
+bldg:Zone_VAV_120 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 120" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_120 .
+
+bldg:Zone_VAV_121 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 121" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_121 .
+
+bldg:Zone_VAV_124 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 124" ;
+  brick:isPartOf bldg:Floor_1 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_124 .
+
+bldg:Zone_VAV_2D301 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D301" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D301 .
+
+bldg:Zone_VAV_2D303 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D303" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D303 .
+
+bldg:Zone_VAV_2D304 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D304" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D304 .
+
+bldg:Zone_VAV_2D305 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D305" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D305 .
+
+bldg:Zone_VAV_2D307 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D307" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D307 .
+
+bldg:Zone_VAV_2D308 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D308" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D308 .
+
+bldg:Zone_VAV_2D309 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D309" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D309 .
+
+bldg:Zone_VAV_2D310 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D310" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D310 .
+
+bldg:Zone_VAV_2D312 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D312" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D312 .
+
+bldg:Zone_VAV_2D314 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D314" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D314 .
+
+bldg:Zone_VAV_2D315 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D315" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D315 .
+
+bldg:Zone_VAV_2D317 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D317" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D317 .
+
+bldg:Zone_VAV_2D318 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D318" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D318 .
+
+bldg:Zone_VAV_2D320 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D320" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D320 .
+
+bldg:Zone_VAV_2D321 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D321" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D321 .
+
+bldg:Zone_VAV_2D322 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D322" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D322 .
+
+bldg:Zone_VAV_2D323 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D323" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D323 .
+
+bldg:Zone_VAV_2D327 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D327" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D327 .
+
+bldg:Zone_VAV_2D328 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D328" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D328 .
+
+bldg:Zone_VAV_2D329 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D329" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D329 .
+
+bldg:Zone_VAV_2D330 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D330" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D330 .
+
+bldg:Zone_VAV_2D331 a brick:HVAC_Zone ;
+  rdfs:label "Zone VAV 2D331" ;
+  brick:isPartOf bldg:Floor_3 ;
+  brick:isFedBy bldg:AHU_1 .
+bldg:AHU_1 brick:feeds bldg:Zone_VAV_2D331 .
