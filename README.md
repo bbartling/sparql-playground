@@ -9,7 +9,8 @@ A small tutorial API for **building data**:
 This repo uses SQLite as a stand-in historian. A real site would use Timescale, Influx, or a data lake; the API shape stays the same.
 
 **Demo site:** `BUILDING_50` with `AHU_1` and `AHU_2`.  
-**Live API docs:** <https://sparql-playground.onrender.com/docs>
+**Live API docs:** <https://sparql-playground.onrender.com/docs>  
+**Queries to paste into Swagger:** [`docs/sparql_queries.md`](docs/sparql_queries.md)
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
