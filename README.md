@@ -55,7 +55,7 @@ Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`).
 
 ## Interactive surface
 
-There is **no custom HTML UI**. `/` and `/ui` redirect to **Swagger** at `/docs`. Use **GET** `/api/sparql/examples` then **POST** `/api/sparql` to try inventory queries in the browser. Tutorial depth is in `scripts/lesson_0*.py`.
+There is **no custom HTML UI** — bare FastAPI + **Swagger** at `/docs` (`/` redirects there). **POST** `/api/sparql` ships with prefilled example bodies (mech summary, list AHUs) so Try it out / curl is ready. More presets: **GET** `/api/sparql/examples`. Tutorial depth is in `scripts/lesson_0*.py`.
 
 ## Production notes
 

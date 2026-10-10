@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-_MECH_SUMMARY_EXAMPLE = """\
+# Used as the default Swagger / curl body for POST /api/sparql
+MECH_SUMMARY_QUERY = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -23,12 +24,32 @@ GROUP BY ?kind
 ORDER BY DESC(?n) ?kind
 """
 
+LIST_AHUS_QUERY = """\
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?ahu ?label WHERE {
+  ?ahu a/(rdfs:subClassOf|owl:equivalentClass)* brick:Air_Handler_Unit .
+  FILTER(STRSTARTS(STR(?ahu), STR(bldg:)))
+  OPTIONAL { ?ahu rdfs:label ?label }
+}
+ORDER BY ?ahu
+"""
+
 
 class SparqlRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"query": MECH_SUMMARY_QUERY},
+        }
+    )
+
     query: str = Field(
         min_length=1,
         description="Read-only SPARQL SELECT/ASK (no UPDATE/LOAD/SERVICE/FROM).",
-        examples=[_MECH_SUMMARY_EXAMPLE],
+        examples=[MECH_SUMMARY_QUERY],
     )
 
 

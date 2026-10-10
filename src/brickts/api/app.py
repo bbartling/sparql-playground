@@ -118,11 +118,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def root():
         return RedirectResponse(url="/docs")
 
-    @app.get("/ui", include_in_schema=False)
-    def ui_redirect():
-        """Old static UI removed — Swagger is the interactive surface."""
-        return RedirectResponse(url="/docs")
-
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
         start = time.perf_counter()

@@ -17,13 +17,9 @@ def test_docs_is_the_ui(settings: Settings):
         assert root.status_code in (301, 302, 303, 307, 308)
         assert root.headers.get("location", "").endswith("/docs")
 
-        ui = client.get("/ui", follow_redirects=False)
-        assert ui.status_code in (301, 302, 303, 307, 308)
-        assert ui.headers.get("location", "").endswith("/docs")
-
-        # Old static UI is gone
+        # No custom HTML UI
+        assert client.get("/ui").status_code == 404
         assert client.get("/static/app.js").status_code == 404
-        assert client.get("/static/index.html").status_code == 404
 
         ttl = client.get("/api/model/ttl")
         assert ttl.status_code == 200
@@ -33,3 +29,12 @@ def test_docs_is_the_ui(settings: Settings):
         examples = client.get("/api/sparql/examples")
         assert examples.status_code == 200
         assert any(e["id"] == "mech_system_summary" for e in examples.json()["examples"])
+
+        # Swagger Try-it-out / curl should prefill real SPARQL, not "string"
+        openapi = client.get("/openapi.json").json()
+        post = openapi["paths"]["/api/sparql"]["post"]
+        examples_body = post["requestBody"]["content"]["application/json"]["examples"]
+        assert "mech_summary" in examples_body
+        q = examples_body["mech_summary"]["value"]["query"]
+        assert "Air_Handler_Unit" in q
+        assert "string" != q.strip()
