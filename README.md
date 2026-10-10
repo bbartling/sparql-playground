@@ -1,5 +1,7 @@
 # brickts
 
+![brickts Swagger API](docs/swagger.jpg)
+
 A small tutorial API for **building data**:
 
 1. A **Brick** model describes the site (AHUs, fans, sensors, zones…).
