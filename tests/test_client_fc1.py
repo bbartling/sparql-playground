@@ -1,3 +1,5 @@
+"""FC1 path used by the lesson scripts (SPARQL → timeseries → run_rule)."""
+
 import sys
 from pathlib import Path
 
@@ -9,31 +11,44 @@ from brickts.ingest import bootstrap_all
 from brickts.settings import Settings
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from analyst_client import find_one, run_fc1  # noqa: E402
+from lesson_02_fc1_points import find_fc1_points  # noqa: E402
 
 
-def test_client_fc1(settings: Settings):
+class _HttpxLike:
+    def __init__(self, tc: TestClient):
+        self._tc = tc
+
+    def post(self, path, **kwargs):
+        return self._tc.post(path, **kwargs)
+
+    def get(self, path, **kwargs):
+        return self._tc.get(path, **kwargs)
+
+
+def test_lesson_fc1_sparql_and_series(settings: Settings):
     bootstrap_all(settings)
     app = create_app(settings)
-
-    class _Adapter:
-        def __init__(self, tc: TestClient) -> None:
-            self._tc = tc
-
-        def get(self, path: str, **kwargs):
-            return self._tc.get(path, **kwargs)
-
     with TestClient(app) as tc:
-        client = _Adapter(tc)
-        dsp = find_one(client, "AHU_1", brick_class="Supply_Air_Static_Pressure_Sensor")
-        sp = find_one(client, "AHU_1", tags="Supply,Air,Static,Pressure,Setpoint")
-        fan = find_one(client, "AHU_1", brick_class="Fan_Speed_Command", parent_class="Supply_Fan")
-        assert dsp and sp and fan
-        run_fc1(client, "AHU_1")
+        http = _HttpxLike(tc)
+        points = find_fc1_points(http, quiet=True)
+        assert set(points) == {
+            "duct-static-pressure",
+            "duct-static-pressure-sp",
+            "fan-cmd",
+        }
+        series = {}
+        for role, pid in points.items():
+            r = http.get(f"/api/points/{pid}/timeseries", params={"limit": 200})
+            assert r.status_code == 200
+            samples = r.json()["samples"]
+            assert len(samples) >= 50
+            idx = pd.to_datetime([s["ts"] for s in samples], unit="s", utc=True)
+            series[role] = pd.Series([s["value"] for s in samples], index=idx)
+        df = pd.DataFrame(series).sort_index()
+        assert len(df) >= 50
 
 
 def test_fc1_raw_mask_semantics():
-    # synthetic window: fan high, dsp below sp - 0.12
     idx = pd.date_range("2026-01-01", periods=5, freq="5min", tz="UTC")
     df = pd.DataFrame(
         {

@@ -5,17 +5,12 @@ import re
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import PlainTextResponse
 
 from brickts.api.deps import AppState, get_app_state
-from brickts.api.schemas import (
-    FC1_POINTS_QUERY,
-    LIST_AHUS_QUERY,
-    MECH_SUMMARY_QUERY,
-    SparqlRequest,
-)
+from brickts.api.schemas import FC1_POINTS_QUERY, SparqlRequest
 from brickts.graph.sparql_guard import (
     SparqlRejected,
     SparqlSyntaxError,
@@ -30,7 +25,6 @@ _RQ_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_\-]{0,127}\.rq$")
 
 
 def _lesson_sparql_dir() -> Path | None:
-    """Tutorial .rq files shipped next to the app (see Dockerfile COPY)."""
     candidates = [
         Path.cwd() / "scripts" / "sparql",
         Path(__file__).resolve().parents[4] / "scripts" / "sparql",
@@ -40,46 +34,8 @@ def _lesson_sparql_dir() -> Path | None:
             return path
     return None
 
-_SPARQL_BODY_EXAMPLES = {
-    "mech_summary": {
-        "summary": "Mechanical system roll-up",
-        "description": "Counts equipment by Brick kind (AHUs, zones, boilers, …).",
-        "value": {"query": MECH_SUMMARY_QUERY},
-    },
-    "list_ahus": {
-        "summary": "List AHUs",
-        "description": "Every Air_Handler_Unit in the site graph.",
-        "value": {"query": LIST_AHUS_QUERY},
-    },
-    "fc1_points": {
-        "summary": "FC1 points on AHU_1 (lesson 2)",
-        "description": "Same SPARQL as scripts/lesson_02 / scripts/sparql/02_fc1_points.rq.",
-        "value": {"query": FC1_POINTS_QUERY},
-    },
-}
 
-
-@router.get(
-    "/examples",
-    summary="List SPARQL tutorial presets",
-    description=(
-        "Returns inventory queries (mech summary, equipment lists, points). "
-        "Or pick a prefilled example on POST /api/sparql in Swagger."
-    ),
-)
-def list_examples(state: AppState = Depends(get_app_state)):
-    from pathlib import Path
-
-    ex_dir = Path(__file__).resolve().parent.parent.parent / "sparql" / "examples"
-    items = []
-    for path in sorted(ex_dir.glob("*.rq")):
-        items.append(
-            {"id": path.stem, "title": path.stem.replace("_", " "), "query": path.read_text()}
-        )
-    return {"examples": items}
-
-
-async def _run_query(request, state: AppState, text: str):
+async def _run_query(request: Request, state: AppState, text: str):
     settings = state.settings
     try:
         prepared = prepare_sparql(text, settings)
@@ -103,17 +59,20 @@ async def _run_query(request, state: AppState, text: str):
 
 @router.post(
     "",
-    summary="Run a read-only SPARQL query",
-    description=(
-        "Pick an example from the dropdown (pre-fills the body / curl), "
-        "or write your own SELECT/ASK. Prefer POST /api/sparql/upload to avoid "
-        "JSON newline issues — upload a .rq file from scripts/sparql/."
-    ),
+    summary="Run SPARQL (JSON)",
+    description="Used by scripts/lesson_*.py. For humans, prefer /upload with a .rq file.",
 )
 async def sparql_post(
     payload: Annotated[
         SparqlRequest,
-        Body(openapi_examples=_SPARQL_BODY_EXAMPLES),
+        Body(
+            openapi_examples={
+                "fc1_points": {
+                    "summary": "FC1 points (same as scripts/sparql/02_fc1_points.rq)",
+                    "value": {"query": FC1_POINTS_QUERY},
+                }
+            }
+        ),
     ],
     request: Request,
     state: AppState = Depends(get_app_state),
@@ -121,30 +80,34 @@ async def sparql_post(
     return await _run_query(request, state, payload.query)
 
 
-@router.get("")
-async def sparql_get(
-    request: Request,
-    query: str = Query(..., min_length=1),
-    state: AppState = Depends(get_app_state),
-):
-    return await _run_query(request, state, query)
-
-
-@router.get(
-    "/files",
-    summary="List lesson SPARQL .rq files",
-    description="Plain-text queries mirroring scripts/lesson_0*.py (also under scripts/sparql/).",
+@router.post(
+    "/upload",
+    summary="Run SPARQL from uploaded .rq file",
+    description="Choose File → scripts/sparql/*.rq → Execute. No JSON needed.",
 )
+async def sparql_upload(
+    request: Request,
+    state: AppState = Depends(get_app_state),
+    file: UploadFile = File(..., description="UTF-8 .rq or .txt SPARQL file"),
+):
+    raw = await file.read()
+    if len(raw) > 200_000:
+        raise HTTPException(status_code=400, detail="file too large")
+    try:
+        text = raw.decode("utf-8").strip()
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="file must be UTF-8 text") from exc
+    if not text:
+        raise HTTPException(status_code=400, detail="empty file")
+    return await _run_query(request, state, text)
+
+
+@router.get("/files", summary="List lesson .rq files")
 def list_lesson_files():
     root = _lesson_sparql_dir()
     if root is None:
-        return {"files": [], "hint": "scripts/sparql not present on this host"}
-    files = sorted(p.name for p in root.glob("*.rq"))
-    return {
-        "files": files,
-        "upload": "POST /api/sparql/upload with one of these files (or your own .rq)",
-        "download": "GET /api/sparql/files/{name}",
-    }
+        return {"files": []}
+    return {"files": sorted(p.name for p in root.glob("*.rq"))}
 
 
 @router.get(
@@ -165,29 +128,3 @@ def get_lesson_file(name: str):
         path.read_text(encoding="utf-8"),
         media_type="application/sparql-query",
     )
-
-
-@router.post(
-    "/upload",
-    summary="Run SPARQL from an uploaded .rq file",
-    description=(
-        "Easiest Try-it-out path: Choose File → pick scripts/sparql/02_fc1_points.rq "
-        "(or any .rq / .txt with a SELECT/ASK) → Execute. No JSON body needed."
-    ),
-)
-async def sparql_upload(
-    request: Request,
-    state: AppState = Depends(get_app_state),
-    file: UploadFile = File(..., description="SPARQL query file (.rq or .txt)"),
-):
-    raw = await file.read()
-    if len(raw) > 200_000:
-        raise HTTPException(status_code=400, detail="file too large")
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=400, detail="file must be UTF-8 text") from exc
-    text = text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="empty file")
-    return await _run_query(request, state, text)

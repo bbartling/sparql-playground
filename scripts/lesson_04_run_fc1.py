@@ -48,7 +48,7 @@ def main() -> None:
         for iv in intervals[:5]:
             print(f"  {iv}")
 
-    print("\nDone. More rules →  scripts/analyst_client.py")
+    print("\nDone. Try another EQUIPMENT / date window, or add a .rq under scripts/sparql/")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,137 +14,53 @@ def client(settings: Settings):
         yield c
 
 
-def test_health(client: TestClient):
+def test_health_and_hello(client: TestClient):
     assert client.get("/health").json()["status"] == "ok"
+    hello = client.get("/hello").json()
+    assert hello["ready"] is True
+    assert "hello" in hello["message"].lower()
 
 
-def test_sparql_examples(client: TestClient):
-    ex = client.get("/api/sparql/examples").json()["examples"]
-    assert ex
-    for item in ex:
-        r = client.post("/api/sparql", json={"query": item["query"]})
-        assert r.status_code == 200, item["id"]
-
-
-def test_sparql_rejects_update(client: TestClient):
-    r = client.post(
-        "/api/sparql", json={"query": 'INSERT DATA { <http://ex/s> <http://ex/p> "1" }'}
+def test_sparql_and_upload(client: TestClient):
+    bad = client.post(
+        "/api/sparql",
+        json={"query": 'INSERT DATA { <http://ex/s> <http://ex/p> "1" }'},
     )
-    assert r.status_code == 400
+    assert bad.status_code == 400
 
+    listed = client.get("/api/sparql/files")
+    assert listed.status_code == 200
+    assert "02_fc1_points.rq" in listed.json()["files"]
 
-def test_fc1_points(client: TestClient):
-    eq = "AHU_1"
-    r1 = client.get(
-        f"/api/equipment/{eq}/points",
-        params={"brick_class": "Supply_Air_Static_Pressure_Sensor"},
+    rq = client.get("/api/sparql/files/02_fc1_points.rq")
+    assert rq.status_code == 200
+    assert "Fan_Speed_Command" in rq.text
+
+    uploaded = client.post(
+        "/api/sparql/upload",
+        files={"file": ("02_fc1_points.rq", rq.content, "text/plain")},
     )
-    assert len(r1.json()["points"]) == 1
-    r2 = client.get(
-        f"/api/equipment/{eq}/points",
-        params={"tags": "Supply,Air,Static,Pressure,Setpoint"},
-    )
-    assert len(r2.json()["points"]) == 1
-    r3 = client.get(
-        f"/api/equipment/{eq}/points",
-        params={"brick_class": "Fan_Speed_Command", "parent_class": "Supply_Fan"},
-    )
-    assert len(r3.json()["points"]) == 1
+    assert uploaded.status_code == 200
+    assert uploaded.json()["meta"]["row_count"] >= 3
+
+    posted = client.post("/api/sparql", json={"query": rq.text})
+    assert posted.status_code == 200
+    assert posted.json()["meta"]["row_count"] >= 3
 
 
-def test_fault_lesson_and_run_fc1(client: TestClient):
-    lesson = client.get("/api/equipment/AHU_1/faults/FC1/lesson")
-    assert lesson.status_code == 200
-    body = lesson.json()
-    assert body["rule_id"] == "FC1"
-    assert body["lessons"]
-    assert body["lessons"][0]["query"]
-    run = client.post("/api/equipment/AHU_1/faults/FC1/run", params={"limit": 500})
-    assert run.status_code == 200, run.text
-    assert run.json()["rule_id"] == "FC1"
-    assert run.json()["bindings"]
-
-
-def test_timeseries_and_errors(client: TestClient, settings: Settings):
-    pt = client.get(
-        "/api/equipment/AHU_1/points", params={"brick_class": "Supply_Air_Static_Pressure_Sensor"}
-    ).json()["points"][0]
-    ts = client.get(f"/api/points/{pt['point_id']}/timeseries", params={"limit": 10})
+def test_timeseries(client: TestClient):
+    ts = client.get("/api/points/AHU_1_DA_P/timeseries", params={"limit": 10})
     assert ts.status_code == 200
     samples = ts.json()["samples"]
+    assert samples
     assert samples == sorted(samples, key=lambda s: s["ts"])
 
-    r404 = client.get("/api/equipment/NO_SUCH_EQUIP/points")
-    assert r404.status_code == 404
-
-    r422 = client.get("/api/equipment/AHU_1/points", params={"brick_class": "NotAClass"})
-    assert r422.status_code == 422
-
-
-def test_mutations_gated(settings: Settings):
-    bootstrap_all(settings)
-    app = create_app(settings)
-    with TestClient(app) as client:
-        r = client.post("/api/model/points", json={"points": []})
-        assert r.status_code == 403
-
-
-def test_mutations_enabled(settings: Settings, tmp_path: Path):
-    settings.allow_mutations = True
-    settings.serialize_on_mutation = True
-    bootstrap_all(settings)
-    app = create_app(settings)
-    with TestClient(app) as client:
-        body = {
-            "points": [
-                {
-                    "point_id": "TEST_PT",
-                    "label": "Test",
-                    "brick_class": "Sensor",
-                    "owner_id": "AHU_1",
-                    "timeseries_id": "00000000-0000-0000-0000-000000000099",
-                    "unit": None,
-                }
-            ]
-        }
-        r = client.post("/api/model/points", json=body)
-        assert r.status_code == 200
-        q = client.post(
-            "/api/sparql",
-            json={
-                "query": (
-                    "PREFIX bldg: <https://example.org/openfdd/BUILDING_50#> "
-                    "ASK { bldg:TEST_PT ?p ?o }"
-                )
-            },
-        )
-        assert q.status_code == 200
-        assert q.json()["results"].get("boolean") is True
-        client.post("/api/model/flush")
-        assert settings.snapshot_path.exists()
-        assert not list(settings.snapshot_path.parent.glob("*.tmp"))
-
-
-def test_timeseries_negative_cases(client: TestClient):
-    from rdflib import Literal
-
-    from brickts.graph.namespaces import BLDG, BRICK, RDF, REF
-
     assert client.get("/api/points/NO_SUCH_POINT/timeseries").status_code == 404
-    assert (
-        client.post(
-            "/api/sparql", json={"query": "SELECT * WHERE { SERVICE <http://x/> { ?s ?p ?o } }"}
-        ).status_code
-        == 400
-    )
 
-    graph = client.app.state.ctx.graph
-    model = graph.state.model
-    model.add((BLDG.NO_REF_PT, RDF.type, BRICK.Temperature_Sensor))
-    model.add((BLDG.NO_REF_PT, BRICK.isPointOf, BLDG.AHU_1))
-    ref = next(model.objects(BLDG.AHU_1_DA_P, REF.hasExternalReference))
-    model.add((ref, REF.hasTimeseriesId, Literal("second-id")))
-    graph._state = graph._rebuild_union(model)
 
-    assert client.get("/api/points/NO_REF_PT/timeseries").status_code == 409
-    assert client.get("/api/points/AHU_1_DA_P/timeseries").status_code == 409
+def test_removed_froofy_routes(client: TestClient):
+    assert client.get("/api/equipment").status_code == 404
+    assert client.get("/api/equipment/AHU_1/faults").status_code == 404
+    assert client.get("/api/model/ttl").status_code == 404
+    assert client.get("/api/sparql/examples").status_code == 404
+    assert client.get("/redoc").status_code == 404

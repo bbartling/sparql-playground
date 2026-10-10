@@ -67,13 +67,13 @@ TIMESERIES STORE
 - Storage is long/narrow: (timeseries_id, timestamp_utc, value). Wide CSV/BMS tables are ingest-only.
 - Swap SQLite / Timescale / Influx / lakehouse SQL behind the same interface; API unchanged.
 
-HTTP SURFACE (minimum)
+HTTP SURFACE (minimum — this repo’s bare tutorial API)
+- GET /hello — wake/ping (ready flag for cold starts)
 - GET /health
-- POST /sparql  (or /api/sparql) — read-only SELECT/ASK; reject UPDATE, LOAD, SERVICE, FROM; enforce timeout + row cap
-- GET /sparql/examples — optional tutorial queries
-- GET /equipment, GET /equipment/{id}/points?brick_class=&tags=
-- GET /points/{id}/timeseries?start=&end=&limit=
-- GET /model.ttl (or /api/model/ttl) — export site graph
+- POST /api/sparql — read-only SELECT/ASK; reject UPDATE, LOAD, SERVICE, FROM; timeout + row cap
+- POST /api/sparql/upload — run a .rq file (human-friendly in Swagger)
+- GET /api/sparql/files — list/download lesson .rq files
+- GET /api/points/{id}/timeseries?start=&end=&limit=
 - Interactive OpenAPI/Swagger docs; no custom HTML app required
 
 SECURITY / OPS

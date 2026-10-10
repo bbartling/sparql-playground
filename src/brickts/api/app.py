@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 
 from brickts.api.deps import AppState
-from brickts.api.routers import equipment, faults, health, model, points, sparql, timeseries
+from brickts.api.routers import health, points, sparql
 from brickts.graph.service import GraphService
 from brickts.ingest import bootstrap_all_async
 from brickts.logging import configure_logging
@@ -20,32 +20,20 @@ from brickts.store.registry import build_store_registry
 log = logging.getLogger(__name__)
 
 APP_DESCRIPTION = """
-## Brick timeseries SPARQL API
+Bare read-only API for the Brick tutorial.
 
-Read-only SPARQL against a Brick RDF model, plus point lookup and timeseries JSON.
-The model is the only path from a logical point to historian samples
-([Brick timeseries storage](https://docs.brickschema.org/metadata/timeseries-storage.html)).
+**Wake the free Render instance**  
+`GET /hello` — retry until `"ready": true`
 
-### Try it here (Swagger)
+**Humans (Swagger)**  
+1. `GET /api/sparql/files` — list lesson `.rq` files  
+2. `POST /api/sparql/upload` — Choose File → Execute  
 
-1. **POST** `/api/sparql/upload` — easiest: upload a `.rq` from `scripts/sparql/`  
-2. **GET** `/api/sparql/files` — list those lesson query files  
-3. **POST** `/api/sparql` — JSON body / Examples dropdown  
-4. **GET** `/api/model/ttl` — download the site Turtle  
-5. **GET** `/api/points/{point_id}/timeseries` — samples for a point id  
+**Python lessons** (`scripts/lesson_0*.py`)  
+- `POST /api/sparql` — run SPARQL JSON  
+- `GET /api/points/{id}/timeseries` — samples for a point id  
 
-### Local Python tutorial (no HTML UI)
-
-Fault math and progressive lessons live on your laptop:
-
-```bash
-uv run python scripts/lesson_01_mech_summary.py
-uv run python scripts/lesson_02_fc1_points.py
-uv run python scripts/lesson_03_fc1_dataframe.py
-uv run python scripts/lesson_04_run_fc1.py
-```
-
-Edit `BASE_URL` at the top of each `scripts/lesson_0*.py` (Render or localhost).
+Fault math stays on your laptop (lesson 04 / open-fdd).
 """.strip()
 
 
@@ -111,7 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/docs",
-        redoc_url="/redoc",
+        redoc_url=None,
     )
 
     @app.get("/", include_in_schema=False)
@@ -136,9 +124,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(sparql.router)
-    app.include_router(equipment.router)
     app.include_router(points.router)
-    app.include_router(timeseries.router)
-    app.include_router(model.router)
-    app.include_router(faults.router)
     return app
