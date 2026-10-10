@@ -40,3 +40,19 @@ def test_docs_is_the_ui(settings: Settings):
         assert "Air_Handler_Unit" in q
         assert "string" != q.strip()
         assert "Fan_Speed_Command" in examples_body["fc1_points"]["value"]["query"]
+
+        listed = client.get("/api/sparql/files")
+        assert listed.status_code == 200
+        names = listed.json()["files"]
+        assert "02_fc1_points.rq" in names
+
+        rq = client.get("/api/sparql/files/02_fc1_points.rq")
+        assert rq.status_code == 200
+        assert "Fan_Speed_Command" in rq.text
+
+        uploaded = client.post(
+            "/api/sparql/upload",
+            files={"file": ("02_fc1_points.rq", rq.text.encode("utf-8"), "text/plain")},
+        )
+        assert uploaded.status_code == 200
+        assert uploaded.json()["meta"]["row_count"] >= 3

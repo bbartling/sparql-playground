@@ -51,9 +51,8 @@ SELECT ?ahu ?label WHERE {
 ORDER BY ?ahu
 """
 
-# Tags live on the Brick *class* in the ontology, not as free text on each point.
-# Copy query text (inside the quotes) into Swagger's query box, then Execute.
-# If you change EQUIPMENT above, change bldg:AHU_1 in the query too.
+# Tags live on the Brick *class*. Twin file: scripts/sparql/01_point_tags.rq
+# (upload via Swagger POST /api/sparql/upload). Change bldg:AHU_1 if EQUIPMENT changes.
 POINT_TAGS = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>

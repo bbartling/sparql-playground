@@ -10,7 +10,10 @@ This repo uses SQLite as a stand-in historian. A real site would use Timescale, 
 
 **Demo site:** `BUILDING_50` with `AHU_1` and `AHU_2`.  
 **Live API docs:** <https://sparql-playground.onrender.com/docs>  
-**Queries to paste into Swagger:** [`docs/sparql_queries.md`](docs/sparql_queries.md)
+**SPARQL text files (same as the lessons):** [`scripts/sparql/`](scripts/sparql/)  
+**More queries:** [`docs/sparql_queries.md`](docs/sparql_queries.md)
+
+Easiest in Swagger: **POST** `/api/sparql/upload` → Choose File → pick e.g. `scripts/sparql/02_fc1_points.rq` → Execute.
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)

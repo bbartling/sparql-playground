@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import re
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import PlainTextResponse
 
 from brickts.api.deps import AppState, get_app_state
 from brickts.api.schemas import (
@@ -23,6 +26,20 @@ from brickts.sparql.results import sparql_results_to_json
 
 router = APIRouter(prefix="/api/sparql", tags=["sparql"])
 
+_RQ_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_\-]{0,127}\.rq$")
+
+
+def _lesson_sparql_dir() -> Path | None:
+    """Tutorial .rq files shipped next to the app (see Dockerfile COPY)."""
+    candidates = [
+        Path.cwd() / "scripts" / "sparql",
+        Path(__file__).resolve().parents[4] / "scripts" / "sparql",
+    ]
+    for path in candidates:
+        if path.is_dir():
+            return path
+    return None
+
 _SPARQL_BODY_EXAMPLES = {
     "mech_summary": {
         "summary": "Mechanical system roll-up",
@@ -36,7 +53,7 @@ _SPARQL_BODY_EXAMPLES = {
     },
     "fc1_points": {
         "summary": "FC1 points on AHU_1 (lesson 2)",
-        "description": "Same SPARQL as scripts/lesson_02_fc1_points.py — duct static, setpoint, fan speed.",
+        "description": "Same SPARQL as scripts/lesson_02 / scripts/sparql/02_fc1_points.rq.",
         "value": {"query": FC1_POINTS_QUERY},
     },
 }
@@ -89,7 +106,8 @@ async def _run_query(request, state: AppState, text: str):
     summary="Run a read-only SPARQL query",
     description=(
         "Pick an example from the dropdown (pre-fills the body / curl), "
-        "or write your own SELECT/ASK. More presets: GET /api/sparql/examples."
+        "or write your own SELECT/ASK. Prefer POST /api/sparql/upload to avoid "
+        "JSON newline issues — upload a .rq file from scripts/sparql/."
     ),
 )
 async def sparql_post(
@@ -110,3 +128,66 @@ async def sparql_get(
     state: AppState = Depends(get_app_state),
 ):
     return await _run_query(request, state, query)
+
+
+@router.get(
+    "/files",
+    summary="List lesson SPARQL .rq files",
+    description="Plain-text queries mirroring scripts/lesson_0*.py (also under scripts/sparql/).",
+)
+def list_lesson_files():
+    root = _lesson_sparql_dir()
+    if root is None:
+        return {"files": [], "hint": "scripts/sparql not present on this host"}
+    files = sorted(p.name for p in root.glob("*.rq"))
+    return {
+        "files": files,
+        "upload": "POST /api/sparql/upload with one of these files (or your own .rq)",
+        "download": "GET /api/sparql/files/{name}",
+    }
+
+
+@router.get(
+    "/files/{name}",
+    summary="Download one lesson .rq file",
+    response_class=PlainTextResponse,
+)
+def get_lesson_file(name: str):
+    if not _RQ_NAME.match(name):
+        raise HTTPException(status_code=400, detail="invalid file name")
+    root = _lesson_sparql_dir()
+    if root is None:
+        raise HTTPException(status_code=404, detail="scripts/sparql not available")
+    path = root / name
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="file not found")
+    return PlainTextResponse(
+        path.read_text(encoding="utf-8"),
+        media_type="application/sparql-query",
+    )
+
+
+@router.post(
+    "/upload",
+    summary="Run SPARQL from an uploaded .rq file",
+    description=(
+        "Easiest Try-it-out path: Choose File → pick scripts/sparql/02_fc1_points.rq "
+        "(or any .rq / .txt with a SELECT/ASK) → Execute. No JSON body needed."
+    ),
+)
+async def sparql_upload(
+    request: Request,
+    state: AppState = Depends(get_app_state),
+    file: UploadFile = File(..., description="SPARQL query file (.rq or .txt)"),
+):
+    raw = await file.read()
+    if len(raw) > 200_000:
+        raise HTTPException(status_code=400, detail="file too large")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="file must be UTF-8 text") from exc
+    text = text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="empty file")
+    return await _run_query(request, state, text)

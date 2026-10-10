@@ -28,10 +28,10 @@ The model is the only path from a logical point to historian samples
 
 ### Try it here (Swagger)
 
-1. **GET** `/api/sparql/examples` — inventory / equipment / points query presets  
-2. **POST** `/api/sparql` — paste any example `query` and Execute  
-3. **GET** `/api/model/ttl` — download the site Turtle  
-4. **GET** `/api/model/validate` — SPARQL invariant checks  
+1. **POST** `/api/sparql/upload` — easiest: upload a `.rq` from `scripts/sparql/`  
+2. **GET** `/api/sparql/files` — list those lesson query files  
+3. **POST** `/api/sparql` — JSON body / Examples dropdown  
+4. **GET** `/api/model/ttl` — download the site Turtle  
 5. **GET** `/api/points/{point_id}/timeseries` — samples for a point id  
 
 ### Local Python tutorial (no HTML UI)
