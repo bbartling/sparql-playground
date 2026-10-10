@@ -1,16 +1,56 @@
 let lastJson = null;
-let currentEquipment = "";
-let currentLesson = null;
+let examplesById = {};
+let lastRunner = null;
 
-const QUICK = [
-  { id: "list_ahus", label: "List AHUs" },
-  { id: "list_points", label: "List points" },
-  { id: "ahu_points_refs", label: "Points + refs" },
-  { id: "databases", label: "Databases" },
-  { id: "equipment_tree", label: "Equipment tree" },
-  { id: "class_counts", label: "Class counts" },
-  { id: "missing_refs", label: "Missing refs" },
-  { id: "zones_fed", label: "Zones fed" },
+const GROUPS = [
+  {
+    title: "Mechanical system summary",
+    buttons: [
+      { label: "Mech system roll-up", example: "mech_system_summary", run: true },
+      { label: "Counts by equip kind", example: "count_by_equip_kind", run: true },
+      { label: "Class counts (points)", example: "class_counts", run: true },
+      { label: "Equipment tree", example: "equipment_tree", run: true },
+      { label: "Databases / TS store", example: "databases", run: true },
+    ],
+  },
+  {
+    title: "List equipment",
+    buttons: [
+      { label: "AHUs", example: "list_ahus", run: true },
+      { label: "AHU parts", example: "ahu_parts", run: true },
+      { label: "Fans", example: "list_fans", run: true },
+      { label: "VAV zones (by name)", example: "list_vav_zones", run: true },
+      { label: "Typed VAVs", example: "list_vavs", run: true },
+      { label: "Heat pumps", example: "list_heat_pumps", run: true },
+      { label: "Boilers", example: "list_boilers", run: true },
+      { label: "Chillers", example: "list_chillers", run: true },
+      { label: "Cooling towers", example: "list_cooling_towers", run: true },
+      { label: "Pumps", example: "list_pumps", run: true },
+      { label: "Zones fed", example: "zones_fed", run: true },
+    ],
+  },
+  {
+    title: "Points",
+    buttons: [
+      { label: "All points", example: "list_points", run: true },
+      { label: "AHU points + refs", example: "points_of_ahus", run: true },
+      { label: "VAV-zone points", example: "points_of_vav_zones", run: true },
+      { label: "Points on other kinds", example: "points_by_equip_kind", run: true },
+      { label: "Missing refs", example: "missing_refs", run: true },
+    ],
+  },
+  {
+    title: "Open-FDD SPARQL lessons → local Python",
+    hint: "Loads role SPARQL for the rule. Fault math runs locally via analyst_client.py.",
+    buttons: [
+      { label: "FC1 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC1" } },
+      { label: "FC1 · AHU_2", lesson: { equipment: "AHU_2", rule: "FC1" } },
+      { label: "FC2 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC2" } },
+      { label: "FC2 · AHU_2", lesson: { equipment: "AHU_2", rule: "FC2" } },
+      { label: "FC3 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC3" } },
+      { label: "FC4 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC4" } },
+    ],
+  },
 ];
 
 function setQuery(text) {
@@ -23,136 +63,173 @@ function showLessonText(lines) {
   box.textContent = lines.join("\n");
 }
 
-async function loadPresets() {
-  const res = await fetch("/api/sparql/examples");
-  const data = await res.json();
-  const sel = document.getElementById("preset");
-  sel.innerHTML = "";
-  const byId = {};
-  for (const ex of data.examples) {
-    byId[ex.id] = ex;
-    const opt = document.createElement("option");
-    opt.value = ex.id;
-    opt.dataset.query = ex.query;
-    opt.textContent = ex.title;
-    sel.appendChild(opt);
-  }
-  if (data.examples.length && !document.getElementById("query").value) {
-    setQuery(data.examples[0].query);
-  }
-  sel.addEventListener("change", () => {
-    const opt = sel.selectedOptions[0];
-    if (opt) setQuery(opt.dataset.query);
-  });
-
-  const quick = document.getElementById("quick-buttons");
-  quick.innerHTML = "";
-  for (const q of QUICK) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "ghost";
-    btn.textContent = q.label;
-    btn.addEventListener("click", () => {
-      const ex = byId[q.id];
-      if (!ex) return;
-      sel.value = q.id;
-      setQuery(ex.query);
-    });
-    quick.appendChild(btn);
-  }
+function baseUrl() {
+  return window.location.origin;
 }
 
-async function loadEquipment() {
-  const res = await fetch("/api/equipment");
-  const data = await res.json();
-  const sel = document.getElementById("equipment");
-  sel.innerHTML = "";
-  for (const eq of data.equipment || []) {
-    if (!/^AHU_/i.test(eq.equipment_id)) continue;
-    const opt = document.createElement("option");
-    opt.value = eq.equipment_id;
-    opt.textContent = eq.label || eq.equipment_id;
-    sel.appendChild(opt);
-  }
-  currentEquipment = sel.value;
-  sel.addEventListener("change", async () => {
-    currentEquipment = sel.value;
-    await loadFaults();
-  });
-  await loadFaults();
+function buildPythonArtifacts(equipment, rule, lessons) {
+  const url = baseUrl();
+  const cmd =
+    `uv run python scripts/analyst_client.py \\\n` +
+    `  --base-url ${url} \\\n` +
+    `  --equipment ${equipment} \\\n` +
+    `  --rule ${rule}`;
+  const roleLines = (lessons || [])
+    .filter((l) => l.binding)
+    .map(
+      (l) =>
+        `    # ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})\n` +
+        `    # SPARQL lesson available via GET /api/equipment/${equipment}/faults/${rule}/lesson`
+    )
+    .join("\n");
+  const script = `#!/usr/bin/env python3
+"""Generated from brickts UI — resolve Brick roles via API, run Open-FDD locally."""
+from __future__ import annotations
+
+import httpx
+import pandas as pd
+from open_fdd.rules import run_rule
+
+BASE = ${JSON.stringify(url)}
+EQUIPMENT = ${JSON.stringify(equipment)}
+RULE = ${JSON.stringify(rule)}
+
+${roleLines}
+
+def main() -> None:
+    with httpx.Client(base_url=BASE, timeout=300.0) as client:
+        lesson = client.get(f"/api/equipment/{EQUIPMENT}/faults/{RULE}/lesson")
+        lesson.raise_for_status()
+        data = lesson.json()
+        series = {}
+        for item in data.get("lessons", []):
+            binding = item.get("binding")
+            if not binding:
+                raise SystemExit(item.get("error") or f"missing role {item.get('role')}")
+            pid = binding["point_id"]
+            ts = client.get(f"/api/points/{pid}/timeseries")
+            ts.raise_for_status()
+            samples = ts.json()["samples"]
+            idx = pd.to_datetime([s["ts"] for s in samples], unit="s", utc=True)
+            series[item["role"]] = pd.Series(
+                [s["value"] for s in samples], index=idx, name=item["role"]
+            )
+        df = pd.DataFrame(series).sort_index()
+        df.attrs.update(equipment_id=EQUIPMENT, equipment_type="ahu")
+        res = run_rule(RULE, df, poll_seconds=300)
+        print(res.status, res.fault_hours, res.fault_pct, res.sample_count, res.fault_sample_count)
+
+if __name__ == "__main__":
+    main()
+`;
+  return { cmd, script };
 }
 
-async function loadFaults() {
-  const sel = document.getElementById("fault-rule");
-  const roleSel = document.getElementById("role-lesson");
-  sel.innerHTML = "";
-  roleSel.innerHTML = "";
-  currentLesson = null;
-  if (!currentEquipment) return;
+function setRunner(equipment, rule, lessons) {
+  lastRunner = buildPythonArtifacts(equipment, rule, lessons);
+  document.getElementById("python-cmd").textContent = lastRunner.cmd;
+  document.getElementById("python-script").textContent = lastRunner.script;
+  document.getElementById("python-script").hidden = false;
+  document.getElementById("copy-cmd").disabled = false;
+  document.getElementById("copy-script").disabled = false;
+}
 
+async function copyText(text) {
+  await navigator.clipboard.writeText(text);
+}
+
+function loadExample(id, { run = false } = {}) {
+  const ex = examplesById[id];
+  if (!ex) return;
+  setQuery(ex.query);
+  if (run) runQuery();
+}
+
+async function loadFaultLesson(equipment, rule) {
+  const roleBox = document.getElementById("role-buttons");
+  roleBox.innerHTML = "";
+  roleBox.hidden = true;
   const res = await fetch(
-    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults?include_generic=false`
-  );
-  if (!res.ok) return;
-  const faults = await res.json();
-  const applicable = faults.filter((f) => f.applicable);
-  for (const f of applicable) {
-    const opt = document.createElement("option");
-    opt.value = f.rule_id;
-    opt.textContent = `${f.rule_id} — ${f.title}`;
-    sel.appendChild(opt);
-  }
-  if (!applicable.length) {
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.textContent = "No role-based rules applicable";
-    sel.appendChild(opt);
-    return;
-  }
-  sel.onchange = () => loadFaultLesson(sel.value);
-  await loadFaultLesson(sel.value);
-}
-
-async function loadFaultLesson(ruleId) {
-  const roleSel = document.getElementById("role-lesson");
-  roleSel.innerHTML = "";
-  currentLesson = null;
-  if (!currentEquipment || !ruleId) return;
-
-  const res = await fetch(
-    `/api/equipment/${encodeURIComponent(currentEquipment)}/faults/${encodeURIComponent(ruleId)}/lesson`
+    `/api/equipment/${encodeURIComponent(equipment)}/faults/${encodeURIComponent(rule)}/lesson`
   );
   const data = await res.json();
   if (!res.ok) {
     showLessonText([data.detail || JSON.stringify(data)]);
     return;
   }
-  currentLesson = data;
-  const lessons = (data.lessons || []).filter((l) => l.query);
-  for (const l of lessons) {
-    const opt = document.createElement("option");
-    opt.value = l.role;
-    opt.textContent = `${l.role} → ${l.binding?.point_id || "?"}`;
-    roleSel.appendChild(opt);
-  }
+  const lessons = data.lessons || [];
+  const ok = lessons.filter((l) => l.query);
   showLessonText([
     `${data.rule_id}: ${data.title}`,
     data.summary || "",
     data.equation ? `Equation: ${data.equation}` : "",
     "",
-    "This menu only pre-fills SPARQL. Run Open-FDD locally with scripts/analyst_client.py.",
-    "",
-    "Roles:",
-    ...lessons.map((l) => `  ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})`),
-  ].filter((x) => x !== undefined));
+    "Role buttons below swap the SPARQL editor. Fault evaluation is local Python only.",
+    ...ok.map((l) => `  ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})`),
+    ...(lessons.filter((l) => l.error).map((l) => `  ${l.role}: ${l.error}`)),
+  ]);
+  setRunner(equipment, rule, ok);
+  if (ok.length) {
+    setQuery(ok[0].query);
+    roleBox.hidden = false;
+    for (const l of ok) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.textContent = l.role;
+      btn.addEventListener("click", () => {
+        setQuery(l.query);
+        runQuery();
+      });
+      roleBox.appendChild(btn);
+    }
+    await runQuery();
+  }
+}
 
-  if (lessons.length) {
-    setQuery(lessons[0].query);
-    roleSel.onchange = () => {
-      const role = roleSel.value;
-      const hit = lessons.find((l) => l.role === role);
-      if (hit?.query) setQuery(hit.query);
-    };
+function renderButtonGroups() {
+  const host = document.getElementById("button-groups");
+  host.innerHTML = "";
+  for (const group of GROUPS) {
+    const section = document.createElement("div");
+    section.className = "btn-group";
+    const h = document.createElement("h3");
+    h.textContent = group.title;
+    section.appendChild(h);
+    if (group.hint) {
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = group.hint;
+      section.appendChild(p);
+    }
+    const row = document.createElement("div");
+    row.className = "quick";
+    for (const b of group.buttons) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.textContent = b.label;
+      btn.addEventListener("click", async () => {
+        if (b.example) loadExample(b.example, { run: !!b.run });
+        if (b.lesson) await loadFaultLesson(b.lesson.equipment, b.lesson.rule);
+      });
+      row.appendChild(btn);
+    }
+    section.appendChild(row);
+    host.appendChild(section);
+  }
+}
+
+async function loadPresets() {
+  const res = await fetch("/api/sparql/examples");
+  const data = await res.json();
+  examplesById = {};
+  for (const ex of data.examples) {
+    examplesById[ex.id] = ex;
+  }
+  renderButtonGroups();
+  if (examplesById.mech_system_summary) {
+    loadExample("mech_system_summary", { run: true });
   }
 }
 
@@ -244,7 +321,9 @@ async function plotPoint(pointId) {
   const scaleX = (x) => pad + ((x - minX) / (maxX - minX || 1)) * (w - 2 * pad);
   const scaleY = (y) => h - pad - ((y - minY) / (maxY - minY || 1)) * (h - 2 * pad);
   const pts = samples.map((s) => `${scaleX(s.ts)},${scaleY(s.value)}`).join(" ");
-  document.getElementById("plot").innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${pts}"/></svg><p>${pointId} · ${samples.length} samples via GET /api/points/…/timeseries</p>`;
+  document.getElementById("plot").innerHTML =
+    `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${pts}"/></svg>` +
+    `<p>${pointId} · ${samples.length} samples via GET /api/points/…/timeseries</p>`;
 }
 
 function download(name, text, type) {
@@ -273,6 +352,13 @@ document.getElementById("validate-model").addEventListener("click", async () => 
     : `OK · ${(data.checks || []).length} checks clean`;
 });
 
+document.getElementById("copy-cmd").addEventListener("click", async () => {
+  if (lastRunner) await copyText(lastRunner.cmd);
+});
+document.getElementById("copy-script").addEventListener("click", async () => {
+  if (lastRunner) await copyText(lastRunner.script);
+});
+
 document.getElementById("run").addEventListener("click", runQuery);
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -292,4 +378,4 @@ document.getElementById("dl-csv").addEventListener("click", () => {
   download("sparql.csv", [vars.join(","), ...rows].join("\n"), "text/csv");
 });
 
-Promise.all([loadPresets(), loadEquipment()]);
+loadPresets();

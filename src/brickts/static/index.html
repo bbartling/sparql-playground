@@ -11,11 +11,10 @@
       <p class="brand">brickts</p>
       <h1>Brick SPARQL playground</h1>
       <p class="sub">
-        Read-only SPARQL against a Brick model + ontology. Use the menus to
-        <em>pre-populate</em> queries that resolve Open-FDD roles through the graph.
-        Fault crunching stays local — run
-        <code>scripts/analyst_client.py</code> / <code>scripts/sparql_tutorial.py</code>
-        against this API from your machine.
+        Button-driven tutorial for read-only SPARQL against a Brick model.
+        Inventory the mechanical system, learn Open-FDD <em>role</em> queries, then
+        copy a local Python command that fetches timeseries and runs FC rules on your machine —
+        this UI never crunches faults.
       </p>
       <div class="toolbar">
         <button id="view-ttl" type="button" class="ghost">View RDF model</button>
@@ -27,38 +26,33 @@
     <main>
       <section class="panel query-panel">
         <h2>Build a query</h2>
-        <p class="hint">Pick equipment and a fault rule — each role loads a SPARQL lesson into the editor. Or use a catalog preset.</p>
+        <p class="hint">
+          Every button loads SPARQL into the editor. Empty result sets for boilers/chillers/etc.
+          mean that class is not modeled yet on this tutorial site (today: AHUs + zones).
+        </p>
 
-        <div class="controls">
-          <div class="field">
-            <label for="equipment">Equipment</label>
-            <select id="equipment"></select>
-          </div>
-          <div class="field">
-            <label for="fault-rule">Open-FDD rule → SPARQL lesson</label>
-            <select id="fault-rule"></select>
-          </div>
-          <div class="field">
-            <label for="role-lesson">Role query</label>
-            <select id="role-lesson"></select>
-          </div>
-          <div class="field">
-            <label for="preset">Catalog preset</label>
-            <select id="preset"></select>
-          </div>
-        </div>
-
-        <div class="quick" id="quick-buttons"></div>
-
+        <div id="button-groups"></div>
+        <div id="role-buttons" class="quick" hidden></div>
         <div id="lesson" class="lesson" hidden></div>
 
         <label for="query">SPARQL</label>
-        <textarea id="query" rows="16" spellcheck="false"></textarea>
+        <textarea id="query" rows="14" spellcheck="false"></textarea>
         <div class="actions">
           <button id="run" type="button" class="primary">Run SPARQL</button>
           <span class="kbd">Ctrl+Enter</span>
           <span id="meta" class="muted"></span>
         </div>
+
+        <h3>Local Python (Open-FDD)</h3>
+        <p class="hint">
+          After a fault-lesson button, copy the command or script and run it locally against this API.
+        </p>
+        <pre id="python-cmd" class="code-box">Click an Open-FDD lesson button (e.g. FC1 · AHU_1) to generate a local runner command.</pre>
+        <div class="actions">
+          <button id="copy-cmd" type="button" class="ghost" disabled>Copy command</button>
+          <button id="copy-script" type="button" class="ghost" disabled>Copy Python script</button>
+        </div>
+        <pre id="python-script" class="code-box" hidden></pre>
       </section>
 
       <section class="panel results-panel">
@@ -66,7 +60,7 @@
         <div id="error" class="error" hidden></div>
 
         <h3>Result table</h3>
-        <p class="hint">Click a row with a <code>point</code> binding to plot recent samples from the timeseries API.</p>
+        <p class="hint">Click a row with a <code>point</code> binding to plot samples from the timeseries API.</p>
         <div class="table-wrap">
           <table id="table"><thead></thead><tbody></tbody></table>
         </div>
@@ -76,7 +70,7 @@
         </div>
 
         <h3>API JSON</h3>
-        <p class="hint">Exact <code>POST /api/sparql</code> payload shape automation clients receive.</p>
+        <p class="hint">Exact <code>POST /api/sparql</code> response body.</p>
         <pre id="api-json" class="code-box">Run a query to see the API response here.</pre>
 
         <div id="plot" class="plot"></div>
@@ -84,11 +78,10 @@
     </main>
 
     <footer>
-      <span>Endpoints:</span>
-      <code>/api/sparql</code>
-      <code>/api/model/ttl</code>
-      <code>/api/equipment/…/faults/…/lesson</code>
-      <code>/health</code>
+      <span>Local runners:</span>
+      <code>scripts/sparql_tutorial.py</code>
+      <code>scripts/analyst_client.py --rule FC1</code>
+      <code>/ → /ui</code>
     </footer>
     <script src="/static/app.js"></script>
   </body>

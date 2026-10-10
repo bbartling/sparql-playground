@@ -1,0 +1,18 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+# This tutorial site models terminal zones as brick:HVAC_Zone (not typed VAV boxes).
+# IRIs/labels that contain "vav" are the closest VAV inventory.
+SELECT ?zone ?label ?fedBy WHERE {
+  ?zone a/(rdfs:subClassOf|owl:equivalentClass)* brick:HVAC_Zone .
+  FILTER(STRSTARTS(STR(?zone), STR(bldg:)))
+  FILTER(
+    CONTAINS(LCASE(STR(?zone)), "vav") ||
+    CONTAINS(LCASE(STR(?label)), "vav")
+  )
+  OPTIONAL { ?zone rdfs:label ?label }
+  OPTIONAL { ?zone brick:isFedBy ?fedBy }
+}
+ORDER BY ?zone

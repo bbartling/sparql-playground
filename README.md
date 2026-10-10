@@ -46,7 +46,7 @@ Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`).
 
 ## UI
 
-Static tutorial at `/ui` (also the target of `/`) — SPARQL presets + quick buttons, **View RDF model** (`/api/model/ttl`), **Validate model**, equipment + Open-FDD rule menus that only **pre-populate role SPARQL**, result table + raw API JSON. Fault evaluation stays local via `scripts/analyst_client.py`. Click a point row to plot recent samples.
+Static tutorial at `/ui` (also `/`) — **buttons only** (no dropdowns) to pre-fill SPARQL for mechanical inventory (AHUs, VAV zones, heat pumps, boilers, chillers, towers, pumps, fans, point roll-ups) and Open-FDD role lessons. Result table + API JSON. Copy a local Python command/script; fault evaluation stays on your machine via `scripts/analyst_client.py --rule FC1|FC2|…`.
 
 ![SPARQL UI](docs/ui.png)
 

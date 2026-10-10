@@ -149,11 +149,33 @@ main {
   text-transform: uppercase;
 }
 
+.btn-group {
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.btn-group:last-of-type {
+  border-bottom: none;
+}
+
+.btn-group h3 {
+  margin: 0 0 0.35rem;
+}
+
 .quick {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.35rem;
+}
+
+#role-buttons {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: #0f172a66;
 }
 
 label[for="query"] {

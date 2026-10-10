@@ -1,0 +1,14 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?fan ?cls ?label ?parent WHERE {
+  ?fan a/(rdfs:subClassOf|owl:equivalentClass)* brick:Fan .
+  ?fan a ?cls .
+  FILTER(STRSTARTS(STR(?fan), STR(bldg:)))
+  FILTER(STRSTARTS(STR(?cls), STR(brick:)))
+  OPTIONAL { ?fan rdfs:label ?label }
+  OPTIONAL { ?fan brick:isPartOf ?parent }
+}
+ORDER BY ?fan

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Local Open-FDD runner: resolve Brick roles via the API, crunch faults with pandas.
+"""Local Open-FDD runner: Brick role SPARQL lessons → timeseries → run_rule.
 
-The hosted UI is SPARQL-only. Use this script on your machine (against local or Render).
+The hosted UI is SPARQL-only. Use this on your machine against local or Render:
 
-  uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC1 --local-fc1
+  uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC1
   uv run python scripts/analyst_client.py --base-url https://sparql-playground.onrender.com \\
-      --equipment AHU_2 --rule FC1 --local-fc1
+      --equipment AHU_2 --rule FC2
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import sys
 
 import httpx
 import pandas as pd
-from open_fdd.rules import RULES, run_rule
+from open_fdd.rules import run_rule
 
 
 def find_one(client, equip: str, **params: str):
@@ -28,15 +28,12 @@ def find_one(client, equip: str, **params: str):
     return pts[0]
 
 
-def fetch_series(client: httpx.Client, point: dict) -> pd.Series:
-    pid = point["point_id"]
-    r = client.get(f"/api/points/{pid}/timeseries")
+def fetch_series(client: httpx.Client, point_id: str) -> pd.Series:
+    r = client.get(f"/api/points/{point_id}/timeseries")
     r.raise_for_status()
-    payload = r.json()
-    samples = payload["samples"]
+    samples = r.json()["samples"]
     idx = pd.to_datetime([s["ts"] for s in samples], unit="s", utc=True)
-    vals = [s["value"] for s in samples]
-    return pd.Series(vals, index=idx, name=pid)
+    return pd.Series([s["value"] for s in samples], index=idx, name=point_id)
 
 
 def run_fc1(client: httpx.Client, equipment_id: str) -> None:
@@ -57,7 +54,7 @@ def run_fc1(client: httpx.Client, equipment_id: str) -> None:
             parent_class="Supply_Fan",
         ),
     }
-    series = {role: fetch_series(client, pt) for role, pt in roles.items()}
+    series = {role: fetch_series(client, pt["point_id"]) for role, pt in roles.items()}
     df = pd.DataFrame(series).sort_index()
     df.attrs.update(equipment_id=equipment_id, equipment_type="ahu")
     res = run_rule("FC1", df, poll_seconds=300)
@@ -68,10 +65,22 @@ def run_fc1(client: httpx.Client, equipment_id: str) -> None:
     print(intervals)
 
 
-def show_lesson(client: httpx.Client, equipment_id: str, rule_id: str) -> None:
+def fetch_lesson(client: httpx.Client, equipment_id: str, rule_id: str) -> dict:
     lesson = client.get(f"/api/equipment/{equipment_id}/faults/{rule_id}/lesson")
     lesson.raise_for_status()
-    data = lesson.json()
+    return lesson.json()
+
+
+def run_rule_from_lesson(
+    client: httpx.Client,
+    equipment_id: str,
+    rule_id: str,
+    *,
+    equipment_type: str = "ahu",
+    poll_seconds: int = 300,
+) -> None:
+    """Use /faults/{rule}/lesson bindings, pull timeseries, run open-fdd locally."""
+    data = fetch_lesson(client, equipment_id, rule_id)
     print(
         json.dumps(
             {
@@ -81,7 +90,7 @@ def show_lesson(client: httpx.Client, equipment_id: str, rule_id: str) -> None:
                     {
                         "role": x.get("role"),
                         "point_id": (x.get("binding") or {}).get("point_id"),
-                        "query_preview": (x.get("query") or "")[:120],
+                        "error": x.get("error"),
                     }
                     for x in data.get("lessons", [])
                 ],
@@ -89,71 +98,57 @@ def show_lesson(client: httpx.Client, equipment_id: str, rule_id: str) -> None:
             indent=2,
         )
     )
-
-
-def run_rule_via_api(client: httpx.Client, equipment_id: str, rule_id: str) -> None:
-    """Optional: server-side run endpoint (not used by the tutorial UI)."""
-    r = client.post(f"/api/equipment/{equipment_id}/faults/{rule_id}/run")
-    r.raise_for_status()
-    body = r.json()
-    print(
-        body["status"],
-        body.get("fault_hours"),
-        body.get("fault_pct"),
-        body.get("sample_count"),
-        body.get("fault_sample_count"),
-    )
+    series: dict[str, pd.Series] = {}
+    for item in data.get("lessons", []):
+        binding = item.get("binding")
+        if not binding:
+            raise SystemExit(item.get("error") or f"missing role {item.get('role')}")
+        role = item["role"]
+        series[role] = fetch_series(client, binding["point_id"])
+        print(f"  loaded {role}: {binding['point_id']} ({len(series[role])} samples)")
+    if not series:
+        raise SystemExit(f"no role bindings for {rule_id}")
+    df = pd.DataFrame(series).sort_index()
+    df.attrs.update(equipment_id=equipment_id, equipment_type=equipment_type)
+    res = run_rule(rule_id, df, poll_seconds=poll_seconds)
+    print(res.status, res.fault_hours, res.fault_pct, res.sample_count, res.fault_sample_count)
+    evidence = res.to_dict().get("evidence", {}) if hasattr(res, "to_dict") else {}
+    confirmed = evidence.get("confirmed_fault", {})
+    print((confirmed.get("fault_intervals") or [])[:5])
 
 
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--base-url", default="http://127.0.0.1:8000")
     p.add_argument("--equipment", required=True)
-    p.add_argument("--rule", default="FC1", help="open-fdd rule id (default FC1)")
+    p.add_argument("--rule", default="FC1", help="open-fdd rule id (FC1, FC2, …)")
     p.add_argument(
         "--local-fc1",
         action="store_true",
-        help="resolve FC1 roles via points API and run open-fdd locally (recommended)",
+        help="legacy FC1 point lookup (tests); default path uses lesson API for any rule",
     )
-    p.add_argument(
-        "--via-api",
-        action="store_true",
-        help="use POST …/faults/{rule}/run on the server (not the UI path)",
-    )
-    p.add_argument("--lesson-only", action="store_true", help="print SPARQL lesson JSON only")
+    p.add_argument("--lesson-only", action="store_true", help="print lesson JSON only")
     args = p.parse_args()
-
-    if args.rule != "FC1" and args.local_fc1:
-        print("note: --local-fc1 currently implements FC1 role wiring only", file=sys.stderr)
 
     with httpx.Client(base_url=args.base_url, timeout=300.0) as client:
         faults = client.get(
-            f"/api/equipment/{args.equipment}/faults", params={"include_generic": True}
+            f"/api/equipment/{args.equipment}/faults", params={"include_generic": False}
         )
         faults.raise_for_status()
         applicable = [f for f in faults.json() if f["applicable"]]
-        print(f"Applicable faults ({len(applicable)}):")
+        print(f"Applicable role-based faults ({len(applicable)}):")
         for f in applicable:
             print(f"  {f['rule_id']}: {f['title']}")
         print(f"--- {args.rule} ---")
-        show_lesson(client, args.equipment, args.rule)
         if args.lesson_only:
+            print(json.dumps(fetch_lesson(client, args.equipment, args.rule), indent=2)[:4000])
             return 0
-        if args.via_api:
-            run_rule_via_api(client, args.equipment, args.rule)
+        if args.local_fc1:
+            if args.rule != "FC1":
+                raise SystemExit("--local-fc1 only supports FC1")
+            run_fc1(client, args.equipment)
         else:
-            # Default: local crunch for FC1; otherwise require --via-api
-            if args.local_fc1 or args.rule == "FC1":
-                if args.rule != "FC1":
-                    raise SystemExit(
-                        "local runner currently supports FC1; use --via-api for others"
-                    )
-                run_fc1(client, args.equipment)
-            else:
-                known = {r.id for r in RULES}
-                if args.rule not in known:
-                    raise SystemExit(f"unknown rule {args.rule}")
-                raise SystemExit("pass --local-fc1 for FC1 or --via-api for server-side run")
+            run_rule_from_lesson(client, args.equipment, args.rule)
     return 0
 
 

@@ -1,0 +1,13 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?equip ?cls ?label WHERE {
+  ?equip a/(rdfs:subClassOf|owl:equivalentClass)* brick:Pump .
+  ?equip a ?cls .
+  FILTER(STRSTARTS(STR(?equip), STR(bldg:)))
+  FILTER(STRSTARTS(STR(?cls), STR(brick:)))
+  OPTIONAL { ?equip rdfs:label ?label }
+}
+ORDER BY ?equip
