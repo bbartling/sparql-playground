@@ -9,11 +9,11 @@ A small tutorial API for **building data**:
 This repo uses SQLite as a stand-in historian. A real site would use Timescale, Influx, or a data lake; the API shape stays the same.
 
 **Demo site:** `BUILDING_50` with `AHU_1` and `AHU_2`.  
-**Wake (after Render sleep):** <https://sparql-playground.onrender.com/hello>  
+**Wake (after Render sleep):** <https://sparql-playground.onrender.com/health>  
 **Live API docs:** <https://sparql-playground.onrender.com/docs>  
-**SPARQL text files:** [`scripts/sparql/`](scripts/sparql/) · more notes in [`docs/sparql_queries.md`](docs/sparql_queries.md)
+**SPARQL text files (in this repo):** [`scripts/sparql/`](scripts/sparql/) · [`docs/sparql_queries.md`](docs/sparql_queries.md)
 
-Easiest in Swagger: hit **GET** `/hello` until ready, then **POST** `/api/sparql/upload` → Choose File → `scripts/sparql/02_fc1_points.rq`.
+Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api/sparql/upload` (Choose File) or paste into **POST** `/api/sparql`.
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)

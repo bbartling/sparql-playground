@@ -22,17 +22,14 @@ log = logging.getLogger(__name__)
 APP_DESCRIPTION = """
 Bare read-only API for the Brick tutorial.
 
-**Wake the free Render instance**  
-`GET /hello` — retry until `"ready": true`
+**Wake (Render free tier)** — `GET /health` until `"ready": true`
 
-**Humans (Swagger)**  
-1. `GET /api/sparql/files` — list lesson `.rq` files  
-2. `POST /api/sparql/upload` — Choose File → Execute  
+**Try SPARQL in Swagger** — copy a query from the repo (`scripts/sparql/*.rq`
+or the lesson scripts), then either:
+- **POST** `/api/sparql/upload` — Choose File → Execute, or
+- **POST** `/api/sparql` — paste into the JSON `query` field
 
-**Python lessons** (`scripts/lesson_0*.py`)  
-- `POST /api/sparql` — run SPARQL JSON  
-- `GET /api/points/{id}/timeseries` — samples for a point id  
-
+**Python lessons** — `POST /api/sparql` + `GET /api/points/{id}/timeseries`  
 Fault math stays on your laptop (lesson 04 / open-fdd).
 """.strip()
 

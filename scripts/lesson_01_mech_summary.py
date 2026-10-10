@@ -76,11 +76,11 @@ def main() -> None:
     banner("Lesson 1 — mechanical system summary", base_url=BASE_URL, equipment=EQUIPMENT)
 
     with client(BASE_URL) as http:
-        # /hello wakes a sleeping Render free instance; retry until ready=true
-        hello = http.get("/hello")
-        hello.raise_for_status()
-        print("\nGET /hello →", json.dumps(hello.json()))
-        if not hello.json().get("ready"):
+        # /health also wakes a sleeping Render free instance; retry until ready=true
+        health = http.get("/health")
+        health.raise_for_status()
+        print("\nGET /health →", json.dumps(health.json()))
+        if not health.json().get("ready"):
             print("Server still starting — wait a few seconds and re-run.")
             return
 

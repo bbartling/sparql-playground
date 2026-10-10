@@ -7,7 +7,6 @@ COPY pyproject.toml uv.lock ./
 COPY src ./src
 COPY model ./model
 COPY data ./data
-COPY scripts/sparql ./scripts/sparql
 RUN uv sync --frozen --no-dev \
   && mkdir -p /app/var \
   && uv run brickts bootstrap

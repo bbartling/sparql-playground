@@ -68,13 +68,12 @@ TIMESERIES STORE
 - Swap SQLite / Timescale / Influx / lakehouse SQL behind the same interface; API unchanged.
 
 HTTP SURFACE (minimum — this repo’s bare tutorial API)
-- GET /hello — wake/ping (ready flag for cold starts)
-- GET /health
+- GET /health — wake/ping (ready flag for cold starts)
 - POST /api/sparql — read-only SELECT/ASK; reject UPDATE, LOAD, SERVICE, FROM; timeout + row cap
-- POST /api/sparql/upload — run a .rq file (human-friendly in Swagger)
-- GET /api/sparql/files — list/download lesson .rq files
+- POST /api/sparql/upload — run a local .rq the human copied from the tutorial
 - GET /api/points/{id}/timeseries?start=&end=&limit=
 - Interactive OpenAPI/Swagger docs; no custom HTML app required
+- Lesson `.rq` files live in the repo only (not downloaded from the API)
 
 SECURITY / OPS
 - Parameterized SQL only. No secrets in RDF or logs.

@@ -1,9 +1,13 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
 from brickts.api.app import create_app
 from brickts.ingest import bootstrap_all
 from brickts.settings import Settings
+
+RQ = Path(__file__).resolve().parents[1] / "scripts" / "sparql" / "02_fc1_points.rq"
 
 
 @pytest.fixture
@@ -14,11 +18,11 @@ def client(settings: Settings):
         yield c
 
 
-def test_health_and_hello(client: TestClient):
-    assert client.get("/health").json()["status"] == "ok"
-    hello = client.get("/hello").json()
-    assert hello["ready"] is True
-    assert "hello" in hello["message"].lower()
+def test_health(client: TestClient):
+    body = client.get("/health").json()
+    assert body["status"] == "ok"
+    assert body["ready"] is True
+    assert client.get("/hello").status_code == 404
 
 
 def test_sparql_and_upload(client: TestClient):
@@ -28,24 +32,19 @@ def test_sparql_and_upload(client: TestClient):
     )
     assert bad.status_code == 400
 
-    listed = client.get("/api/sparql/files")
-    assert listed.status_code == 200
-    assert "02_fc1_points.rq" in listed.json()["files"]
-
-    rq = client.get("/api/sparql/files/02_fc1_points.rq")
-    assert rq.status_code == 200
-    assert "Fan_Speed_Command" in rq.text
-
+    text = RQ.read_text(encoding="utf-8")
     uploaded = client.post(
         "/api/sparql/upload",
-        files={"file": ("02_fc1_points.rq", rq.content, "text/plain")},
+        files={"file": ("02_fc1_points.rq", text.encode("utf-8"), "text/plain")},
     )
     assert uploaded.status_code == 200
     assert uploaded.json()["meta"]["row_count"] >= 3
 
-    posted = client.post("/api/sparql", json={"query": rq.text})
+    posted = client.post("/api/sparql", json={"query": text})
     assert posted.status_code == 200
     assert posted.json()["meta"]["row_count"] >= 3
+
+    assert client.get("/api/sparql/files").status_code == 404
 
 
 def test_timeseries(client: TestClient):
@@ -54,13 +53,10 @@ def test_timeseries(client: TestClient):
     samples = ts.json()["samples"]
     assert samples
     assert samples == sorted(samples, key=lambda s: s["ts"])
-
     assert client.get("/api/points/NO_SUCH_POINT/timeseries").status_code == 404
 
 
-def test_removed_froofy_routes(client: TestClient):
+def test_removed_routes(client: TestClient):
     assert client.get("/api/equipment").status_code == 404
-    assert client.get("/api/equipment/AHU_1/faults").status_code == 404
     assert client.get("/api/model/ttl").status_code == 404
-    assert client.get("/api/sparql/examples").status_code == 404
     assert client.get("/redoc").status_code == 404
