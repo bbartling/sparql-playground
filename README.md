@@ -27,12 +27,21 @@ uv run python scripts/analyst_client.py --base-url http://127.0.0.1:8000 --equip
 uv run pytest -q && uv run ruff check .
 ```
 
-Against the Render deploy:
+**Split of labor:** the server hosts the Brick model + timeseries and answers SPARQL /
+point / “which rules are applicable?”. Your laptop runs Open-FDD math.
 
 ```bash
+# 1) Explore / summarize the mechanical system (server SPARQL)
 uv run python scripts/sparql_tutorial.py --base-url https://sparql-playground.onrender.com
-uv run python scripts/analyst_client.py --base-url https://sparql-playground.onrender.com \
-  --equipment AHU_1 --rule FC1 --local-fc1
+
+# 2) List which Open-FDD rules the model can support (server)
+uv run python scripts/analyst_client.py --equipment AHU_1 --list-only
+
+# 3) Crunch one rule locally (laptop pulls series, runs open_fdd)
+uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC2
+
+# 4) Report loop: every AHU × every applicable rule (local crunch)
+uv run python scripts/analyst_client.py --all-equipment --all-applicable --quiet
 ```
 
 Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`). Docker/Render must bind `0.0.0.0` and honor `$PORT` (the image does).
