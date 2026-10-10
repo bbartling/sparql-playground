@@ -1,9 +1,9 @@
 let lastJson = null;
 let examplesById = {};
-let lastRunner = null;
 
-const GROUPS = [
+const TABS = [
   {
+    id: "summary",
     title: "Mechanical system summary",
     buttons: [
       { label: "Mech system roll-up", example: "mech_system_summary", run: true },
@@ -14,6 +14,7 @@ const GROUPS = [
     ],
   },
   {
+    id: "equipment",
     title: "List equipment",
     buttons: [
       { label: "AHUs", example: "list_ahus", run: true },
@@ -30,6 +31,7 @@ const GROUPS = [
     ],
   },
   {
+    id: "points",
     title: "Points",
     buttons: [
       { label: "All points", example: "list_points", run: true },
@@ -39,118 +41,10 @@ const GROUPS = [
       { label: "Missing refs", example: "missing_refs", run: true },
     ],
   },
-  {
-    title: "Which Open-FDD rules can this dataset run?",
-    hint: "Loads SPARQL that lists Open-FDD roles present in the Brick graph, then shows applicable rules from GET /api/equipment/…/faults. Crunching still happens in local Python.",
-    buttons: [
-      {
-        label: "Rules this dataset can run · AHU_1",
-        applicable: { equipment: "AHU_1", example: "openfdd_roles_present" },
-      },
-      {
-        label: "Rules this dataset can run · AHU_2",
-        applicable: { equipment: "AHU_2", example: "openfdd_roles_present" },
-      },
-      { label: "Open-FDD roles present (SPARQL)", example: "openfdd_roles_present", run: true },
-    ],
-  },
-  {
-    title: "Open-FDD SPARQL lessons → local Python",
-    hint: "Loads one rule’s role SPARQL. Then run analyst_client.py on your laptop to crunch.",
-    buttons: [
-      { label: "FC1 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC1" } },
-      { label: "FC1 · AHU_2", lesson: { equipment: "AHU_2", rule: "FC1" } },
-      { label: "FC2 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC2" } },
-      { label: "FC2 · AHU_2", lesson: { equipment: "AHU_2", rule: "FC2" } },
-      { label: "FC3 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC3" } },
-      { label: "FC4 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC4" } },
-    ],
-  },
 ];
 
 function setQuery(text) {
   document.getElementById("query").value = text || "";
-}
-
-function showLessonText(lines) {
-  const box = document.getElementById("lesson");
-  box.hidden = false;
-  box.textContent = lines.join("\n");
-}
-
-function baseUrl() {
-  return window.location.origin;
-}
-
-function buildPythonArtifacts(equipment, rule, lessons) {
-  const url = baseUrl();
-  const cmd =
-    `uv run python scripts/analyst_client.py \\\n` +
-    `  --base-url ${url} \\\n` +
-    `  --equipment ${equipment} \\\n` +
-    `  --rule ${rule}`;
-  const roleLines = (lessons || [])
-    .filter((l) => l.binding)
-    .map(
-      (l) =>
-        `    # ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})\n` +
-        `    # SPARQL lesson available via GET /api/equipment/${equipment}/faults/${rule}/lesson`
-    )
-    .join("\n");
-  const script = `#!/usr/bin/env python3
-"""Generated from brickts UI — resolve Brick roles via API, run Open-FDD locally."""
-from __future__ import annotations
-
-import httpx
-import pandas as pd
-from open_fdd.rules import run_rule
-
-BASE = ${JSON.stringify(url)}
-EQUIPMENT = ${JSON.stringify(equipment)}
-RULE = ${JSON.stringify(rule)}
-
-${roleLines}
-
-def main() -> None:
-    with httpx.Client(base_url=BASE, timeout=300.0) as client:
-        lesson = client.get(f"/api/equipment/{EQUIPMENT}/faults/{RULE}/lesson")
-        lesson.raise_for_status()
-        data = lesson.json()
-        series = {}
-        for item in data.get("lessons", []):
-            binding = item.get("binding")
-            if not binding:
-                raise SystemExit(item.get("error") or f"missing role {item.get('role')}")
-            pid = binding["point_id"]
-            ts = client.get(f"/api/points/{pid}/timeseries")
-            ts.raise_for_status()
-            samples = ts.json()["samples"]
-            idx = pd.to_datetime([s["ts"] for s in samples], unit="s", utc=True)
-            series[item["role"]] = pd.Series(
-                [s["value"] for s in samples], index=idx, name=item["role"]
-            )
-        df = pd.DataFrame(series).sort_index()
-        df.attrs.update(equipment_id=EQUIPMENT, equipment_type="ahu")
-        res = run_rule(RULE, df, poll_seconds=300)
-        print(res.status, res.fault_hours, res.fault_pct, res.sample_count, res.fault_sample_count)
-
-if __name__ == "__main__":
-    main()
-`;
-  return { cmd, script };
-}
-
-function setRunner(equipment, rule, lessons) {
-  lastRunner = buildPythonArtifacts(equipment, rule, lessons);
-  document.getElementById("python-cmd").textContent = lastRunner.cmd;
-  document.getElementById("python-script").textContent = lastRunner.script;
-  document.getElementById("python-script").hidden = false;
-  document.getElementById("copy-cmd").disabled = false;
-  document.getElementById("copy-script").disabled = false;
-}
-
-async function copyText(text) {
-  await navigator.clipboard.writeText(text);
 }
 
 function loadExample(id, { run = false } = {}) {
@@ -160,153 +54,60 @@ function loadExample(id, { run = false } = {}) {
   if (run) runQuery();
 }
 
-async function loadApplicableRules(equipment, exampleId) {
-  const ex = examplesById[exampleId];
-  if (ex) setQuery(ex.query);
-
-  const faultsRes = await fetch(
-    `/api/equipment/${encodeURIComponent(equipment)}/faults?include_generic=false`
-  );
-  const faults = faultsRes.ok ? await faultsRes.json() : [];
-  const applicable = faults.filter((f) => f.applicable);
-  const missing = faults.filter((f) => !f.applicable).slice(0, 12);
-
-  showApiJson({
-    note: "Applicability from GET /api/equipment/{id}/faults — not computed by SPARQL alone.",
-    equipment,
-    applicable_count: applicable.length,
-    applicable: applicable.map((f) => ({
-      rule_id: f.rule_id,
-      title: f.title,
-      reason: f.reason,
-    })),
-  });
-
-  const first = applicable[0];
-  if (first) {
-    const cmd =
-      `# Server listed applicable rules; YOUR laptop runs open-fdd.\n` +
-      `uv run python scripts/analyst_client.py \\\n` +
-      `  --base-url ${baseUrl()} \\\n` +
-      `  --equipment ${equipment} \\\n` +
-      `  --rule ${first.rule_id}\n\n` +
-      `# Other applicable rules on ${equipment}:\n` +
-      applicable
-        .slice(0, 10)
-        .map((f) => `#   --rule ${f.rule_id}   # ${f.title}`)
-        .join("\n");
-    lastRunner = buildPythonArtifacts(equipment, first.rule_id, []);
-    lastRunner.cmd = cmd;
-    document.getElementById("python-cmd").textContent = cmd;
-    document.getElementById("python-script").textContent = lastRunner.script;
-    document.getElementById("python-script").hidden = false;
-    document.getElementById("copy-cmd").disabled = false;
-    document.getElementById("copy-script").disabled = false;
-  }
-
-  showLessonText([
-    `Applicable Open-FDD rules on ${equipment}: ${applicable.length}`,
-    "(Server listed these via /api/equipment/…/faults after checking Brick roles.)",
-    "",
-    ...applicable.map((f) => `  ✓ ${f.rule_id}: ${f.title}`),
-    "",
-    missing.length
-      ? `Not applicable (sample):\n${missing.map((f) => `  ✗ ${f.rule_id}: ${f.reason || f.title}`).join("\n")}`
-      : "",
-    "",
-    "SPARQL editor is loaded with openfdd_roles_present — Run SPARQL to see role→point rows.",
-    "Fault numbers (FAULT hours / %) only appear when you run analyst_client.py locally.",
-  ].filter(Boolean));
-
-  if (ex) await runQuery();
+function bindButton(b) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ghost";
+  btn.textContent = b.label;
+  btn.addEventListener("click", () => loadExample(b.example, { run: !!b.run }));
+  return btn;
 }
 
-async function loadFaultLesson(equipment, rule) {
-  const roleBox = document.getElementById("role-buttons");
-  roleBox.innerHTML = "";
-  roleBox.hidden = true;
-  const res = await fetch(
-    `/api/equipment/${encodeURIComponent(equipment)}/faults/${encodeURIComponent(rule)}/lesson`
-  );
-  const data = await res.json();
-  if (!res.ok) {
-    showLessonText([data.detail || JSON.stringify(data)]);
-    return;
-  }
-  const lessons = data.lessons || [];
-  const ok = lessons.filter((l) => l.query);
-  showLessonText([
-    `${data.rule_id}: ${data.title}`,
-    data.summary || "",
-    data.equation ? `Equation: ${data.equation}` : "",
-    "",
-    "Role buttons below swap the SPARQL editor. Fault evaluation is local Python only.",
-    ...ok.map((l) => `  ${l.role} → ${l.binding.point_id} (${l.binding.brick_class})`),
-    ...(lessons.filter((l) => l.error).map((l) => `  ${l.role}: ${l.error}`)),
-  ]);
-  setRunner(equipment, rule, ok);
-  if (ok.length) {
-    setQuery(ok[0].query);
-    roleBox.hidden = false;
-    for (const l of ok) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "ghost";
-      btn.textContent = l.role;
-      btn.addEventListener("click", () => {
-        setQuery(l.query);
-        runQuery();
-      });
-      roleBox.appendChild(btn);
-    }
-    await runQuery();
-  }
-}
-
-function renderButtonGroups() {
-  const host = document.getElementById("button-groups");
+function renderTabs() {
+  const host = document.getElementById("tab-panels");
   host.innerHTML = "";
-  for (const group of GROUPS) {
-    const section = document.createElement("div");
-    section.className = "btn-group";
+  for (const tab of TABS) {
+    const panel = document.createElement("div");
+    panel.className = "tab-panel" + (tab.id === "summary" ? " active" : "");
+    panel.dataset.tab = tab.id;
     const h = document.createElement("h3");
-    h.textContent = group.title;
-    section.appendChild(h);
-    if (group.hint) {
-      const p = document.createElement("p");
-      p.className = "hint";
-      p.textContent = group.hint;
-      section.appendChild(p);
-    }
+    h.textContent = tab.title;
+    panel.appendChild(h);
     const row = document.createElement("div");
     row.className = "quick";
-    for (const b of group.buttons) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "ghost";
-      btn.textContent = b.label;
-      btn.addEventListener("click", async () => {
-        if (b.example) loadExample(b.example, { run: !!b.run });
-        if (b.applicable) {
-          await loadApplicableRules(b.applicable.equipment, b.applicable.example);
-        }
-        if (b.lesson) await loadFaultLesson(b.lesson.equipment, b.lesson.rule);
-      });
-      row.appendChild(btn);
-    }
-    section.appendChild(row);
-    host.appendChild(section);
+    for (const b of tab.buttons) row.appendChild(bindButton(b));
+    panel.appendChild(row);
+    host.appendChild(panel);
   }
+
+  document.querySelectorAll(".tab").forEach((tabBtn) => {
+    tabBtn.addEventListener("click", () => {
+      const id = tabBtn.dataset.tab;
+      document.querySelectorAll(".tab").forEach((b) => {
+        b.classList.toggle("active", b === tabBtn);
+        b.setAttribute("aria-selected", b === tabBtn ? "true" : "false");
+      });
+      document.querySelectorAll(".tab-panel").forEach((p) => {
+        p.classList.toggle("active", p.dataset.tab === id);
+      });
+    });
+  });
+}
+
+function applyTheme(theme) {
+  const next = theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("brickts-theme", next);
+  const btn = document.getElementById("theme-toggle");
+  if (btn) btn.textContent = `Theme: ${next}`;
 }
 
 async function loadPresets() {
   const res = await fetch("/api/sparql/examples");
   const data = await res.json();
   examplesById = {};
-  for (const ex of data.examples) {
-    examplesById[ex.id] = ex;
-  }
-  renderButtonGroups();
+  for (const ex of data.examples) examplesById[ex.id] = ex;
+  renderTabs();
   if (examplesById.mech_system_summary) {
     loadExample("mech_system_summary", { run: true });
   }
@@ -378,8 +179,7 @@ async function runQuery() {
     document.getElementById("meta").textContent += ` · ASK=${body.boolean}`;
     return;
   }
-  const vars = body.head.vars || [];
-  renderTable(body.results.bindings || [], vars);
+  renderTable(body.results.bindings || [], body.head.vars || []);
 }
 
 async function plotPoint(pointId) {
@@ -402,7 +202,7 @@ async function plotPoint(pointId) {
   const pts = samples.map((s) => `${scaleX(s.ts)},${scaleY(s.value)}`).join(" ");
   document.getElementById("plot").innerHTML =
     `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${pts}"/></svg>` +
-    `<p>${pointId} · ${samples.length} samples via GET /api/points/…/timeseries</p>`;
+    `<p>${pointId} · ${samples.length} samples</p>`;
 }
 
 function download(name, text, type) {
@@ -412,6 +212,11 @@ function download(name, text, type) {
   a.download = name;
   a.click();
 }
+
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || "dark";
+  applyTheme(cur === "dark" ? "light" : "dark");
+});
 
 document.getElementById("view-ttl").addEventListener("click", () => {
   window.open("/api/model/ttl", "_blank", "noopener,noreferrer");
@@ -429,13 +234,6 @@ document.getElementById("validate-model").addEventListener("click", async () => 
   meta.textContent = bad.length
     ? `Issues: ${bad.map((c) => `${c.check}=${c.count}`).join(", ")}`
     : `OK · ${(data.checks || []).length} checks clean`;
-});
-
-document.getElementById("copy-cmd").addEventListener("click", async () => {
-  if (lastRunner) await copyText(lastRunner.cmd);
-});
-document.getElementById("copy-script").addEventListener("click", async () => {
-  if (lastRunner) await copyText(lastRunner.script);
 });
 
 document.getElementById("run").addEventListener("click", runQuery);
@@ -457,4 +255,5 @@ document.getElementById("dl-csv").addEventListener("click", () => {
   download("sparql.csv", [vars.join(","), ...rows].join("\n"), "text/csv");
 });
 
+applyTheme(document.documentElement.getAttribute("data-theme") || "dark");
 loadPresets();

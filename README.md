@@ -9,7 +9,7 @@ Near-production tutorial for the [Brick timeseries storage pattern](https://docs
 ```
 history_wide.csv ── bootstrap ──▶ SqliteTimeseriesStore
 site.ttl + points CSV ── model build ──▶ building_50.ttl ──▶ GraphService (+ Brick 1.5 ontology)
-HTTP ──▶ read-only SPARQL / point lookup / timeseries JSON / Open-FDD fault applicability
+HTTP ──▶ read-only SPARQL / point lookup / timeseries JSON
 ```
 
 Locked decisions: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md). Agent guide: [`AGENTS.md`](AGENTS.md).
@@ -23,24 +23,18 @@ uv run brickts validate --shacl
 uv run brickts bootstrap          # idempotent; --force to reload
 uv run brickts serve              # http://127.0.0.1:8000/ui
 uv run python scripts/sparql_tutorial.py --base-url http://127.0.0.1:8000
-uv run python scripts/analyst_client.py --base-url http://127.0.0.1:8000 --equipment AHU_1 --rule FC1 --local-fc1
 uv run pytest -q && uv run ruff check .
 ```
 
-**Split of labor:** the server hosts the Brick model + timeseries and answers SPARQL /
-point / “which rules are applicable?”. Your laptop runs Open-FDD math.
+**Server = model + SPARQL + timeseries.** Fault discovery and Open-FDD math stay in local Python:
 
 ```bash
-# 1) Explore / summarize the mechanical system (server SPARQL)
+# Explore mechanical inventory (server SPARQL)
 uv run python scripts/sparql_tutorial.py --base-url https://sparql-playground.onrender.com
 
-# 2) List which Open-FDD rules the model can support (server)
+# Local Open-FDD (laptop pulls series, runs open_fdd)
 uv run python scripts/analyst_client.py --equipment AHU_1 --list-only
-
-# 3) Crunch one rule locally (laptop pulls series, runs open_fdd)
 uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC2
-
-# 4) Report loop: every AHU × every applicable rule (local crunch)
 uv run python scripts/analyst_client.py --all-equipment --all-applicable --quiet
 ```
 
@@ -49,13 +43,13 @@ Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`).
 ## AI / human modeling workflow
 
 1. Author equipment and locations in `model/site.ttl` (Site, Building, Floors, AHUs, parts, zones, Database node).
-2. Author `model/points/BUILDING_50__AHU_*.csv` (`source_column`, `point_id`, Brick class, QUDT unit, owner, Open-FDD role, frozen UUIDv5 `timeseries_id`).
+2. Author `model/points/BUILDING_50__AHU_*.csv` (`source_column`, `point_id`, Brick class, QUDT unit, owner, optional role, frozen UUIDv5 `timeseries_id`).
 3. `uv run brickts model build` merges every `model/points/*.csv` into committed `model/building_50.ttl` with `ref:TimeseriesReference` on every point.
 4. `uv run brickts bootstrap` loads wide CSVs into SQLite using the mappings (never query by CSV column name in app code).
 
 ## UI
 
-Static tutorial at `/ui` (also `/`) — **buttons only** (no dropdowns) to pre-fill SPARQL for mechanical inventory (AHUs, VAV zones, heat pumps, boilers, chillers, towers, pumps, fans, point roll-ups) and Open-FDD role lessons. Result table + API JSON. Copy a local Python command/script; fault evaluation stays on your machine via `scripts/analyst_client.py --rule FC1|FC2|…`.
+Static tutorial at `/ui` (also `/`) — View RDF, Validate, and SPARQL buttons for mechanical summary / list equipment / points (light/dark theme). No Open-FDD on the server UI; use `scripts/analyst_client.py` locally.
 
 ![SPARQL UI](docs/ui.png)
 

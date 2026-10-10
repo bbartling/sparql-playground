@@ -1,26 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>brickts · SPARQL tutorial</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <script>
+      (() => {
+        const saved = localStorage.getItem("brickts-theme");
+        if (saved === "light" || saved === "dark") {
+          document.documentElement.setAttribute("data-theme", saved);
+        }
+      })();
+    </script>
   </head>
   <body>
     <header>
-      <p class="brand">brickts</p>
-      <h1>Brick SPARQL playground</h1>
+      <div class="header-top">
+        <div>
+          <p class="brand">brickts</p>
+          <h1>Brick SPARQL playground</h1>
+        </div>
+        <button id="theme-toggle" type="button" class="ghost" aria-label="Toggle theme">
+          Theme: dark
+        </button>
+      </div>
       <p class="sub">
-        Button-driven tutorial for read-only SPARQL against a Brick model.
-        Inventory the mechanical system, see which Open-FDD <em>roles</em> the graph can satisfy,
-        then copy a local Python command.
-      </p>
-      <p class="callout">
-        <strong>Who crunches faults?</strong>
-        <span>This server only answers SPARQL + timeseries JSON.
-        <code>scripts/analyst_client.py</code> on your laptop pulls those points and runs
-        <code>open_fdd.rules.run_rule</code> locally (that is what printed
-        <code>FAULT 10.5 …</code> in your terminal).</span>
+        Read-only SPARQL against the Brick model + ontology. Buttons load queries;
+        empty boiler/chiller results mean that class is not modeled yet (this site: AHUs + zones).
       </p>
       <div class="toolbar">
         <button id="view-ttl" type="button" class="ghost">View RDF model</button>
@@ -32,14 +39,14 @@
     <main>
       <section class="panel query-panel">
         <h2>Build a query</h2>
-        <p class="hint">
-          Every button loads SPARQL into the editor. Empty result sets for boilers/chillers/etc.
-          mean that class is not modeled yet on this tutorial site (today: AHUs + zones).
-        </p>
+        <p class="hint">Every button loads SPARQL into the editor, then runs it.</p>
 
-        <div id="button-groups"></div>
-        <div id="role-buttons" class="quick" hidden></div>
-        <div id="lesson" class="lesson" hidden></div>
+        <div class="tabs" role="tablist" aria-label="Query topics">
+          <button type="button" class="tab active" data-tab="summary">Summary</button>
+          <button type="button" class="tab" data-tab="equipment">Equipment</button>
+          <button type="button" class="tab" data-tab="points">Points</button>
+        </div>
+        <div id="tab-panels"></div>
 
         <label for="query">SPARQL</label>
         <textarea id="query" rows="14" spellcheck="false"></textarea>
@@ -48,18 +55,6 @@
           <span class="kbd">Ctrl+Enter</span>
           <span id="meta" class="muted"></span>
         </div>
-
-        <h3>Local Python (Open-FDD crunch)</h3>
-        <p class="hint">
-          Server = discover roles / fetch samples. Your machine = fault math.
-          Use “Rules this dataset can run” then copy the command for a specific FC rule.
-        </p>
-        <pre id="python-cmd" class="code-box">Click an Open-FDD lesson button (e.g. FC1 · AHU_1) to generate a local runner command.</pre>
-        <div class="actions">
-          <button id="copy-cmd" type="button" class="ghost" disabled>Copy command</button>
-          <button id="copy-script" type="button" class="ghost" disabled>Copy Python script</button>
-        </div>
-        <pre id="python-script" class="code-box" hidden></pre>
       </section>
 
       <section class="panel results-panel">
@@ -67,7 +62,7 @@
         <div id="error" class="error" hidden></div>
 
         <h3>Result table</h3>
-        <p class="hint">Click a row with a <code>point</code> binding to plot samples from the timeseries API.</p>
+        <p class="hint">Click a row with a <code>point</code> binding to plot recent samples.</p>
         <div class="table-wrap">
           <table id="table"><thead></thead><tbody></tbody></table>
         </div>
@@ -77,7 +72,7 @@
         </div>
 
         <h3>API JSON</h3>
-        <p class="hint">Exact <code>POST /api/sparql</code> response body.</p>
+        <p class="hint"><code>POST /api/sparql</code> response body.</p>
         <pre id="api-json" class="code-box">Run a query to see the API response here.</pre>
 
         <div id="plot" class="plot"></div>
@@ -85,9 +80,10 @@
     </main>
 
     <footer>
-      <span>Local runners:</span>
-      <code>scripts/sparql_tutorial.py</code>
-      <code>scripts/analyst_client.py --rule FC1</code>
+      <span>Endpoints:</span>
+      <code>/api/sparql</code>
+      <code>/api/model/ttl</code>
+      <code>/health</code>
       <code>/ → /ui</code>
     </footer>
     <script src="/static/app.js"></script>

@@ -14,20 +14,20 @@ def test_ui(settings: Settings):
         assert "SPARQL" in html.text
         assert "View RDF model" in html.text
         assert "API JSON" in html.text
-        assert "Local Python" in html.text
-        assert "Who crunches faults" in html.text
+        assert "theme-toggle" in html.text
+        assert "Open-FDD" not in html.text
+        assert "analyst_client" not in html.text
         assert "<select" not in html.text.lower()
-        assert "Run rule" not in html.text
         root = client.get("/", follow_redirects=False)
         assert root.status_code in (301, 302, 303, 307, 308)
         assert root.headers.get("location", "").endswith("/ui")
         js = client.get("/static/app.js")
         assert js.status_code == 200
         assert "mech_system_summary" in js.text
-        assert "openfdd_roles_present" in js.text
-        assert "loadApplicableRules" in js.text
-        assert 'getElementById("equipment")' not in js.text
-        assert "Run rule" not in js.text
+        assert "applyTheme" in js.text
+        assert "Open-FDD" not in js.text
+        assert "loadApplicableRules" not in js.text
+        assert "loadFaultLesson" not in js.text
         ttl = client.get("/api/model/ttl")
         assert ttl.status_code == 200
         assert "text/turtle" in ttl.headers.get("content-type", "")
