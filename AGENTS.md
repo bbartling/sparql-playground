@@ -1,78 +1,148 @@
 # AGENTS.md — sparql-playground (brickts)
 
-A tutorial that is also near-production. It hosts a **Brick RDF model** and queries
-**timeseries through the model** (Brick ref-schema, <https://docs.brickschema.org/metadata/timeseries-storage.html>).
-FastAPI serves a read-only SPARQL endpoint, point lookups by class or tag, timeseries
-JSON, and Open-FDD fault applicability APIs. Interactive surface is FastAPI Swagger (`/docs`); tutorial scripts live under `scripts/lesson_0*.py`. **Async SQLite (aiosqlite)** stands in for a real TSDB on the HTTP path; SPARQL/rdflib runs in a thread pool.
+This repo is a **tutorial + near-production pattern**: Brick RDF describes the building;
+timeseries are reached **only through the model** ([Brick timeseries storage](https://docs.brickschema.org/metadata/timeseries-storage.html)).
+Here: FastAPI + read-only SPARQL + SQLite stand-in TSDB + Swagger at `/docs`. Lessons: `scripts/lesson_0*.py`.
 
-- **Build plan (start here if the app is not built yet):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
-
-## Architecture in one picture
+- **Build plan (if rebuilding from scratch):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 
 ```
-data/<BUILDING>/<EQUIP>/history_wide.csv ──(brickts bootstrap, uses model/points/*.csv)──▶ TimeseriesStore (SQLite: samples(timeseries_id, ts, value))
-model/site.ttl + model/points/*.csv ──(brickts model build)──▶ model/building_50.ttl ──▶ GraphService (model + Brick ontology)
-HTTP ─▶ routers ─▶ services ─▶ GraphService (SPARQL)  ─▶ point ─ref:hasExternalReference─▶ TimeseriesReference
-                                                      ─ref:hasTimeseriesId + ref:storedAt─▶ Database node ─▶ store registry ─▶ await TimeseriesStore.read()
+CSV ──bootstrap──▶ TimeseriesStore (samples: timeseries_id, ts, value)
+site.ttl + points CSV ──model build──▶ building_50.ttl ──▶ Graph (+ Brick ontology)
+HTTP ──▶ SPARQL / points / timeseries
+         point → ref:TimeseriesReference → timeseries_id + storedAt → Database → store.read()
 ```
 
 ## Commands
 
 ```bash
-uv sync                                   # install (project-local .venv)
-uv run brickts model build                # render model/building_50.ttl from site.ttl + mappings
-uv run brickts bootstrap                  # CSV -> SQLite (idempotent; --force to reload)
-uv run brickts validate [--shacl]         # SPARQL invariant checks (+ Brick SHACL)
+uv sync
+uv run brickts model build
+uv run brickts bootstrap
+uv run brickts validate [--shacl]
 uv run brickts serve                      # http://127.0.0.1:8000/docs
-uv run python scripts/lesson_01_mech_summary.py   # beginner series (edit lesson_config.py)
-uv run python scripts/analyst_client.py   # multi-rule Open-FDD against a running server
-uv run ruff check . && uv run ruff format --check .
-uv run pytest -q
+uv run python scripts/lesson_01_mech_summary.py
+uv run pytest -q && uv run ruff check .
 ```
 
-## Invariants (tests enforce these; never break them)
+## Invariants (do not break)
 
-1. Every `brick:Point` has **exactly one** `ref:hasExternalReference` to a `ref:TimeseriesReference`.
-   That reference has **exactly one** `ref:hasTimeseriesId` and a `ref:storedAt` to a node typed
-   `ref:Database` or `brick:Database`.
-2. Every timeseries id in the model exists in the store, and every mapped CSV column is in the model.
-3. **No hardcoded CSV column names** in `src/brickts/api`, `src/brickts/services`, `src/brickts/graph`,
-   or `scripts/analyst_client.py`. Column names live only in `data/`, `model/points/*.csv`, and `src/brickts/ingest.py`.
-4. **No equipment ids hardcoded** in product code. Ids are request parameters, and selection is by Brick class, tags, or roles.
-5. The SPARQL endpoint stays read-only: no UPDATE, LOAD, SERVICE, or FROM. Row cap, timeout, and length limit apply.
-6. SQL is parameterized only. Graph mutations go through `GraphService` (lock + copy-on-write). TTL writes are atomic.
-7. No secrets in the graph, the repo, or the logs. Database nodes carry labels and env-var *names*, never connection strings with credentials.
-
-## How to add data (new CSV, same or new equipment)
-
-1. Put the CSV at `data/<BUILDING>/<EQUIP>/history_wide.csv`. It needs a `timestamp_utc` column plus value columns. Tutorial site ships `AHU_1` and `AHU_2`.
-2. Author `model/points/<BUILDING>__<EQUIP>.csv` with columns
-   `source_column,point_id,label,brick_class,unit,owner_id,openfdd_role,timeseries_id,notes`.
-   Generate ids with the UUIDv5 rule in ARCHITECTURE A3 and freeze them in the file.
-3. For new equipment, zones, or parts, add their triples to `model/site.ttl` (`brick:isPartOf` / `brick:hasPart`, `brick:feeds`).
-4. Register the dataset in `data/datasets.json`.
-5. Run `uv run brickts model build && uv run brickts validate --shacl && uv run brickts bootstrap && uv run pytest -q`.
-6. Runtime alternative (mutations enabled): `uv run brickts ingest --csv … --mapping …`, or `POST /api/model/points`.
-
-## How to extend the model
-
-- Pick classes from Brick 1.5 (`brickschema` bundled ontology) and check that each exists:
-  `uv run python -c "import brickschema;from rdflib import RDF,OWL,Namespace;B=Namespace('https://brickschema.org/schema/Brick#');g=brickschema.Graph(load_brick=True);print((B['Fan_Speed_Command'],RDF.type,OWL.Class) in g)"`.
-- Points attach with `brick:isPointOf` to the equipment or its part (Supply_Fan, Outside_Damper, …), and include the inverse `brick:hasPoint`.
-- Units use QUDT (`unit:DEG_F`, `unit:IN_H2O`, `unit:PERCENT`). Leave the unit out for binary or enumerated points.
-- When a new Open-FDD role is needed, add it to `ROLE_REQUIREMENTS` in `src/brickts/services/faults.py`.
-
-## How to add a TSDB backend (Timescale, Influx, a historian)
-
-1. Implement `TimeseriesStore` in `src/brickts/store/<backend>.py`. Keep it parameterized, return `Sample` objects, and make `read` honor `start`, `end`, and `limit`.
-2. Register it in `src/brickts/store/registry.py` under a `bts:backend` value (for example `"timescale"`), and read its connection from env settings.
-3. In `model/site.ttl`, point the Database node (`a ref:Database, brick:Database ; bts:backend "timescale"`) at it, or add a second Database node and set `ref:storedAt` per reference.
-4. Graph, routers, client, and tests do not change. Add one contract test that runs the shared store test suite against the new backend.
+1. Every `brick:Point` has exactly one `ref:hasExternalReference` → `ref:TimeseriesReference` with exactly one `ref:hasTimeseriesId` and a `ref:storedAt` Database.
+2. Every timeseries id in the model exists in the store; every mapped column is in the model.
+3. No hardcoded CSV column names in API/services/graph/client code.
+4. No hardcoded equipment ids in product code — select by Brick class, tags, or roles.
+5. SPARQL is read-only (no UPDATE/LOAD/SERVICE/FROM); row cap + timeout + length limit.
+6. Parameterized SQL only; graph mutations via locked copy-on-write; atomic TTL writes.
+7. No secrets in the graph, repo, or logs — Database nodes hold env-var *names*, not credentials.
 
 ## Guardrails
 
-- Read-only reference repo: `/home/ben/Desktop/open-fdd`. **Never edit it.**
-- Don't commit `var/`, `*.sqlite`, `.venv`, or any secrets. Don't use Git LFS. Data files must stay under 50 MB each; if one is larger, stop and ask.
-- Keep the code small and typed. Use pydantic for every request/response schema. Write a comment only for a constraint the code cannot show.
-- No auth system, no extra services, no CDN, no Node build.
+- Read-only reference: `/home/ben/Desktop/open-fdd` — never edit it.
+- Don’t commit `var/`, `*.sqlite`, `.venv`, secrets. No Git LFS. Data files under 50 MB each.
+- No auth, no CDN, no Node UI — Swagger only for interactive API.
+
+---
+
+## Prompt A — build an API like this (any language)
+
+Copy this into another agent / project. Stack can be Go, Node, Java, .NET, etc. — not tied to FastAPI.
+
+```text
+Build a read-only “Brick + timeseries” API with these rules:
+
+GOAL
+- Clients discover building equipment and points with SPARQL (or an equivalent graph query).
+- Clients never query the historian by raw column/tag names from the BMS export.
+- The Brick (or Brick-compatible RDF) model is the only path from a logical point to samples.
+
+DATA MODEL (Brick ref-schema)
+- Site graph: Building, Equipment (AHU, Fan, …), Points, parts (isPartOf/hasPart), feeds/zones.
+- Every Point has exactly one ref:hasExternalReference → ref:TimeseriesReference.
+- That reference has exactly one opaque ref:hasTimeseriesId (UUID string, frozen at model time).
+- That reference has ref:storedAt → a Database node (label + backend kind + env var NAME for connection — never credentials in the graph).
+
+TIMESERIES STORE
+- Abstract interface: read(timeseries_id, start?, end?, limit?) → [{ts, value}, …].
+- Storage is long/narrow: (timeseries_id, timestamp_utc, value). Wide CSV/BMS tables are ingest-only.
+- Swap SQLite / Timescale / Influx / lakehouse SQL behind the same interface; API unchanged.
+
+HTTP SURFACE (minimum)
+- GET /health
+- POST /sparql  (or /api/sparql) — read-only SELECT/ASK; reject UPDATE, LOAD, SERVICE, FROM; enforce timeout + row cap
+- GET /sparql/examples — optional tutorial queries
+- GET /equipment, GET /equipment/{id}/points?brick_class=&tags=
+- GET /points/{id}/timeseries?start=&end=&limit=
+- GET /model.ttl (or /api/model/ttl) — export site graph
+- Interactive OpenAPI/Swagger docs; no custom HTML app required
+
+SECURITY / OPS
+- Parameterized SQL only. No secrets in RDF or logs.
+- Mutations off by default. Auth optional for LAN tutorials; required for production.
+
+DELIVERABLES
+1) Short architecture note matching the above.
+2) Working read path: SPARQL → point → timeseries_id → store.read → JSON.
+3) One inventory SPARQL example (count AHUs / zones) prefilled in OpenAPI.
+4) Contract tests: every point has a ref; every timeseries_id resolves; bad SPARQL rejected.
+```
+
+---
+
+## Prompt B — add Brick on top of an existing SQL / lake TSDB
+
+Copy this when the customer already has a huge historian or data lake and only needs a Brick layer.
+
+```text
+We already have a production timeseries store (SQL warehouse, Timescale, Snowflake, Databricks,
+Influx, PI/historian, etc.). Do NOT migrate the samples. Add a Brick metadata layer so apps
+resolve points through RDF, then follow an opaque timeseries id into the existing store.
+
+CONSTRAINTS
+- Timeseries stay where they are. No bulk copy into a new DB for the tutorial/pattern.
+- Wide BMS tables may remain for ETL; query path for apps is long/narrow or native TS API keyed by id.
+- Opaque timeseries ids: either reuse stable historian point ids, or mint UUIDv5 once and store a mapping table (source_tag → timeseries_id). Never recompute ids at request time from column names in app code.
+
+STEPS
+1) Inventory: list equipment and points you care about (AHUs first). For each point note:
+   human label, Brick class (e.g. Supply_Air_Static_Pressure_Sensor), owning equipment/part,
+   unit (QUDT if possible), and the existing store key (tag, uuid, measurement+tags, …).
+
+2) Author Brick RDF (Turtle or generate from CSV):
+   - Site / Building / Floors / Equipment / parts / zones (isPartOf, hasPart, feeds).
+   - Points with brick:isPointOf (and hasPoint inverse).
+   - For each point: ref:hasExternalReference → ref:TimeseriesReference ;
+       ref:hasTimeseriesId "…" ; ref:storedAt <Database> .
+   - Database node: rdfs:label, backend type (e.g. "timescale"), connectionEnv "MY_TSDB_DSN"
+     (env var name only).
+
+3) Implement a thin adapter:
+   read(timeseries_id, start, end, limit) → samples
+   using the existing SQL/API (parameterized). Register it under the Database node’s backend.
+
+4) Expose read-only SPARQL over the Brick graph (+ Brick ontology for subclass/tag inference).
+   Point and timeseries HTTP helpers may wrap SPARQL for convenience.
+
+5) Validate:
+   - Every Point has exactly one TimeseriesReference + timeseries id + storedAt.
+   - Spot-check: SPARQL finds duct static / setpoint / fan speed on an AHU; adapter returns a month of samples.
+   - No application code hardcodes BMS column names — only the mapping/ETL layer may.
+
+NON-GOALS
+- Replacing the lakehouse. Rewriting historians. Building a full digital-twin UI.
+- Putting connection strings or credentials into the RDF graph.
+
+SUCCESS
+Apps ask the graph “what is the supply-fan speed command on AHU_1?” and receive samples from
+the existing production store via the opaque id — same pattern as Brick timeseries storage docs.
+```
+
+---
+
+## How to add data in *this* repo
+
+1. `data/<BUILDING>/<EQUIP>/history_wide.csv` with `timestamp_utc` + value columns.
+2. `model/points/<BUILDING>__<EQUIP>.csv` — freeze `timeseries_id` (UUIDv5 rule in ARCHITECTURE A3).
+3. New equipment/parts/zones → `model/site.ttl`.
+4. Register in `data/datasets.json`.
+5. `uv run brickts model build && uv run brickts validate --shacl && uv run brickts bootstrap && uv run pytest -q`.
