@@ -17,17 +17,12 @@ BASE_URL = "https://sparql-playground.onrender.com"
 EQUIPMENT = "AHU_1"
 # ----------------------------------------------------------------------------
 
-PREFIXES = """\
+MECH_SUMMARY = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
-"""
 
-MECH_SUMMARY = (
-    PREFIXES
-    + """
 SELECT ?kind (COUNT(DISTINCT ?equip) AS ?n) WHERE {
   VALUES ?kind {
     brick:Air_Handler_Unit brick:Variable_Air_Volume_Box
@@ -41,11 +36,13 @@ SELECT ?kind (COUNT(DISTINCT ?equip) AS ?n) WHERE {
 GROUP BY ?kind
 ORDER BY DESC(?n) ?kind
 """
-)
 
-LIST_AHUS = (
-    PREFIXES
-    + """
+LIST_AHUS = """\
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
 SELECT ?ahu ?label WHERE {
   ?ahu a/(rdfs:subClassOf|owl:equivalentClass)* brick:Air_Handler_Unit .
   FILTER(STRSTARTS(STR(?ahu), STR(bldg:)))
@@ -53,12 +50,14 @@ SELECT ?ahu ?label WHERE {
 }
 ORDER BY ?ahu
 """
-)
 
 # Tags live on the Brick *class* in the ontology, not as free text on each point
-POINT_TAGS = (
-    PREFIXES
-    + f"""
+POINT_TAGS = f"""\
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
 SELECT ?point ?cls ?tag WHERE {{
   BIND(bldg:{EQUIPMENT} AS ?ahu)
   ?point brick:isPointOf ?owner .
@@ -70,7 +69,6 @@ SELECT ?point ?cls ?tag WHERE {{
 ORDER BY ?point ?tag
 LIMIT 30
 """
-)
 
 
 def main() -> None:

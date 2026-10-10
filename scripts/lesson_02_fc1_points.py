@@ -19,17 +19,13 @@ BASE_URL = "https://sparql-playground.onrender.com"
 EQUIPMENT = "AHU_1"
 # ----------------------------------------------------------------------------
 
-PREFIXES = """\
+FC1_POINTS = f"""\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
-"""
 
-FC1_POINTS = (
-    PREFIXES
-    + f"""
 SELECT ?role ?brickClass ?point ?timeseriesId WHERE {{
   BIND(bldg:{EQUIPMENT} AS ?ahu)
   VALUES (?role ?brickClass ?needSupplyFan) {{
@@ -52,7 +48,6 @@ SELECT ?role ?brickClass ?point ?timeseriesId WHERE {{
 }}
 ORDER BY ?role
 """
-)
 
 NEEDED = ("duct-static-pressure", "duct-static-pressure-sp", "fan-cmd")
 
