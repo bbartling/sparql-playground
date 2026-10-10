@@ -10,15 +10,22 @@
 
 from __future__ import annotations
 
-from lesson_config import (  # noqa: E402
-    EQUIPMENT,
-    PREFIXES,
-    banner,
-    client,
-    post_sparql,
-    print_table,
-    short,
-)
+from lesson_helpers import banner, client, post_sparql, print_table, short  # noqa: E402
+
+# --- edit these (keep in sync across lesson_0*.py if you chain them) ---------
+BASE_URL = "https://sparql-playground.onrender.com"
+# BASE_URL = "http://127.0.0.1:8000"
+
+EQUIPMENT = "AHU_1"
+# ----------------------------------------------------------------------------
+
+PREFIXES = """\
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+"""
 
 FC1_POINTS = (
     PREFIXES
@@ -69,9 +76,9 @@ def find_fc1_points(http, *, quiet: bool = False) -> dict[str, str]:
 
 
 def main() -> None:
-    banner("Lesson 2 — find FC1 points with SPARQL")
+    banner("Lesson 2 — find FC1 points with SPARQL", base_url=BASE_URL, equipment=EQUIPMENT)
 
-    with client() as http:
+    with client(BASE_URL) as http:
         points = find_fc1_points(http)
 
     print("\nUse these point ids in lesson 3:")

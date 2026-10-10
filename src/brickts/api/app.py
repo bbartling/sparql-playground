@@ -45,7 +45,7 @@ uv run python scripts/lesson_03_fc1_dataframe.py
 uv run python scripts/lesson_04_run_fc1.py
 ```
 
-Edit `BASE_URL` in `scripts/lesson_config.py` (Render or `http://127.0.0.1:8000`).
+Edit `BASE_URL` at the top of each `scripts/lesson_0*.py` (Render or localhost).
 """.strip()
 
 

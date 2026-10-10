@@ -8,14 +8,22 @@ from __future__ import annotations
 
 import json
 
-from lesson_config import (  # noqa: E402
-    EQUIPMENT,
-    PREFIXES,
-    banner,
-    client,
-    post_sparql,
-    print_table,
-)
+from lesson_helpers import banner, client, post_sparql, print_table  # noqa: E402
+
+# --- edit these -------------------------------------------------------------
+BASE_URL = "https://sparql-playground.onrender.com"
+# BASE_URL = "http://127.0.0.1:8000"
+
+EQUIPMENT = "AHU_1"
+# ----------------------------------------------------------------------------
+
+PREFIXES = """\
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+"""
 
 MECH_SUMMARY = (
     PREFIXES
@@ -66,9 +74,9 @@ LIMIT 30
 
 
 def main() -> None:
-    banner("Lesson 1 — mechanical system summary")
+    banner("Lesson 1 — mechanical system summary", base_url=BASE_URL, equipment=EQUIPMENT)
 
-    with client() as http:
+    with client(BASE_URL) as http:
         health = http.get("/health")
         health.raise_for_status()
         print("\nGET /health →", json.dumps(health.json()))

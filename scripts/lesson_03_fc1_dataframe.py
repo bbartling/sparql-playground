@@ -14,13 +14,18 @@ from datetime import datetime
 
 import pandas as pd
 from lesson_02_fc1_points import find_fc1_points  # noqa: E402
-from lesson_config import (  # noqa: E402
-    END_ISO,
-    EQUIPMENT,
-    START_ISO,
-    banner,
-    client,
-)
+from lesson_helpers import banner, client  # noqa: E402
+
+# --- edit these (keep in sync across lesson_0*.py if you chain them) ---------
+BASE_URL = "https://sparql-playground.onrender.com"
+# BASE_URL = "http://127.0.0.1:8000"
+
+EQUIPMENT = "AHU_1"
+
+# One month inside the loaded CSV range (~2026-03-16 → 2026-07-17 UTC)
+START_ISO = "2026-06-01T00:00:00+00:00"
+END_ISO = "2026-07-01T00:00:00+00:00"
+# ----------------------------------------------------------------------------
 
 
 def _unix(iso: str) -> int:
@@ -57,9 +62,9 @@ def build_fc1_dataframe(http, *, quiet: bool = False) -> pd.DataFrame:
 
 
 def main() -> None:
-    banner("Lesson 3 — build FC1 DataFrame")
+    banner("Lesson 3 — build FC1 DataFrame", base_url=BASE_URL, equipment=EQUIPMENT)
 
-    with client() as http:
+    with client(BASE_URL) as http:
         df = build_fc1_dataframe(http)
 
     print(f"\nDataFrame  shape={df.shape}  columns={list(df.columns)}")

@@ -11,16 +11,25 @@ from __future__ import annotations
 import warnings
 
 from lesson_03_fc1_dataframe import build_fc1_dataframe  # noqa: E402
-from lesson_config import POLL_SECONDS, banner, client  # noqa: E402
+from lesson_helpers import banner, client  # noqa: E402
 from open_fdd.rules import run_rule
+
+# --- edit these (keep in sync across lesson_0*.py if you chain them) ---------
+BASE_URL = "https://sparql-playground.onrender.com"
+# BASE_URL = "http://127.0.0.1:8000"
+
+EQUIPMENT = "AHU_1"
+
+POLL_SECONDS = 300  # 5-minute samples in this dataset
+# ----------------------------------------------------------------------------
 
 warnings.filterwarnings("ignore", category=FutureWarning, module=r"open_fdd\.rules\.evidence")
 
 
 def main() -> None:
-    banner("Lesson 4 — run FC1 on this machine")
+    banner("Lesson 4 — run FC1 on this machine", base_url=BASE_URL, equipment=EQUIPMENT)
 
-    with client() as http:
+    with client(BASE_URL) as http:
         df = build_fc1_dataframe(http, quiet=True)
 
     print(f"\nLoaded {len(df)} rows × {len(df.columns)} roles — calling run_rule('FC1')…")

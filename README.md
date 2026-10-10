@@ -31,7 +31,7 @@ uv run brickts serve          # http://127.0.0.1:8000/docs
 
 ## Tutorial scripts (no CLI args)
 
-Edit `BASE_URL` in `scripts/lesson_config.py`, then:
+Edit `BASE_URL` (and friends) at the top of each `scripts/lesson_0*.py`, then:
 
 ```bash
 uv run python scripts/lesson_01_mech_summary.py   # inventory via SPARQL
