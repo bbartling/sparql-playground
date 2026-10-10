@@ -101,9 +101,9 @@ def main() -> int:
         root = client.get("/", follow_redirects=False)
         print(f"\nGET / → {root.status_code} Location={root.headers.get('location')}")
 
-        ui = client.get("/ui")
-        ui.raise_for_status()
-        print(f"GET /ui → {ui.status_code} ({len(ui.text)} bytes)")
+        docs = client.get("/docs")
+        docs.raise_for_status()
+        print(f"GET /docs → {docs.status_code} ({len(docs.text)} bytes)")
 
         ttl = client.get("/api/model/ttl")
         ttl.raise_for_status()
@@ -114,8 +114,9 @@ def main() -> int:
             run_catalog(client)
         run_fault_lessons(client, args.equipment, args.rule)
 
-    print("\nDone. For local Open-FDD crunching:")
-    print("  uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC1 --local-fc1")
+    print("\nDone. Prefer the numbered lessons:")
+    print("  uv run python scripts/lesson_01_mech_summary.py")
+    print("Or power tool: uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC1")
     return 0
 
 

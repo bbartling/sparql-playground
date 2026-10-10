@@ -5,8 +5,8 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
 
 # Open-FDD roles that have a matching Brick point on each AHU.
-# The hosted UI uses this SPARQL as a tutorial; which *rules* apply is
-# GET /api/equipment/{id}/faults (role catalog is not stored in the RDF graph).
+# Which *rules* apply is GET /api/equipment/{id}/faults (not stored in RDF).
+# Prefer scripts/lesson_0*.py for the tutorial path.
 SELECT ?equip ?role ?brickClass ?point ?label ?timeseriesId WHERE {
   VALUES (?role ?brickClass) {
     ("duct-static-pressure" brick:Supply_Air_Static_Pressure_Sensor)

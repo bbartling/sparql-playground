@@ -18,11 +18,15 @@ from brickts.sparql.results import sparql_results_to_json
 router = APIRouter(prefix="/api/sparql", tags=["sparql"])
 
 
-@router.get("/examples")
+@router.get(
+    "/examples",
+    summary="List SPARQL tutorial presets",
+    description=(
+        "Returns inventory queries (mech summary, equipment lists, points). "
+        "Copy a `query` into POST /api/sparql to run it from Swagger."
+    ),
+)
 def list_examples(state: AppState = Depends(get_app_state)):
-    root = state.settings.data_dir.parent / "src" / "brickts" / "sparql" / "examples"
-    if not root.exists():
-        root = state.settings.model_path.parent.parent / "src" / "brickts" / "sparql" / "examples"
     from pathlib import Path
 
     ex_dir = Path(__file__).resolve().parent.parent.parent / "sparql" / "examples"
@@ -56,7 +60,11 @@ async def _run_query(request, state: AppState, text: str):
     return {"results": body, "meta": meta}
 
 
-@router.post("")
+@router.post(
+    "",
+    summary="Run a read-only SPARQL query",
+    description="Paste a query from GET /api/sparql/examples, or write your own SELECT/ASK.",
+)
 async def sparql_post(
     payload: SparqlRequest,
     request: Request,

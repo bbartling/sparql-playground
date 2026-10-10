@@ -10,6 +10,7 @@ Near-production tutorial for the [Brick timeseries storage pattern](https://docs
 history_wide.csv ── bootstrap ──▶ SqliteTimeseriesStore
 site.ttl + points CSV ── model build ──▶ building_50.ttl ──▶ GraphService (+ Brick 1.5 ontology)
 HTTP ──▶ read-only SPARQL / point lookup / timeseries JSON
+Browser ──▶ /docs (Swagger) · laptop ──▶ scripts/lesson_0*.py (+ Open-FDD)
 ```
 
 Locked decisions: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md). Agent guide: [`AGENTS.md`](AGENTS.md).
@@ -21,18 +22,23 @@ uv sync
 uv run brickts model build
 uv run brickts validate --shacl
 uv run brickts bootstrap          # idempotent; --force to reload
-uv run brickts serve              # http://127.0.0.1:8000/ui
-uv run python scripts/sparql_tutorial.py --base-url http://127.0.0.1:8000
+uv run brickts serve              # http://127.0.0.1:8000/docs
 uv run pytest -q && uv run ruff check .
 ```
 
-**Server = model + SPARQL + timeseries.** Fault discovery and Open-FDD math stay in local Python:
+**Server = model + SPARQL + timeseries.** Explore the API in Swagger (`/docs`). Progressive Python lessons (no CLI args — edit `scripts/lesson_config.py`):
 
 ```bash
-# Explore mechanical inventory (server SPARQL)
-uv run python scripts/sparql_tutorial.py --base-url https://sparql-playground.onrender.com
+# Point BASE_URL at Render or localhost in scripts/lesson_config.py
+uv run python scripts/lesson_01_mech_summary.py   # health + mech roll-up + tags
+uv run python scripts/lesson_02_fc1_points.py      # SPARQL → FC1 point ids
+uv run python scripts/lesson_03_fc1_dataframe.py   # month of samples → pandas DF
+uv run python scripts/lesson_04_run_fc1.py           # local open_fdd.run_rule("FC1")
+```
 
-# Local Open-FDD (laptop pulls series, runs open_fdd)
+Power tool for many rules / AHUs:
+
+```bash
 uv run python scripts/analyst_client.py --equipment AHU_1 --list-only
 uv run python scripts/analyst_client.py --equipment AHU_1 --rule FC2
 uv run python scripts/analyst_client.py --all-equipment --all-applicable --quiet
@@ -47,11 +53,9 @@ Environment variables use the `BRICKTS_` prefix (see `src/brickts/settings.py`).
 3. `uv run brickts model build` merges every `model/points/*.csv` into committed `model/building_50.ttl` with `ref:TimeseriesReference` on every point.
 4. `uv run brickts bootstrap` loads wide CSVs into SQLite using the mappings (never query by CSV column name in app code).
 
-## UI
+## Interactive surface
 
-Static tutorial at `/ui` (also `/`) — View RDF, Validate, and SPARQL buttons for mechanical summary / list equipment / points (light/dark theme). No Open-FDD on the server UI; use `scripts/analyst_client.py` locally.
-
-![SPARQL UI](docs/ui.png)
+There is **no custom HTML UI**. `/` and `/ui` redirect to **Swagger** at `/docs`. Use **GET** `/api/sparql/examples` then **POST** `/api/sparql` to try inventory queries in the browser. Tutorial depth is in `scripts/lesson_0*.py`.
 
 ## Production notes
 
@@ -65,7 +69,7 @@ Static tutorial at `/ui` (also `/`) — View RDF, Validate, and SPARQL buttons f
 
 ```bash
 docker compose up --build
-# UI: http://127.0.0.1:8000/ui
+# Swagger: http://127.0.0.1:8000/docs
 ```
 
 ## License

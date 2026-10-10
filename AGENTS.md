@@ -3,7 +3,7 @@
 A tutorial that is also near-production. It hosts a **Brick RDF model** and queries
 **timeseries through the model** (Brick ref-schema, <https://docs.brickschema.org/metadata/timeseries-storage.html>).
 FastAPI serves a read-only SPARQL endpoint, point lookups by class or tag, timeseries
-JSON, Open-FDD fault applicability, and a static SPARQL UI. **Async SQLite (aiosqlite)** stands in for a real TSDB on the HTTP path; SPARQL/rdflib runs in a thread pool.
+JSON, and Open-FDD fault applicability APIs. Interactive surface is FastAPI Swagger (`/docs`); tutorial scripts live under `scripts/lesson_0*.py`. **Async SQLite (aiosqlite)** stands in for a real TSDB on the HTTP path; SPARQL/rdflib runs in a thread pool.
 
 - **Build plan (start here if the app is not built yet):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
@@ -24,8 +24,9 @@ uv sync                                   # install (project-local .venv)
 uv run brickts model build                # render model/building_50.ttl from site.ttl + mappings
 uv run brickts bootstrap                  # CSV -> SQLite (idempotent; --force to reload)
 uv run brickts validate [--shacl]         # SPARQL invariant checks (+ Brick SHACL)
-uv run brickts serve                      # http://127.0.0.1:8000/ui
-uv run python scripts/analyst_client.py   # faults + FC1 against a running server
+uv run brickts serve                      # http://127.0.0.1:8000/docs
+uv run python scripts/lesson_01_mech_summary.py   # beginner series (edit lesson_config.py)
+uv run python scripts/analyst_client.py   # multi-rule Open-FDD against a running server
 uv run ruff check . && uv run ruff format --check .
 uv run pytest -q
 ```

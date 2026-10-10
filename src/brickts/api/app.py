@@ -7,8 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 from brickts.api.deps import AppState
 from brickts.api.routers import equipment, faults, health, model, points, sparql, timeseries
@@ -19,6 +18,35 @@ from brickts.settings import Settings
 from brickts.store.registry import build_store_registry
 
 log = logging.getLogger(__name__)
+
+APP_DESCRIPTION = """
+## Brick timeseries SPARQL API
+
+Read-only SPARQL against a Brick RDF model, plus point lookup and timeseries JSON.
+The model is the only path from a logical point to historian samples
+([Brick timeseries storage](https://docs.brickschema.org/metadata/timeseries-storage.html)).
+
+### Try it here (Swagger)
+
+1. **GET** `/api/sparql/examples` — inventory / equipment / points query presets  
+2. **POST** `/api/sparql` — paste any example `query` and Execute  
+3. **GET** `/api/model/ttl` — download the site Turtle  
+4. **GET** `/api/model/validate` — SPARQL invariant checks  
+5. **GET** `/api/points/{point_id}/timeseries` — samples for a point id  
+
+### Local Python tutorial (no HTML UI)
+
+Fault math and progressive lessons live on your laptop:
+
+```bash
+uv run python scripts/lesson_01_mech_summary.py
+uv run python scripts/lesson_02_fc1_points.py
+uv run python scripts/lesson_03_fc1_dataframe.py
+uv run python scripts/lesson_04_run_fc1.py
+```
+
+Edit `BASE_URL` in `scripts/lesson_config.py` (Render or `http://127.0.0.1:8000`).
+""".strip()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -77,17 +105,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for store in ctx.stores.values():
                 await store.close()
 
-    app = FastAPI(title="brickts", lifespan=lifespan)
-    static_dir = Path(__file__).resolve().parent.parent / "static"
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    app = FastAPI(
+        title="brickts",
+        description=APP_DESCRIPTION,
+        version="0.1.0",
+        lifespan=lifespan,
+        docs_url="/docs",
+        redoc_url="/redoc",
+    )
 
-    @app.get("/")
+    @app.get("/", include_in_schema=False)
     def root():
-        return RedirectResponse(url="/ui")
+        return RedirectResponse(url="/docs")
 
-    @app.get("/ui", response_class=HTMLResponse)
-    def ui_page():
-        return (static_dir / "index.html").read_text()
+    @app.get("/ui", include_in_schema=False)
+    def ui_redirect():
+        """Old static UI removed — Swagger is the interactive surface."""
+        return RedirectResponse(url="/docs")
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):

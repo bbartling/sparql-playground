@@ -2,9 +2,34 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+_MECH_SUMMARY_EXAMPLE = """\
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?kind (COUNT(DISTINCT ?equip) AS ?n) WHERE {
+  VALUES ?kind {
+    brick:Air_Handler_Unit
+    brick:Variable_Air_Volume_Box
+    brick:Boiler
+    brick:Chiller
+    brick:HVAC_Zone
+  }
+  ?equip a/(rdfs:subClassOf|owl:equivalentClass)* ?kind .
+  FILTER(STRSTARTS(STR(?equip), STR(bldg:)))
+}
+GROUP BY ?kind
+ORDER BY DESC(?n) ?kind
+"""
+
 
 class SparqlRequest(BaseModel):
-    query: str = Field(min_length=1)
+    query: str = Field(
+        min_length=1,
+        description="Read-only SPARQL SELECT/ASK (no UPDATE/LOAD/SERVICE/FROM).",
+        examples=[_MECH_SUMMARY_EXAMPLE],
+    )
 
 
 class HealthResponse(BaseModel):
