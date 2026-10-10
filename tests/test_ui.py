@@ -35,6 +35,8 @@ def test_docs_is_the_ui(settings: Settings):
         post = openapi["paths"]["/api/sparql"]["post"]
         examples_body = post["requestBody"]["content"]["application/json"]["examples"]
         assert "mech_summary" in examples_body
+        assert "fc1_points" in examples_body
         q = examples_body["mech_summary"]["value"]["query"]
         assert "Air_Handler_Unit" in q
         assert "string" != q.strip()
+        assert "Fan_Speed_Command" in examples_body["fc1_points"]["value"]["query"]

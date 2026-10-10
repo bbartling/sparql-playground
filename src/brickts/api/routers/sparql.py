@@ -7,7 +7,12 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 
 from brickts.api.deps import AppState, get_app_state
-from brickts.api.schemas import LIST_AHUS_QUERY, MECH_SUMMARY_QUERY, SparqlRequest
+from brickts.api.schemas import (
+    FC1_POINTS_QUERY,
+    LIST_AHUS_QUERY,
+    MECH_SUMMARY_QUERY,
+    SparqlRequest,
+)
 from brickts.graph.sparql_guard import (
     SparqlRejected,
     SparqlSyntaxError,
@@ -28,6 +33,11 @@ _SPARQL_BODY_EXAMPLES = {
         "summary": "List AHUs",
         "description": "Every Air_Handler_Unit in the site graph.",
         "value": {"query": LIST_AHUS_QUERY},
+    },
+    "fc1_points": {
+        "summary": "FC1 points on AHU_1 (lesson 2)",
+        "description": "Same SPARQL as scripts/lesson_02_fc1_points.py — duct static, setpoint, fan speed.",
+        "value": {"query": FC1_POINTS_QUERY},
     },
 }
 

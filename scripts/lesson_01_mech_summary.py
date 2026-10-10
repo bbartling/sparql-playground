@@ -52,8 +52,8 @@ ORDER BY ?ahu
 """
 
 # Tags live on the Brick *class* in the ontology, not as free text on each point.
-# Plain string (no f-string) so you can copy/paste into Swagger as-is.
-# If you change EQUIPMENT above, change bldg:AHU_1 here too.
+# Copy query text (inside the quotes) into Swagger's query box, then Execute.
+# If you change EQUIPMENT above, change bldg:AHU_1 in the query too.
 POINT_TAGS = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>

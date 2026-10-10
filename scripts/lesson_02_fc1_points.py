@@ -19,8 +19,10 @@ BASE_URL = "https://sparql-playground.onrender.com"
 EQUIPMENT = "AHU_1"
 # ----------------------------------------------------------------------------
 
-# Plain string (no f-string) so you can copy/paste into Swagger as-is.
-# If you change EQUIPMENT above, change bldg:AHU_1 here too.
+# Copy everything between the triple-quotes into Swagger → POST /api/sparql → query
+# (or pick Examples → "FC1 points on AHU_1"). Paste into the query box, then Execute —
+# do not paste raw newlines into a hand-edited curl JSON body (JSON needs \n escapes).
+# If you change EQUIPMENT above, change bldg:AHU_1 in the query too.
 FC1_POINTS = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
