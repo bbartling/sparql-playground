@@ -56,7 +56,20 @@ def test_timeseries(client: TestClient):
     assert client.get("/api/points/NO_SUCH_POINT/timeseries").status_code == 404
 
 
+def test_model_ttl(client: TestClient):
+    full = client.get("/api/model/ttl")
+    assert full.status_code == 200
+    assert "text/turtle" in full.headers.get("content-type", "")
+    assert "Air_Handler_Unit" in full.text
+    assert "AHU_1_DA_P" in full.text  # points included in model scope
+
+    site = client.get("/api/model/ttl", params={"scope": "site"})
+    assert site.status_code == 200
+    assert "Air_Handler_Unit" in site.text
+    assert "AHU_1_DA_P" not in site.text  # site.ttl has no point individuals
+
+
 def test_removed_routes(client: TestClient):
     assert client.get("/api/equipment").status_code == 404
-    assert client.get("/api/model/ttl").status_code == 404
+    assert client.get("/hello").status_code == 404
     assert client.get("/redoc").status_code == 404

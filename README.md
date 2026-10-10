@@ -15,6 +15,8 @@ This repo uses SQLite as a stand-in historian. A real site would use Timescale, 
 
 Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api/sparql/upload` (Choose File) or paste into **POST** `/api/sparql`.
 
+Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only).
+
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
 site.ttl + point maps  ──build──▶  Brick Turtle  ──▶  SPARQL API

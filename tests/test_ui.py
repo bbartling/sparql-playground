@@ -21,4 +21,5 @@ def test_docs_and_bare_surface(settings: Settings):
             "/api/sparql",
             "/api/sparql/upload",
             "/api/points/{point_id}/timeseries",
+            "/api/model/ttl",
         }

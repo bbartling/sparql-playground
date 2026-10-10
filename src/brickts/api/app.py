@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 
 from brickts.api.deps import AppState
-from brickts.api.routers import health, points, sparql
+from brickts.api.routers import health, model, points, sparql
 from brickts.graph.service import GraphService
 from brickts.ingest import bootstrap_all_async
 from brickts.logging import configure_logging
@@ -30,6 +30,9 @@ or the lesson scripts), then either:
 - **POST** `/api/sparql` — paste into the JSON `query` field
 
 **Python lessons** — `POST /api/sparql` + `GET /api/points/{id}/timeseries`  
+
+**RDF download** — `GET /api/model/ttl` (`scope=model` or `scope=site`)  
+
 Fault math stays on your laptop (lesson 04 / open-fdd).
 """.strip()
 
@@ -122,4 +125,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(sparql.router)
     app.include_router(points.router)
+    app.include_router(model.router)
     return app

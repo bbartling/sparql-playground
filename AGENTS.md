@@ -72,6 +72,7 @@ HTTP SURFACE (minimum — this repo’s bare tutorial API)
 - POST /api/sparql — read-only SELECT/ASK; reject UPDATE, LOAD, SERVICE, FROM; timeout + row cap
 - POST /api/sparql/upload — run a local .rq the human copied from the tutorial
 - GET /api/points/{id}/timeseries?start=&end=&limit=
+- GET /api/model/ttl?scope=model|site — download Turtle (full building graph, or site.ttl only)
 - Interactive OpenAPI/Swagger docs; no custom HTML app required
 - Lesson `.rq` files live in the repo only (not downloaded from the API)
 
