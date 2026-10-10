@@ -40,8 +40,23 @@ const GROUPS = [
     ],
   },
   {
+    title: "Which Open-FDD rules can this dataset run?",
+    hint: "Loads SPARQL that lists Open-FDD roles present in the Brick graph, then shows applicable rules from GET /api/equipment/…/faults. Crunching still happens in local Python.",
+    buttons: [
+      {
+        label: "Rules this dataset can run · AHU_1",
+        applicable: { equipment: "AHU_1", example: "openfdd_roles_present" },
+      },
+      {
+        label: "Rules this dataset can run · AHU_2",
+        applicable: { equipment: "AHU_2", example: "openfdd_roles_present" },
+      },
+      { label: "Open-FDD roles present (SPARQL)", example: "openfdd_roles_present", run: true },
+    ],
+  },
+  {
     title: "Open-FDD SPARQL lessons → local Python",
-    hint: "Loads role SPARQL for the rule. Fault math runs locally via analyst_client.py.",
+    hint: "Loads one rule’s role SPARQL. Then run analyst_client.py on your laptop to crunch.",
     buttons: [
       { label: "FC1 · AHU_1", lesson: { equipment: "AHU_1", rule: "FC1" } },
       { label: "FC1 · AHU_2", lesson: { equipment: "AHU_2", rule: "FC1" } },
@@ -145,6 +160,67 @@ function loadExample(id, { run = false } = {}) {
   if (run) runQuery();
 }
 
+async function loadApplicableRules(equipment, exampleId) {
+  const ex = examplesById[exampleId];
+  if (ex) setQuery(ex.query);
+
+  const faultsRes = await fetch(
+    `/api/equipment/${encodeURIComponent(equipment)}/faults?include_generic=false`
+  );
+  const faults = faultsRes.ok ? await faultsRes.json() : [];
+  const applicable = faults.filter((f) => f.applicable);
+  const missing = faults.filter((f) => !f.applicable).slice(0, 12);
+
+  showApiJson({
+    note: "Applicability from GET /api/equipment/{id}/faults — not computed by SPARQL alone.",
+    equipment,
+    applicable_count: applicable.length,
+    applicable: applicable.map((f) => ({
+      rule_id: f.rule_id,
+      title: f.title,
+      reason: f.reason,
+    })),
+  });
+
+  const first = applicable[0];
+  if (first) {
+    const cmd =
+      `# Server listed applicable rules; YOUR laptop runs open-fdd.\n` +
+      `uv run python scripts/analyst_client.py \\\n` +
+      `  --base-url ${baseUrl()} \\\n` +
+      `  --equipment ${equipment} \\\n` +
+      `  --rule ${first.rule_id}\n\n` +
+      `# Other applicable rules on ${equipment}:\n` +
+      applicable
+        .slice(0, 10)
+        .map((f) => `#   --rule ${f.rule_id}   # ${f.title}`)
+        .join("\n");
+    lastRunner = buildPythonArtifacts(equipment, first.rule_id, []);
+    lastRunner.cmd = cmd;
+    document.getElementById("python-cmd").textContent = cmd;
+    document.getElementById("python-script").textContent = lastRunner.script;
+    document.getElementById("python-script").hidden = false;
+    document.getElementById("copy-cmd").disabled = false;
+    document.getElementById("copy-script").disabled = false;
+  }
+
+  showLessonText([
+    `Applicable Open-FDD rules on ${equipment}: ${applicable.length}`,
+    "(Server listed these via /api/equipment/…/faults after checking Brick roles.)",
+    "",
+    ...applicable.map((f) => `  ✓ ${f.rule_id}: ${f.title}`),
+    "",
+    missing.length
+      ? `Not applicable (sample):\n${missing.map((f) => `  ✗ ${f.rule_id}: ${f.reason || f.title}`).join("\n")}`
+      : "",
+    "",
+    "SPARQL editor is loaded with openfdd_roles_present — Run SPARQL to see role→point rows.",
+    "Fault numbers (FAULT hours / %) only appear when you run analyst_client.py locally.",
+  ].filter(Boolean));
+
+  if (ex) await runQuery();
+}
+
 async function loadFaultLesson(equipment, rule) {
   const roleBox = document.getElementById("role-buttons");
   roleBox.innerHTML = "";
@@ -211,6 +287,9 @@ function renderButtonGroups() {
       btn.textContent = b.label;
       btn.addEventListener("click", async () => {
         if (b.example) loadExample(b.example, { run: !!b.run });
+        if (b.applicable) {
+          await loadApplicableRules(b.applicable.equipment, b.applicable.example);
+        }
         if (b.lesson) await loadFaultLesson(b.lesson.equipment, b.lesson.rule);
       });
       row.appendChild(btn);

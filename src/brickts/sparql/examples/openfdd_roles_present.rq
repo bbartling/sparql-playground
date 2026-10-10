@@ -1,0 +1,37 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+
+# Open-FDD roles that have a matching Brick point on each AHU.
+# The hosted UI uses this SPARQL as a tutorial; which *rules* apply is
+# GET /api/equipment/{id}/faults (role catalog is not stored in the RDF graph).
+SELECT ?equip ?role ?brickClass ?point ?label ?timeseriesId WHERE {
+  VALUES (?role ?brickClass) {
+    ("duct-static-pressure" brick:Supply_Air_Static_Pressure_Sensor)
+    ("duct-static-pressure-sp" brick:Supply_Air_Static_Pressure_Setpoint)
+    ("fan-cmd" brick:Fan_Speed_Command)
+    ("fan-status" brick:Fan_Status)
+    ("mixed-air-temp" brick:Mixed_Air_Temperature_Sensor)
+    ("return-air-temp" brick:Return_Air_Temperature_Sensor)
+    ("outside-air-temp" brick:Outside_Air_Temperature_Sensor)
+    ("discharge-air-temp" brick:Supply_Air_Temperature_Sensor)
+    ("discharge-air-temp-sp" brick:Supply_Air_Temperature_Setpoint)
+    ("outside-air-damper" brick:Damper_Position_Command)
+    ("cooling-valve" brick:Valve_Position_Command)
+    ("heating-valve" brick:Valve_Position_Command)
+    ("occupied" brick:Occupancy_Command)
+  }
+  ?equip a/(rdfs:subClassOf|owl:equivalentClass)* brick:Air_Handler_Unit .
+  FILTER(STRSTARTS(STR(?equip), STR(bldg:)))
+  ?point brick:isPointOf ?owner .
+  ?owner (brick:isPartOf|^brick:hasPart)* ?equip .
+  ?point a/(rdfs:subClassOf|owl:equivalentClass|^owl:equivalentClass)* ?brickClass .
+  OPTIONAL { ?point rdfs:label ?label }
+  OPTIONAL {
+    ?point ref:hasExternalReference ?ref .
+    ?ref ref:hasTimeseriesId ?timeseriesId .
+  }
+}
+ORDER BY ?equip ?role ?point

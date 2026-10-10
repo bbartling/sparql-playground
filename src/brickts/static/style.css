@@ -86,6 +86,27 @@ footer code,
   gap: 0.4rem;
 }
 
+.callout {
+  margin: 0.85rem 0 0;
+  max-width: 58rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: var(--radius);
+  background: #0b3b4a55;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.callout strong {
+  color: var(--accent);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 main {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);

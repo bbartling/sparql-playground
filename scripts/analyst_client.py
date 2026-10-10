@@ -13,10 +13,18 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import warnings
 
 import httpx
 import pandas as pd
 from open_fdd.rules import run_rule
+
+# open-fdd evidence helper is noisy on current pandas; not actionable here.
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    module=r"open_fdd\.rules\.evidence",
+)
 
 
 def find_one(client, equip: str, **params: str):

@@ -12,9 +12,15 @@
       <h1>Brick SPARQL playground</h1>
       <p class="sub">
         Button-driven tutorial for read-only SPARQL against a Brick model.
-        Inventory the mechanical system, learn Open-FDD <em>role</em> queries, then
-        copy a local Python command that fetches timeseries and runs FC rules on your machine —
-        this UI never crunches faults.
+        Inventory the mechanical system, see which Open-FDD <em>roles</em> the graph can satisfy,
+        then copy a local Python command.
+      </p>
+      <p class="callout">
+        <strong>Who crunches faults?</strong>
+        <span>This server only answers SPARQL + timeseries JSON.
+        <code>scripts/analyst_client.py</code> on your laptop pulls those points and runs
+        <code>open_fdd.rules.run_rule</code> locally (that is what printed
+        <code>FAULT 10.5 …</code> in your terminal).</span>
       </p>
       <div class="toolbar">
         <button id="view-ttl" type="button" class="ghost">View RDF model</button>
@@ -43,9 +49,10 @@
           <span id="meta" class="muted"></span>
         </div>
 
-        <h3>Local Python (Open-FDD)</h3>
+        <h3>Local Python (Open-FDD crunch)</h3>
         <p class="hint">
-          After a fault-lesson button, copy the command or script and run it locally against this API.
+          Server = discover roles / fetch samples. Your machine = fault math.
+          Use “Rules this dataset can run” then copy the command for a specific FC rule.
         </p>
         <pre id="python-cmd" class="code-box">Click an Open-FDD lesson button (e.g. FC1 · AHU_1) to generate a local runner command.</pre>
         <div class="actions">
