@@ -19,33 +19,35 @@ BASE_URL = "https://sparql-playground.onrender.com"
 EQUIPMENT = "AHU_1"
 # ----------------------------------------------------------------------------
 
-FC1_POINTS = f"""\
+# Plain string (no f-string) so you can copy/paste into Swagger as-is.
+# If you change EQUIPMENT above, change bldg:AHU_1 here too.
+FC1_POINTS = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
 
-SELECT ?role ?brickClass ?point ?timeseriesId WHERE {{
-  BIND(bldg:{EQUIPMENT} AS ?ahu)
-  VALUES (?role ?brickClass ?needSupplyFan) {{
+SELECT ?role ?brickClass ?point ?timeseriesId WHERE {
+  BIND(bldg:AHU_1 AS ?ahu)
+  VALUES (?role ?brickClass ?needSupplyFan) {
     ("duct-static-pressure"    brick:Supply_Air_Static_Pressure_Sensor  false)
     ("duct-static-pressure-sp" brick:Supply_Air_Static_Pressure_Setpoint false)
     ("fan-cmd"                 brick:Fan_Speed_Command                   true)
-  }}
+  }
   ?point brick:isPointOf ?owner .
   ?owner (brick:isPartOf|^brick:hasPart)* ?ahu .
   ?point a/(rdfs:subClassOf|owl:equivalentClass|^owl:equivalentClass)* ?brickClass .
-  OPTIONAL {{
+  OPTIONAL {
     ?owner a/(rdfs:subClassOf|owl:equivalentClass)* brick:Supply_Fan .
     BIND(true AS ?onSupplyFan)
-  }}
+  }
   FILTER(!?needSupplyFan || BOUND(?onSupplyFan))
-  OPTIONAL {{
+  OPTIONAL {
     ?point ref:hasExternalReference ?ref .
     ?ref ref:hasTimeseriesId ?timeseriesId .
-  }}
-}}
+  }
+}
 ORDER BY ?role
 """
 

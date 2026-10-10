@@ -51,21 +51,23 @@ SELECT ?ahu ?label WHERE {
 ORDER BY ?ahu
 """
 
-# Tags live on the Brick *class* in the ontology, not as free text on each point
-POINT_TAGS = f"""\
+# Tags live on the Brick *class* in the ontology, not as free text on each point.
+# Plain string (no f-string) so you can copy/paste into Swagger as-is.
+# If you change EQUIPMENT above, change bldg:AHU_1 here too.
+POINT_TAGS = """\
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
-SELECT ?point ?cls ?tag WHERE {{
-  BIND(bldg:{EQUIPMENT} AS ?ahu)
+SELECT ?point ?cls ?tag WHERE {
+  BIND(bldg:AHU_1 AS ?ahu)
   ?point brick:isPointOf ?owner .
   ?owner (brick:isPartOf|^brick:hasPart)* ?ahu .
   ?point a ?cls .
   FILTER(STRSTARTS(STR(?cls), STR(brick:)))
   ?cls brick:hasAssociatedTag ?tag .
-}}
+}
 ORDER BY ?point ?tag
 LIMIT 30
 """
