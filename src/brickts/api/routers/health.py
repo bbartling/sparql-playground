@@ -11,8 +11,7 @@ router = APIRouter(tags=["health"])
     response_model=HealthResponse,
     summary="Health / wake (Render free tier)",
     description=(
-        "Ping after the free instance has slept. "
-        'Retry until status is "ok" and ready is true.'
+        'Ping after the free instance has slept. Retry until status is "ok" and ready is true.'
     ),
 )
 def health(state: AppState = Depends(get_app_state)) -> HealthResponse:

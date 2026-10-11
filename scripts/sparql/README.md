@@ -5,7 +5,7 @@ Copy these from your local clone (they are not served by the API).
 
 ## Run one in Swagger
 
-1. Wake the server: `GET /health` until `"ready": true`
+1. Wake the server: `GET /health` until `"ready": true` (lesson scripts poll this for you)
 2. **POST** `/api/sparql/upload` → Try it out → Choose File → pick e.g. `02_fc1_points.rq`
 3. Execute
 

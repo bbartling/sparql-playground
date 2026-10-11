@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """Lesson 2 — SPARQL for the three FC1 points on one AHU.
 
-  duct-static-pressure     → Supply_Air_Static_Pressure_Sensor
-  duct-static-pressure-sp  → Supply_Air_Static_Pressure_Setpoint
-  fan-cmd                  → Fan_Speed_Command on Supply_Fan
+duct-static-pressure     → Supply_Air_Static_Pressure_Sensor
+duct-static-pressure-sp  → Supply_Air_Static_Pressure_Setpoint
+fan-cmd                  → Fan_Speed_Command on Supply_Fan
 
-  uv run python scripts/lesson_02_fc1_points.py
+uv run python scripts/lesson_02_fc1_points.py
 """
 
 from __future__ import annotations
 
-from lesson_helpers import banner, client, post_sparql, print_table, short  # noqa: E402
+from lesson_helpers import (  # noqa: E402
+    banner,
+    client,
+    post_sparql,
+    print_table,
+    short,
+    wait_until_ready,
+)
 
 # --- edit these (keep in sync across lesson_0*.py if you chain them) ---------
 BASE_URL = "https://sparql-playground.onrender.com"
@@ -76,6 +83,7 @@ def main() -> None:
     banner("Lesson 2 — find FC1 points with SPARQL", base_url=BASE_URL, equipment=EQUIPMENT)
 
     with client(BASE_URL) as http:
+        wait_until_ready(http)
         points = find_fc1_points(http)
 
     print("\nUse these point ids in lesson 3:")

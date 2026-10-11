@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Lesson 1 — health check + mechanical inventory via SPARQL.
 
-  uv run python scripts/lesson_01_mech_summary.py
+uv run python scripts/lesson_01_mech_summary.py
 """
 
 from __future__ import annotations
 
 import json
 
-from lesson_helpers import banner, client, post_sparql, print_table  # noqa: E402
+from lesson_helpers import banner, client, post_sparql, print_table, wait_until_ready  # noqa: E402
 
 # --- edit these -------------------------------------------------------------
 BASE_URL = "https://sparql-playground.onrender.com"
@@ -76,13 +76,8 @@ def main() -> None:
     banner("Lesson 1 — mechanical system summary", base_url=BASE_URL, equipment=EQUIPMENT)
 
     with client(BASE_URL) as http:
-        # /health also wakes a sleeping Render free instance; retry until ready=true
-        health = http.get("/health")
-        health.raise_for_status()
-        print("\nGET /health →", json.dumps(health.json()))
-        if not health.json().get("ready"):
-            print("Server still starting — wait a few seconds and re-run.")
-            return
+        health = wait_until_ready(http)
+        print("GET /health →", json.dumps(health))
 
         print_table("Mechanical roll-up", post_sparql(http, MECH_SUMMARY))
         print_table("AHUs", post_sparql(http, LIST_AHUS))

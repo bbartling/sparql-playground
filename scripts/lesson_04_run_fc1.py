@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Lesson 4 — run open-fdd FC1 locally on the lesson-3 DataFrame.
 
-  Server = model + timeseries.  Laptop = fault math.
+Server = model + timeseries.  Laptop = fault math.
 
-  uv run python scripts/lesson_04_run_fc1.py
+uv run python scripts/lesson_04_run_fc1.py
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import warnings
 
 from lesson_03_fc1_dataframe import build_fc1_dataframe  # noqa: E402
-from lesson_helpers import banner, client  # noqa: E402
+from lesson_helpers import banner, client, wait_until_ready  # noqa: E402
 from open_fdd.rules import run_rule
 
 # --- edit these (keep in sync across lesson_0*.py if you chain them) ---------
@@ -30,6 +30,7 @@ def main() -> None:
     banner("Lesson 4 — run FC1 on this machine", base_url=BASE_URL, equipment=EQUIPMENT)
 
     with client(BASE_URL) as http:
+        wait_until_ready(http)
         df = build_fc1_dataframe(http, quiet=True)
 
     print(f"\nLoaded {len(df)} rows × {len(df.columns)} roles — calling run_rule('FC1')…")

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Lesson 3 — month of samples → pandas DataFrame for FC1.
 
-  1) SPARQL → three point ids (lesson 2)
-  2) GET /api/points/{id}/timeseries?start=&end=
-  3) Join into columns named for open-fdd roles
+1) SPARQL → three point ids (lesson 2)
+2) GET /api/points/{id}/timeseries?start=&end=
+3) Join into columns named for open-fdd roles
 
-  uv run python scripts/lesson_03_fc1_dataframe.py
+uv run python scripts/lesson_03_fc1_dataframe.py
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from datetime import datetime
 
 import pandas as pd
 from lesson_02_fc1_points import find_fc1_points  # noqa: E402
-from lesson_helpers import banner, client  # noqa: E402
+from lesson_helpers import banner, client, wait_until_ready  # noqa: E402
 
 # --- edit these (keep in sync across lesson_0*.py if you chain them) ---------
 BASE_URL = "https://sparql-playground.onrender.com"
@@ -65,6 +65,7 @@ def main() -> None:
     banner("Lesson 3 — build FC1 DataFrame", base_url=BASE_URL, equipment=EQUIPMENT)
 
     with client(BASE_URL) as http:
+        wait_until_ready(http)
         df = build_fc1_dataframe(http)
 
     print(f"\nDataFrame  shape={df.shape}  columns={list(df.columns)}")

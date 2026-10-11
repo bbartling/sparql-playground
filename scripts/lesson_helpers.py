@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 import httpx
@@ -21,6 +22,34 @@ def short(value: str) -> str:
 
 def client(base_url: str) -> httpx.Client:
     return httpx.Client(base_url=base_url.rstrip("/"), timeout=120.0)
+
+
+def wait_until_ready(
+    http: httpx.Client,
+    *,
+    interval_s: float = 5.0,
+    timeout_s: float = 120.0,
+) -> dict:
+    """Ping GET /health until HTTP 200 and ready=true (wakes Render free tier)."""
+    deadline = time.monotonic() + timeout_s
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            r = http.get("/health", timeout=30.0)
+            if r.status_code == 200:
+                body = r.json()
+                if body.get("ready"):
+                    print(f"GET /health → ready=true (attempt {attempt})")
+                    return body
+                print(f"App is still waking up… (attempt {attempt}, status={body.get('status')!r})")
+            else:
+                print(f"App is still waking up… (attempt {attempt}, HTTP {r.status_code})")
+        except httpx.HTTPError as exc:
+            print(f"App is still waking up… (attempt {attempt}, {type(exc).__name__})")
+        if time.monotonic() >= deadline:
+            raise SystemExit(f"Server did not become ready within {timeout_s:.0f}s")
+        time.sleep(interval_s)
 
 
 def post_sparql(http: httpx.Client, query: str) -> list[dict[str, str]]:
