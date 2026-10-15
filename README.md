@@ -27,6 +27,12 @@ Browser → /docs (Swagger)     Laptop → scripts/lesson_0*.py
 
 Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md).
 
+## Daily SQL / PostgreSQL / Timescale course
+
+[**84 daily lessons and 12 weekly challenges**](lessons/sql/INDEX.md) take a complete beginner through SQL, schema design, safe queries, HVAC analytics and fault detection. Practical Brick/SPARQL lessons connect the data model to exact time-series identities. The final week studies actual Open-FDD SQL.
+
+Use the [isolated local lab](lessons/sql/LAB_GUIDE.md) or [set up Timescale on a remote lab machine](lessons/sql/REMOTE_SETUP.md). This independent course database leaves the existing SQLite API tutorial intact.
+
 ## Run locally
 
 ```bash

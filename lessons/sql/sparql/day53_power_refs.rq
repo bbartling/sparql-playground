@@ -1,0 +1,14 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+PREFIX ex: <https://example.org/course#>
+SELECT ?site ?equipment ?point ?unit ?timeseriesId ?database ?backend ?connectionEnv
+WHERE {
+  ?equipment a brick:Air_Handler_Unit ; ex:site_id ?site .
+  ?point brick:isPointOf ?equipment ; ex:role "kw" ;
+    brick:hasUnit ?unit ; ref:hasExternalReference ?reference .
+  ?reference a ref:TimeseriesReference ; ref:hasTimeseriesId ?timeseriesId ;
+    ref:storedAt ?database .
+  ?database ex:backend ?backend ; ex:connectionEnv ?connectionEnv .
+}
+ORDER BY ?site ?equipment
+LIMIT 20

@@ -221,3 +221,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Personal course attempts, screenshots and connection notes
+student-work/

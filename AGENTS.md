@@ -146,3 +146,23 @@ the existing production store via the opaque id — same pattern as Brick timese
 3. New equipment/parts/zones → `model/site.ttl`.
 4. Register in `data/datasets.json`.
 5. `uv run brickts model build && uv run brickts validate --shacl && uv run brickts bootstrap && uv run pytest -q`.
+
+## Daily SQL course (operator requested, 2026-10-15)
+
+`lessons/sql/INDEX.md` contains 84 daily lessons and 12 independent weekly challenges.
+Read its `CONTRACT.md`, `LAB_GUIDE.md` and `REMOTE_SETUP.md` before modifying fixtures or helpers.
+This independent PostgreSQL/Timescale learning lab is not an application-store replacement.
+Use only the dedicated `brickts_course` database; preserve existing lab/application services.
+Keep student work, passwords, dumps and observations under ignored `student-work/` or `var/`.
+
+```bash
+uv run python lessons/sql/validate_course.py
+uv run python lessons/sql/graph_lab.py --check
+uv run python lessons/sql/lab.py up
+uv run python lessons/sql/lab.py load
+uv run python lessons/sql/lab.py check
+```
+
+`validate_course.py` checks course structure and local links. It does not execute SQL.
+The separate Timescale CI job performs real SQL known-answer and integrity checks.
+Do not label those as proof of every learner solution, production security or all 77 rules.

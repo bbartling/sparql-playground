@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "namespace": "https://example.org/course#",
+  "start": "2026-01-05T00:00:00Z",
+  "end_exclusive": "2026-01-07T00:00:00Z",
+  "cadence_seconds": 300,
+  "sites": [
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Synthetic North",
+      "tz": "America/Chicago"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Synthetic South",
+      "tz": "America/New_York"
+    }
+  ],
+  "equipment": [
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df"
+    }
+  ],
+  "points": [
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "7ac98403-4a93-59b9-8bda-603d8d1949f3",
+      "role": "duct_static",
+      "unit": "Pa"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "b49d7f7d-79a9-5e8c-a1d0-83dedace17b2",
+      "role": "duct_static_sp",
+      "unit": "Pa"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "471cd2bb-e6da-509a-a509-184ad2a68f2e",
+      "role": "fan_status",
+      "unit": "bool"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "44076c9a-a20d-517c-b561-fe36e6697f04",
+      "role": "fan_speed_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "1735c7d7-68fa-514b-b246-701748a3e7d6",
+      "role": "kw",
+      "unit": "kW"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "ef52075c-0dc4-5298-88f6-d2239f91322c",
+      "role": "sat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "b46d3fa0-017a-5fcd-bbd7-8923b93f2ef9",
+      "role": "sat_sp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "6e866be7-270c-5d88-9c2d-ea09121b0a12",
+      "role": "rat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "7d4b605a-b12a-5186-b599-7ae883360a21",
+      "role": "oat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "69c03c57-e853-54bc-b86a-c0d3a87e9402",
+      "role": "mat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "5a9e0112-0f80-5c85-b6c4-38c6175a5c1f",
+      "role": "damper_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "6e51b0df-a70f-5853-9e4c-72bd2814ef0b",
+      "role": "cooling_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "0a7b2f78-dec9-555b-a543-b789fde86271",
+      "role": "zone_temp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply A",
+      "equipment_id": "1c58e3a1-a7b0-5816-a319-d3f846785281",
+      "point_id": "cd6eab99-5ea0-5fcd-a094-5512b79824fc",
+      "role": "zone_temp_sp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "dbb90906-1932-5ca9-99d0-36a109416072",
+      "role": "duct_static",
+      "unit": "Pa"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "e3dd9450-91a3-5bae-8ed2-827f844f1d06",
+      "role": "duct_static_sp",
+      "unit": "Pa"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "381a7097-1793-525f-ba3f-b35e02526d7c",
+      "role": "fan_status",
+      "unit": "bool"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "a412d34f-9857-5ea7-89c3-87b8e96355f8",
+      "role": "fan_speed_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "d3e64048-d25e-5625-a31e-19a06097d16a",
+      "role": "kw",
+      "unit": "kW"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "3ac22bf7-780b-5874-b260-56a193278e89",
+      "role": "sat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "a12d19f4-8f19-59a4-b5bc-a9156dae8ed4",
+      "role": "sat_sp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "ad1e78a4-77e9-5370-b062-04deb98d9b7d",
+      "role": "rat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "6cd00321-8f06-5e7e-8c04-fdf9d952e523",
+      "role": "oat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "579328e5-c800-5667-bcab-b978be3bcc26",
+      "role": "mat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "8d97a515-f962-5405-846c-c5c8d819519a",
+      "role": "damper_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "3491d479-22d0-5476-9bff-baaff3d15f39",
+      "role": "cooling_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "a85481c7-9d6e-55cc-9bd5-2a911ecab2fe",
+      "role": "zone_temp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-NORTH",
+      "label": "Supply B",
+      "equipment_id": "98377177-dee0-5f28-93f7-f78650f57a48",
+      "point_id": "3147910d-f6fa-56ed-b824-821c17b5554f",
+      "role": "zone_temp_sp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "62c5b317-cc4a-5946-b5ec-985919880084",
+      "role": "duct_static",
+      "unit": "Pa"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "2b1fdb49-fa26-519c-9683-f977ada2c659",
+      "role": "duct_static_sp",
+      "unit": "Pa"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "ecc072fb-58b9-5e05-9cdb-9276d2912d9c",
+      "role": "fan_status",
+      "unit": "bool"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "80d7640e-91eb-5272-915f-9e84de7f7691",
+      "role": "fan_speed_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "b355184c-e03b-5b19-b424-07e2fdf2dc7c",
+      "role": "kw",
+      "unit": "kW"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "ee368b41-8a82-500c-a913-d701c94c917a",
+      "role": "sat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "d6beb051-3a3a-5c7e-9379-6d7aa7de0873",
+      "role": "sat_sp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "617f33e0-4f01-5beb-949c-a6d75b23e29d",
+      "role": "rat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "e5dddc4c-1537-5f66-a663-41baf8d46473",
+      "role": "oat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "6c916383-54a9-507c-ab41-c09553456355",
+      "role": "mat",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "3d7b67d6-1039-5411-a46a-bffbd9a24659",
+      "role": "damper_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "762b5d2b-de90-5a54-bc4e-8553b26802fe",
+      "role": "cooling_pct",
+      "unit": "%"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "77bcad12-10fc-52df-abf8-616b0d23abcf",
+      "role": "zone_temp",
+      "unit": "degC"
+    },
+    {
+      "site_id": "SYN-SOUTH",
+      "label": "Supply A",
+      "equipment_id": "2c0c3077-c005-5a27-b4d2-06a2976650df",
+      "point_id": "95301bd4-555b-5c3f-b63d-65c4aac1e121",
+      "role": "zone_temp_sp",
+      "unit": "degC"
+    }
+  ],
+  "expected": {
+    "sites": 2,
+    "equipment": 3,
+    "points": 42,
+    "samples": 24190,
+    "bad_samples": 1,
+    "north_samples": 16126,
+    "south_samples": 8064,
+    "north_a_runtime_hours": 24,
+    "north_b_runtime_hours": 12,
+    "south_a_runtime_hours": 12,
+    "observed_energy_kwh": 467,
+    "low_pressure_raw_seconds": 3000,
+    "low_pressure_confirmed_seconds": 1800
+  }
+}

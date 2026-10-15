@@ -1,0 +1,23 @@
+# Standalone teaching service; never use an application Compose project here.
+services:
+  db:
+    image: ${COURSE_IMAGE:-timescale/timescaledb@sha256:6f139d56042989bd35f50ba5986e492cd32e35cc6778c50be2659add298dc09f}
+    environment:
+      POSTGRES_USER: learner
+      POSTGRES_DB: brickts_course
+      POSTGRES_PASSWORD: ${COURSE_PASSWORD:?use lab.py up to generate a private local password}
+      TS_TUNE_MEMORY: 512MB
+      TS_TUNE_NUM_CPUS: "1"
+    command: [postgres, -c, shared_buffers=64MB, -c, work_mem=4MB, -c, max_connections=15, -c, timescaledb.telemetry_level=off]
+    ports: ["127.0.0.1:${COURSE_PORT:-15432}:5432"]
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 256
+    volumes: [course-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U learner -d brickts_course]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+volumes:
+  course-data:

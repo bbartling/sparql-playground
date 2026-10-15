@@ -1,0 +1,6 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX ex: <https://example.org/course#>
+SELECT DISTINCT ?role ?unit
+WHERE { ?point ex:role ?role ; brick:hasUnit ?unit }
+ORDER BY ?role
+LIMIT 100

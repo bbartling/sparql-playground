@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX ex: <https://example.org/course#>
+SELECT DISTINCT ?site ?equipment ?point ?owner ?role
+WHERE {
+  ?equipment a brick:Air_Handler_Unit ; ex:site_id ?site .
+  ?point brick:isPointOf ?owner ; ex:role ?role .
+  ?owner (brick:isPartOf|^brick:hasPart)* ?equipment .
+}
+ORDER BY ?site ?equipment ?role
+LIMIT 100

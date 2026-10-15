@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX ex: <https://example.org/course#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?equipment ?equipmentId ?site ?label
+WHERE {
+  ?equipment a brick:Air_Handler_Unit ;
+    ex:equipment_id ?equipmentId ; ex:site_id ?site ; rdfs:label ?label .
+}
+ORDER BY ?site ?equipmentId
+LIMIT 20

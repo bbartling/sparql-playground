@@ -18,3 +18,32 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run brickts model build
       - run: uv run pytest -q
+      - run: uv run python lessons/sql/validate_course.py
+      - run: uv run python lessons/sql/graph_lab.py --check
+
+  sql-course:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - run: uv run python lessons/sql/lab.py up
+      - run: uv run python lessons/sql/lab.py doctor
+      - name: Load twice to check replay-safe fixture setup
+        run: |
+          uv run python lessons/sql/lab.py load
+          uv run python lessons/sql/lab.py load
+      - name: Verify SQL answers and negative integrity cases
+        run: uv run python lessons/sql/lab.py check
+      - name: Verify explicit Timescale conversion and continuous aggregation
+        run: |
+          uv run python lessons/sql/lab.py run lessons/sql/sql/10_timescale.sql
+          uv run python lessons/sql/lab.py run lessons/sql/sql/11_continuous_aggregate.sql
+          uv run python lessons/sql/lab.py run lessons/sql/sql/12_timescale_assertions.sql
+          uv run python lessons/sql/lab.py check
+      - name: Stop only the course project, preserving volume
+        if: always()
+        run: uv run python lessons/sql/lab.py down
