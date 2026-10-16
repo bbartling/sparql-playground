@@ -195,9 +195,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                 "Fan",
                 "Pump",
             }
-            has_pts = list(g.objects(e, BRICK.hasPoint)) or list(
-                g.subjects(BRICK.isPointOf, e)
-            )
+            has_pts = list(g.objects(e, BRICK.hasPoint)) or list(g.subjects(BRICK.isPointOf, e))
             if not top and not has_pts:
                 continue
             seen.add(str(e))
