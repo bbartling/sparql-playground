@@ -7,10 +7,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from brickts.api.deps import AppState
-from brickts.api.routers import health, model, points, sparql
+from brickts.api.routers import health, model, model_crud, points, sparql
 from brickts.graph.service import GraphService
 from brickts.ingest import bootstrap_all_async
 from brickts.logging import configure_logging
@@ -20,20 +21,22 @@ from brickts.store.registry import build_store_registry
 log = logging.getLogger(__name__)
 
 APP_DESCRIPTION = """
-Bare read-only API for the Brick tutorial.
+Brick tutorial API — SPARQL + timeseries + optional model CRUD UI.
 
 **Wake (Render free tier)** — `GET /health` until `"ready": true`
 
-**Try SPARQL in Swagger** — copy a query from the repo (`scripts/sparql/*.rq`
-or the lesson scripts), then either:
-- **POST** `/api/sparql/upload` — Choose File → Execute, or
-- **POST** `/api/sparql` — paste into the JSON `query` field
+**SPARQL** — `POST /api/sparql` or `/api/sparql/upload` with a `.rq` from `scripts/sparql/`
 
-**Python lessons** — `POST /api/sparql` + `GET /api/points/{id}/timeseries`  
+**Timeseries** — `GET /api/points/{id}/timeseries` (ids come from the Brick model only)
 
-**RDF download** — `GET /api/model/ttl` (`scope=model` or `scope=site`)  
+**Turtle** — `GET /api/model/ttl` downloads the graph and also writes repo-root **`building.ttl`**
+on a background thread (easy to open, commit, push for tutorials)
 
-Fault math stays on your laptop (lesson 04 / open-fdd).
+**Model tree CRUD** (set `BRICKTS_ALLOW_MUTATIONS=true`) — `/api/model/tree`,
+`/api/model/equip`, `/api/model/point`, `/api/model/hide`, `/api/model/tags`
+
+**React UI** — `web/` (Vite): model tree, SPARQL editor, dashboard.
+Existing timeseries refs are never rewritten.
 """.strip()
 
 
@@ -102,6 +105,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     @app.get("/", include_in_schema=False)
     def root():
         return RedirectResponse(url="/docs")
@@ -126,4 +140,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(sparql.router)
     app.include_router(points.router)
     app.include_router(model.router)
+    app.include_router(model_crud.router)
     return app

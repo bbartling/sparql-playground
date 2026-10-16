@@ -40,7 +40,7 @@ uv run pytest -q && uv run ruff check .
 
 - Read-only reference: `/home/ben/Desktop/open-fdd` — never edit it.
 - Don’t commit `var/`, `*.sqlite`, `.venv`, secrets. No Git LFS. Data files under 50 MB each.
-- No auth, no CDN, no Node UI — Swagger only for interactive API.
+- No auth, no CDN for the core API — Swagger at `/docs`. Optional Vite UI under `web/` for model tag-tree CRUD (dev/tutorial). Live Turtle export: repo-root `building.ttl`.
 
 ---
 

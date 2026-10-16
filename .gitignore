@@ -224,3 +224,10 @@ __marimo__/
 
 # Personal course attempts, screenshots and connection notes
 student-work/
+
+# Vite model UI
+web/node_modules/
+web/dist/
+
+# Optional local revision sidecar next to building.ttl
+building.meta.json

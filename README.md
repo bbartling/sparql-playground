@@ -17,12 +17,15 @@ This repo uses SQLite as a stand-in historian. A real site would use Timescale, 
 
 Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api/sparql/upload` (Choose File) or paste into **POST** `/api/sparql`.
 
-Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only).
+Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only). That request also writes repo-root **`building.ttl`** on a background thread — easy to open, commit, and push for tutorials.
+
+Optional UI ([`web/`](web/)): model tag-tree + **in-browser SPARQL editor** + dashboard. Mutations need `BRICKTS_ALLOW_MUTATIONS=true`.
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
 site.ttl + point maps  ──build──▶  Brick Turtle  ──▶  SPARQL API
 Browser → /docs (Swagger)     Laptop → scripts/lesson_0*.py
+Model UI → web/               Live export → ./building.ttl
 ```
 
 Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md).

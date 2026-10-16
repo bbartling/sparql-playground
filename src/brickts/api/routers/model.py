@@ -14,8 +14,8 @@ router = APIRouter(prefix="/api/model", tags=["model"])
     "/ttl",
     summary="Download RDF as Turtle",
     description=(
-        "`scope=model` (default): in-memory site graph with points + timeseries refs "
-        "(same content as model/building_50.ttl — no Brick ontology). "
+        "`scope=model` (default): in-memory site graph with points + timeseries refs. "
+        "Also kicks a background write to repo-root `building.ttl`. "
         "`scope=site`: hand-authored model/site.ttl only (equipment/zones/parts, no points)."
     ),
 )
@@ -35,6 +35,8 @@ def download_ttl(
     else:
         text = state.graph.state.model.serialize(format="turtle")
         filename = "building.ttl"
+        # Tutorial-friendly: persist root-level building.ttl on a side thread.
+        state.graph.schedule_serialize()
 
     return Response(
         content=text,

@@ -44,6 +44,15 @@ def test_sparql_and_upload(client: TestClient):
     assert posted.status_code == 200
     assert posted.json()["meta"]["row_count"] >= 3
 
+    examples = client.get("/api/sparql/examples")
+    assert examples.status_code == 200
+    names = examples.json()["examples"]
+    assert "02_fc1_points.rq" in names
+    loaded = client.get("/api/sparql/examples/02_fc1_points.rq")
+    assert loaded.status_code == 200
+    assert "SELECT" in loaded.json()["query"]
+    assert client.get("/api/sparql/examples/not-a-file.txt").status_code == 400
+    assert client.get("/api/sparql/examples/missing_example.rq").status_code == 404
     assert client.get("/api/sparql/files").status_code == 404
 
 

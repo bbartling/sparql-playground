@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import re
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
@@ -17,6 +19,25 @@ from brickts.graph.sparql_guard import (
 from brickts.sparql.results import sparql_results_to_json
 
 router = APIRouter(prefix="/api/sparql", tags=["sparql"])
+
+_SAFE_EXAMPLE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.rq$")
+
+
+def _examples_dir(state: AppState) -> Path:
+    path = state.settings.sparql_examples_dir
+    if not path.is_dir():
+        raise HTTPException(status_code=404, detail="SPARQL examples directory missing")
+    return path.resolve()
+
+
+def _resolve_example(state: AppState, name: str) -> Path:
+    if not _SAFE_EXAMPLE.match(name):
+        raise HTTPException(status_code=400, detail="invalid example name")
+    root = _examples_dir(state)
+    path = (root / name).resolve()
+    if path.parent != root or not path.is_file():
+        raise HTTPException(status_code=404, detail="example not found")
+    return path
 
 
 async def _run_query(request: Request, state: AppState, text: str):
@@ -87,3 +108,23 @@ async def sparql_upload(
     if not text:
         raise HTTPException(status_code=400, detail="empty file")
     return await _run_query(request, state, text)
+
+
+@router.get(
+    "/examples",
+    summary="List bundled SPARQL tutorial .rq files",
+    description="Names from scripts/sparql/ for the browser SPARQL editor.",
+)
+def list_examples(state: AppState = Depends(get_app_state)) -> dict[str, list[str]]:
+    root = _examples_dir(state)
+    names = sorted(p.name for p in root.glob("*.rq") if p.is_file())
+    return {"examples": names}
+
+
+@router.get(
+    "/examples/{name}",
+    summary="Load one bundled SPARQL .rq file",
+)
+def get_example(name: str, state: AppState = Depends(get_app_state)) -> dict[str, str]:
+    path = _resolve_example(state, name)
+    return {"name": name, "query": path.read_text(encoding="utf-8")}

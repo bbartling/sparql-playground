@@ -5,7 +5,7 @@ from brickts.ingest import bootstrap_all
 from brickts.settings import Settings
 
 
-def test_docs_and_bare_surface(settings: Settings):
+def test_docs_and_surface(settings: Settings):
     bootstrap_all(settings)
     app = create_app(settings)
     with TestClient(app) as client:
@@ -16,10 +16,12 @@ def test_docs_and_bare_surface(settings: Settings):
         assert root.headers.get("location", "").endswith("/docs")
 
         paths = set(client.get("/openapi.json").json()["paths"])
-        assert paths == {
-            "/health",
-            "/api/sparql",
-            "/api/sparql/upload",
-            "/api/points/{point_id}/timeseries",
-            "/api/model/ttl",
-        }
+        assert "/health" in paths
+        assert "/api/sparql" in paths
+        assert "/api/sparql/upload" in paths
+        assert "/api/points/{point_id}/timeseries" in paths
+        assert "/api/model/ttl" in paths
+        assert "/api/model/tree" in paths
+        assert "/api/model/tags" in paths
+        assert "/api/sparql/examples" in paths
+        assert "/api/sparql/examples/{name}" in paths

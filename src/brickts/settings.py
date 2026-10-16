@@ -12,7 +12,12 @@ class Settings(BaseSettings):
     site_model_path: Path = Path("model/site.ttl")
     points_dir: Path = Path("model/points")
     datasets_path: Path = Path("data/datasets.json")
+    # Crash-recovery snapshot under var/ (gitignored).
     snapshot_path: Path = Path("var/graph.snapshot.ttl")
+    # Beginner-friendly live export at repo root — safe to open, commit, and push.
+    tutorial_ttl_path: Path = Path("building.ttl")
+    # Bundled .rq files for the browser SPARQL editor / Swagger upload demos.
+    sparql_examples_dir: Path = Path("scripts/sparql")
 
     serialize_interval_s: int = 60
     serialize_on_mutation: bool = True
@@ -50,6 +55,8 @@ class Settings(BaseSettings):
             "points_dir",
             "datasets_path",
             "snapshot_path",
+            "tutorial_ttl_path",
+            "sparql_examples_dir",
         ):
             _p(k)
         return Settings(**data)
