@@ -9,7 +9,12 @@ from bldgts.graph.sparql_guard import SparqlRejected
 from rdflib import Literal
 from rdflib.namespace import XSD
 
-COURSE = Path(__file__).resolve().parents[1] / "lessons" / "sql"
+# The independent SQL course remains shared at repo root, outside app bases.
+COURSE = next(
+    parent / "lessons" / "sql"
+    for parent in Path(__file__).resolve().parents
+    if (parent / "pyproject.toml").is_file() and (parent / "lessons" / "sql").is_dir()
+)
 
 
 def module(name):

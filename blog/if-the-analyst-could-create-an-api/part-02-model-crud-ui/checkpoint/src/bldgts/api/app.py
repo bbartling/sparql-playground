@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from bldgts.api.deps import AppState
-from bldgts.api.routers import health, model, model_crud, points, sparql
+from bldgts.api.routers import agent, health, model, model_crud, points, sparql
 from bldgts.graph.service import GraphService
 from bldgts.ingest import bootstrap_all_async
 from bldgts.logging import configure_logging
@@ -20,7 +20,7 @@ from fastapi.responses import RedirectResponse
 log = logging.getLogger(__name__)
 
 APP_DESCRIPTION = """
-Brick tutorial API — SPARQL + timeseries + optional model CRUD UI.
+Building metadata tutorial API — SPARQL + timeseries + Haystack authoring UI.
 
 **Wake (Render free tier)** — `GET /health` until `"ready": true`
 
@@ -32,10 +32,14 @@ Brick tutorial API — SPARQL + timeseries + optional model CRUD UI.
 on a background thread (easy to open, commit, push for tutorials)
 
 **Model tree CRUD** (set `BLDGTS_ALLOW_MUTATIONS=true`) — `/api/model/tree`,
-`/api/model/equip`, `/api/model/point`, `/api/model/hide`, `/api/model/tags`
+`/api/model/equip`, `/api/model/point`, `/api/model/hide`, `/api/model/tags`,
+`/api/model/metadata`, `/api/model/rename`
 
-**React UI** — `web/` (Vite): model tree, SPARQL editor, dashboard.
-Existing timeseries refs are never rewritten.
+**SPARQL agent plan/apply** (A19; keeps `/api/sparql` read-only) —
+`POST /api/agent/plan`, `POST /api/agent/apply` for scoped `INSERT DATA`/`DELETE DATA`
+
+**React UI** — Part 2 `checkpoint/web/` (Vite): model tree, typed metadata, saved checks,
+SPARQL, agent plan review. Existing timeseries refs are never rewritten.
 """.strip()
 
 
@@ -140,4 +144,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(points.router)
     app.include_router(model.router)
     app.include_router(model_crud.router)
+    app.include_router(agent.router)
     return app

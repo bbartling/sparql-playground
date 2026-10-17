@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import tempfile
@@ -31,6 +32,9 @@ class GraphService:
         self._ontology = load_brick_ontology()
         self._dirty = False
         self._revision = 0
+        self._snapshot_revision = 0
+        self._snapshot_sha256: str | None = None
+        self._loaded_snapshot_sha256: str | None = None
         self._state = self._load_initial()
         self._revision = self._load_revision()
 
@@ -64,20 +68,44 @@ class GraphService:
             import json
 
             data = json.loads(path.read_text(encoding="utf-8"))
-            return int(data.get("revision") or 0)
+            if not isinstance(data, dict):
+                return 0
+            # The mutation ledger may be newer than the last completed snapshot.
+            # Only recover a revision proved to belong to the exact loaded bytes.
+            digest = data.get("snapshot_sha256")
+            if not self._loaded_snapshot_sha256 or digest != self._loaded_snapshot_sha256:
+                return 0
+            revision = int(data.get("snapshot_revision") or 0)
+            if revision < 0:
+                return 0
+            self._snapshot_revision = revision
+            self._snapshot_sha256 = digest
+            return revision
         except (OSError, ValueError, TypeError):
             return 0
 
-    def _write_revision(self, revision: int, *, note: str = "") -> None:
+    def _write_revision(
+        self,
+        revision: int,
+        *,
+        note: str = "",
+        snapshot_revision: int | None = None,
+        snapshot_sha256: str | None = None,
+    ) -> None:
         import json
         from datetime import UTC, datetime
 
         path = self._revision_path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
+        self._atomic_write_text(
+            path,
             json.dumps(
                 {
                     "revision": revision,
+                    "snapshot_revision": (
+                        self._snapshot_revision if snapshot_revision is None else snapshot_revision
+                    ),
+                    "snapshot_sha256": snapshot_sha256 or self._snapshot_sha256,
                     "updated_at": datetime.now(UTC)
                     .replace(microsecond=0)
                     .isoformat()
@@ -87,7 +115,6 @@ class GraphService:
                 indent=2,
             )
             + "\n",
-            encoding="utf-8",
         )
 
     def _load_initial(self) -> GraphState:
@@ -97,17 +124,25 @@ class GraphService:
         if snap.exists() and (not seed.exists() or snap.stat().st_mtime >= seed.stat().st_mtime):
             load_path = snap
         model = Graph()
+        self._loaded_snapshot_sha256 = None
         if load_path.exists():
-            model.parse(load_path, format="turtle")
+            data = load_path.read_bytes()
+            # Always use Turtle, including transferred files with unfamiliar suffixes.
+            # Parsing RDF/XML or JSON-LD here could introduce external fetch behavior.
+            model.parse(data=data, format="turtle", publicID=load_path.resolve().as_uri())
+            if load_path.resolve() == snap.resolve():
+                self._loaded_snapshot_sha256 = hashlib.sha256(data).hexdigest()
         return GraphState(model=model, union=model + self._ontology)
 
     def _rebuild_union(self, model: Graph) -> GraphState:
         return GraphState(model=model, union=model + self._ontology)
 
     def reload_from_disk(self) -> None:
-        with self._lock:
+        with self._serialize_lock, self._lock:
             self._state = self._load_initial()
             self._dirty = False
+            self._snapshot_revision = 0
+            self._snapshot_sha256 = None
             self._revision = self._load_revision()
 
     def add_triples(self, triples: list[tuple]) -> None:
@@ -139,11 +174,13 @@ class GraphService:
             for issue in issues:
                 if issue.check == "missing_refs" and issue.count > 0:
                     raise ValueError("ref validation failed after mutation")
-            self._state = self._rebuild_union(new_model)
+            new_state = self._rebuild_union(new_model)
+            new_revision = self._revision + 1
+            self._write_revision(new_revision, note=note)
+            self._state = new_state
             self._dirty = True
-            self._revision += 1
-            self._write_revision(self._revision, note=note)
-            return self._revision
+            self._revision = new_revision
+            return new_revision
 
     def _atomic_write_text(self, path: Path, data: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -154,6 +191,13 @@ class GraphService:
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp, path)
+            # Commit the directory entry as well as file contents on POSIX hosts.
+            if hasattr(os, "O_DIRECTORY"):
+                directory = os.open(path.parent, os.O_DIRECTORY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
         except Exception:
             if os.path.exists(tmp):
                 os.unlink(tmp)
@@ -162,13 +206,28 @@ class GraphService:
     def serialize_atomic(self) -> None:
         """Write Turtle to repo-root ``building.ttl`` (tutorial) and ``var/`` snapshot."""
         with self._serialize_lock:
-            data = self._state.model.serialize(format="turtle")
+            with self._lock:
+                state = self._state
+                revision = self._revision
+            data = state.model.serialize(format="turtle")
             tutorial = self._settings.tutorial_ttl_path
             snapshot = self._settings.snapshot_path
             self._atomic_write_text(tutorial, data)
             if snapshot.resolve() != tutorial.resolve():
                 self._atomic_write_text(snapshot, data)
-            self._dirty = False
+            digest = hashlib.sha256(data.encode("utf-8")).hexdigest()
+            with self._lock:
+                # A mutation during this write still needs its own snapshot; its
+                # ledger revision must not be attributed to these older RDF bytes.
+                self._write_revision(
+                    self._revision,
+                    note="snapshot",
+                    snapshot_revision=revision,
+                    snapshot_sha256=digest,
+                )
+                self._snapshot_revision = revision
+                self._snapshot_sha256 = digest
+                self._dirty = self._revision != revision
             log.info(
                 "graph turtle written",
                 extra={"tutorial": str(tutorial), "snapshot": str(snapshot)},

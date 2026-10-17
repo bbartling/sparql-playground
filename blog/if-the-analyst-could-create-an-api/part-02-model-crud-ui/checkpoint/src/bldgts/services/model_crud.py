@@ -14,6 +14,14 @@ from typing import Any
 from bldgts.graph.namespaces import BLDG, BRICK, BTS, REF
 from bldgts.graph.service import ConflictError, GraphService
 from bldgts.haystack.defs import catalog_for_level
+from bldgts.haystack.metadata import (
+    PROFILE,
+    PROFILE_LIMITS,
+    entity_level,
+    metadata,
+    replace_metadata,
+    validate_entity,
+)
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, RDFS, XSD
 
@@ -30,7 +38,7 @@ _BRICK_TO_MARKERS: dict[str, tuple[str, ...]] = {
     "Sensor": ("point", "sensor"),
     "Setpoint": ("point", "sp"),
     "Command": ("point", "cmd"),
-    "Status": ("point", "status"),
+    "Status": ("point",),
     "Point": ("point",),
 }
 
@@ -114,7 +122,8 @@ def _seed_markers(g: Graph, iri: URIRef, node_type: str) -> list[str]:
             {
                 "site": ("site",),
                 "building": ("site",),
-                "floor": ("floor",),
+                "floor": ("space", "floor"),
+                "space": ("space",),
                 "equip": ("equip",),
                 "part": ("equip",),
                 "point": ("point",),
@@ -127,204 +136,119 @@ def _seed_markers(g: Graph, iri: URIRef, node_type: str) -> list[str]:
     return out
 
 
-def _point_complete(markers: list[str]) -> bool:
-    """Historized Haystack point: point + his + a function marker."""
-    have = set(markers)
-    return "point" in have and "his" in have and bool(have & {"sensor", "sp", "cmd"})
-
-
-def _coverage_status(*, total: int, complete: int) -> str:
-    if total <= 0:
-        return "green"
-    if complete >= total:
-        return "green"
-    if complete == 0:
-        return "red"
-    return "yellow"
-
-
-def _annotate_coverage(node: dict[str, Any]) -> dict[str, Any]:
-    """Roll up point tagging completeness for branch highlighting."""
-    if node.get("node_type") == "point":
-        done = 1 if node.get("complete") else 0
-        node["points_total"] = 1
-        node["points_complete"] = done
-        node["coverage"] = "green" if done else "red"
-        return node
-    total = 0
-    complete = 0
-    kids = []
-    for child in node.get("children") or []:
-        annotated = _annotate_coverage(child)
-        kids.append(annotated)
-        total += int(annotated.get("points_total") or 0)
-        complete += int(annotated.get("points_complete") or 0)
+def _annotate_coverage(node: dict[str, Any], g: Graph) -> dict[str, Any]:
+    """Report required errors separately from recommendations, then roll up."""
+    iri = URIRef(node["iri"])
+    level = "equip" if node["node_type"] == "equipment" else node["node_type"]
+    node.update(validate_entity(g, iri, level))
+    node["markers"] = _stored_markers(g, iri)
+    node["hints"] = _seed_markers(g, iri, level)
+    node["tagged"] = bool(node["markers"] or node["metadata"])
+    kids = [_annotate_coverage(child, g) for child in node.get("children") or []]
     node["children"] = kids
-    node["points_total"] = total
-    node["points_complete"] = complete
-    node["coverage"] = _coverage_status(total=total, complete=complete)
+    is_point = node["node_type"] == "point"
+    node["points_total"] = 1 if is_point else sum(c["points_total"] for c in kids)
+    node["points_complete"] = (
+        int(node["complete"]) if is_point else sum(c["points_complete"] for c in kids)
+    )
+    node["error_count"] = sum(i["severity"] == "error" for i in node["issues"]) + sum(
+        c["error_count"] for c in kids
+    )
+    node["warning_count"] = sum(i["severity"] == "warning" for i in node["issues"]) + sum(
+        c["warning_count"] for c in kids
+    )
+    node["coverage"] = (
+        "red" if node["error_count"] else ("yellow" if node["warning_count"] else "green")
+    )
     return node
 
 
 def build_tree(graph: GraphService) -> list[dict[str, Any]]:
-    """Site → building → equipment (+ parts) → points tree for the model UI."""
-    g = graph.state.model
+    """Project the complete visible model into one deterministic, acyclic tree.
 
-    def point_node(point: URIRef) -> dict[str, Any]:
-        tid = _timeseries_id(g, point)
-        markers = _stored_markers(g, point)
+    Resolve classes through Brick rather than a short equipment-name allowlist.
+    Inverse and forward containment/location edges are equivalent inputs. Every
+    visible model entity appears once, including unattached records as roots;
+    malformed cycles or multiple parents cannot hide points or recurse forever.
+    """
+    g = graph.state.model
+    ontology = graph.ontology
+    levels: dict[URIRef, str] = {}
+    candidates = set(g.subjects(RDF.type, None)) | set(g.subjects(REF.hasExternalReference, None))
+    for entity in sorted(candidates, key=str):
+        if not isinstance(entity, URIRef) or _is_hidden(g, entity):
+            continue
+        try:
+            levels[entity] = entity_level(g, entity, ontology)
+        except ValueError:
+            continue  # Database, unit and metadata-definition records are not tree rows.
+
+    def parent_candidates(entity: URIRef) -> list[URIRef]:
+        if levels[entity] == "point":
+            groups = (
+                g.objects(entity, BRICK.isPointOf),
+                g.subjects(BRICK.hasPoint, entity),
+                g.objects(entity, BRICK.isLocatedIn),
+            )
+        else:
+            groups = (
+                g.objects(entity, BRICK.isPartOf),
+                g.subjects(BRICK.hasPart, entity),
+                g.objects(entity, BRICK.isLocatedIn),
+                g.subjects(BRICK.hasLocation, entity),
+            )
+        ordered: list[URIRef] = []
+        for group in groups:
+            for parent in sorted(set(group), key=str):
+                if (
+                    parent in levels
+                    and parent != entity
+                    and levels[parent] != "point"
+                    and parent not in ordered
+                ):
+                    ordered.append(parent)
+        return ordered
+
+    parents: dict[URIRef, URIRef] = {}
+    for entity in sorted(levels, key=str):
+        for parent in parent_candidates(entity):
+            cursor = parent
+            seen = {entity}
+            while cursor not in seen:
+                seen.add(cursor)
+                if cursor not in parents:
+                    parents[entity] = parent
+                    break
+                cursor = parents[cursor]
+            if entity in parents:
+                break
+
+    children: dict[URIRef, list[URIRef]] = {entity: [] for entity in levels}
+    for entity, parent in parents.items():
+        children[parent].append(entity)
+    order = {"site": 0, "building": 1, "floor": 2, "space": 3, "equip": 4, "part": 4, "point": 5}
+
+    def sort_key(entity: URIRef) -> tuple[int, str, str]:
+        return order[levels[entity]], _label(g, entity).lower(), str(entity)
+
+    def node(entity: URIRef) -> dict[str, Any]:
+        level = levels[entity]
+        if level in {"equip", "part"}:
+            parent = parents.get(entity)
+            level = "part" if parent and levels[parent] in {"equip", "part"} else "equip"
+        tid = _timeseries_id(g, entity) if level == "point" else None
         return {
-            "id": _local(point),
-            "iri": str(point),
-            "name": _label(g, point),
-            "node_type": "point",
-            "brick_types": _brick_types(g, point),
-            "markers": markers,
-            "hints": _seed_markers(g, point, "point"),
-            "tagged": bool(markers),
-            "complete": _point_complete(markers),
-            "tags": {k: v for k, v in {"timeseries_id": tid}.items() if v},
-            "children": [],
+            "id": _local(entity),
+            "iri": str(entity),
+            "name": _label(g, entity),
+            "node_type": "equipment" if level == "equip" else level,
+            "brick_types": _brick_types(g, entity),
+            "tags": {"timeseries_id": tid} if tid else {},
+            "children": [node(child) for child in sorted(children[entity], key=sort_key)],
         }
 
-    def points_of(owner: URIRef) -> list[dict[str, Any]]:
-        pts: list[dict[str, Any]] = []
-        for point in g.objects(owner, BRICK.hasPoint):
-            p = URIRef(point)
-            if _is_hidden(g, p):
-                continue
-            pts.append(point_node(p))
-        for point, _, _ in g.triples((None, BRICK.isPointOf, owner)):
-            p = URIRef(point)
-            if _is_hidden(g, p):
-                continue
-            if not any(child["iri"] == str(p) for child in pts):
-                pts.append(point_node(p))
-        pts.sort(key=lambda n: n["name"].lower())
-        return pts
-
-    def part_nodes(equip: URIRef) -> list[dict[str, Any]]:
-        parts: list[dict[str, Any]] = []
-        for part in g.objects(equip, BRICK.hasPart):
-            p = URIRef(part)
-            if _is_hidden(g, p):
-                continue
-            # Skip nested buildings/floors here; those hang off site/building.
-            types = set(_brick_types(g, p))
-            if types & {"Building", "Floor", "Site"}:
-                continue
-            parts.append(
-                {
-                    "id": _local(p),
-                    "iri": str(p),
-                    "name": _label(g, p),
-                    "node_type": "part",
-                    "brick_types": _brick_types(g, p),
-                    "markers": _stored_markers(g, p) or _seed_markers(g, p, "part"),
-                    "tags": {},
-                    "children": points_of(p),
-                }
-            )
-        parts.sort(key=lambda n: n["name"].lower())
-        return parts
-
-    def equip_nodes(building: URIRef | None) -> list[dict[str, Any]]:
-        equips: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        candidates: list[URIRef] = []
-        if building is not None:
-            for e in g.objects(building, BRICK.hasPart):
-                candidates.append(URIRef(e))
-            for e, _, _ in g.triples((None, BRICK.isLocatedIn, building)):
-                candidates.append(URIRef(e))
-        else:
-            for e, _, t in g.triples((None, RDF.type, None)):
-                if str(t).startswith(str(BRICK)) and _local(URIRef(t)) in {
-                    "Air_Handler_Unit",
-                    "Variable_Air_Volume_Box",
-                    "Chiller",
-                    "Boiler",
-                }:
-                    candidates.append(URIRef(e))
-
-        for e in candidates:
-            if _is_hidden(g, e) or str(e) in seen:
-                continue
-            types = set(_brick_types(g, e))
-            if types & {"Floor", "Building", "Site"}:
-                continue
-            # Prefer top-level equipment (AHU etc.), not tiny parts listed via hasPart.
-            top = types & {
-                "Air_Handler_Unit",
-                "Variable_Air_Volume_Box",
-                "Chiller",
-                "Boiler",
-                "Fan",
-                "Pump",
-            }
-            has_pts = list(g.objects(e, BRICK.hasPoint)) or list(g.subjects(BRICK.isPointOf, e))
-            if not top and not has_pts:
-                continue
-            seen.add(str(e))
-            children = part_nodes(e) + points_of(e)
-            equips.append(
-                {
-                    "id": _local(e),
-                    "iri": str(e),
-                    "name": _label(g, e),
-                    "node_type": "equipment",
-                    "brick_types": _brick_types(g, e),
-                    "markers": _stored_markers(g, e) or _seed_markers(g, e, "equip"),
-                    "tags": {},
-                    "children": children,
-                }
-            )
-        equips.sort(key=lambda n: n["name"].lower())
-        return equips
-
-    roots: list[dict[str, Any]] = []
-    sites = [URIRef(s) for s, _, _ in g.triples((None, RDF.type, BRICK.Site))]
-    if not sites:
-        return [_annotate_coverage(n) for n in equip_nodes(None)]
-
-    for site in sites:
-        if _is_hidden(g, site):
-            continue
-        buildings: list[dict[str, Any]] = []
-        for b in g.objects(site, BRICK.hasPart):
-            building = URIRef(b)
-            if _is_hidden(g, building):
-                continue
-            if "Building" not in _brick_types(g, building) and not list(
-                g.triples((building, RDF.type, BRICK.Building))
-            ):
-                continue
-            buildings.append(
-                {
-                    "id": _local(building),
-                    "iri": str(building),
-                    "name": _label(g, building),
-                    "node_type": "building",
-                    "brick_types": _brick_types(g, building),
-                    "markers": _stored_markers(g, building)
-                    or _seed_markers(g, building, "building"),
-                    "tags": {},
-                    "children": equip_nodes(building),
-                }
-            )
-        roots.append(
-            {
-                "id": _local(site),
-                "iri": str(site),
-                "name": _label(g, site),
-                "node_type": "site",
-                "brick_types": _brick_types(g, site),
-                "markers": _stored_markers(g, site) or _seed_markers(g, site, "site"),
-                "tags": {},
-                "children": buildings or equip_nodes(None),
-            }
-        )
-    return [_annotate_coverage(n) for n in roots]
+    roots = sorted((entity for entity in levels if entity not in parents), key=sort_key)
+    return [_annotate_coverage(node(entity), g) for entity in roots]
 
 
 def _require_mutations(graph: GraphService, allow: bool) -> None:
@@ -397,6 +321,8 @@ def upsert_point(
     cls = _POINT_KINDS.get(cls_key.lower()) or BRICK[cls_key]
 
     def mutator(g: Graph) -> None:
+        if entity_level(g, owner) not in {"equip", "part"} or _is_hidden(g, owner):
+            raise ValueError("point owner must be existing visible equipment")
         existing_tid = _timeseries_id(g, point)
         if (point, RDF.type, None) not in g:
             g.add((point, RDF.type, cls))
@@ -404,6 +330,7 @@ def upsert_point(
         else:
             g.add((point, RDF.type, cls))
         g.set((point, RDFS.label, Literal(label or pid)))
+        g.remove((None, BRICK.hasPoint, point))
         g.set((point, BRICK.isPointOf, owner))
         g.add((owner, BRICK.hasPoint, point))
         g.remove((point, BTS.hidden, None))
@@ -482,32 +409,31 @@ def hide_entity(
     return {"ok": True, "revision": rev, "id": eid, "hidden": True}
 
 
-def _level_for_entity(g: Graph, iri: URIRef) -> str:
-    types = set(_brick_types(g, iri))
-    if "Site" in types:
-        return "site"
-    if "Building" in types:
-        return "building"
-    if "Floor" in types:
-        return "floor"
-    if types & {
-        "Sensor",
-        "Setpoint",
-        "Command",
-        "Status",
-        "Point",
-    } or _timeseries_id(g, iri):
-        return "point"
-    if types & {
-        "Air_Handler_Unit",
-        "Variable_Air_Volume_Box",
-        "Chiller",
-        "Boiler",
-        "Fan",
-        "Pump",
-    }:
-        return "equip"
-    return "equip"
+def _validated_markers(g: Graph, entity: URIRef, item: dict[str, Any]) -> list[str]:
+    if _is_hidden(g, entity):
+        raise ValueError(f"entity is hidden: {_local(entity)}")
+    level = entity_level(g, entity)
+    requested = str(item.get("level") or level)
+    requested = "equip" if requested == "equipment" else requested
+    if requested != level:
+        raise ValueError(f"entity level is {level}, not {requested}")
+    allowed = catalog_for_level(level)
+    raw = item.get("markers")
+    if not isinstance(raw, list) or any(not isinstance(m, str) for m in raw):
+        raise ValueError("markers must be a list of strings")
+    markers = list(dict.fromkeys(m.strip() for m in raw if m.strip()))
+    bad = [m for m in markers if m not in allowed]
+    if bad:
+        raise ValueError(f"markers not allowed for level {level}: {', '.join(bad)}")
+    return markers
+
+
+def _write_markers(g: Graph, entity: URIRef, markers: list[str]) -> None:
+    g.remove((entity, BTS.hasHaystackMarker, None))
+    for predicate in (BTS.opsStatus, BTS.opsMeta, BTS.opsNote):
+        g.remove((entity, predicate, None))
+    for marker in markers:
+        g.add((entity, BTS.hasHaystackMarker, Literal(marker)))
 
 
 def apply_markers(
@@ -524,26 +450,8 @@ def apply_markers(
         for item in updates:
             eid = _safe_id(str(item.get("entity_id") or item.get("point_id") or ""))
             entity = BLDG[eid]
-            if (entity, RDF.type, None) not in g:
-                raise ValueError(f"entity not found: {eid}")
-            if _is_hidden(g, entity):
-                raise ValueError(f"entity is hidden: {eid}")
-            level = str(item.get("level") or _level_for_entity(g, entity))
-            allowed = catalog_for_level(level)
-            raw = item.get("markers")
-            if raw is None:
-                raise ValueError("markers list required")
-            markers = [str(m).strip() for m in raw if str(m).strip()]
-            bad = [m for m in markers if m not in allowed]
-            if bad:
-                raise ValueError(f"markers not allowed for level {level}: {', '.join(bad)}")
-            g.remove((entity, BTS.hasHaystackMarker, None))
-            # Drop legacy shipping ops tags if present.
-            g.remove((entity, BTS.opsStatus, None))
-            g.remove((entity, BTS.opsMeta, None))
-            g.remove((entity, BTS.opsNote, None))
-            for marker in markers:
-                g.add((entity, BTS.hasHaystackMarker, Literal(marker)))
+            markers = _validated_markers(g, entity, item)
+            _write_markers(g, entity, markers)
 
     try:
         rev = graph.apply_mutation(
@@ -585,6 +493,10 @@ def rename_entity(
         if _is_hidden(g, entity):
             raise ValueError(f"entity is hidden: {eid}")
         g.set((entity, RDFS.label, Literal(text)))
+        values = metadata(g, entity)
+        if "dis" in values:
+            values["dis"] = {"kind": "Str", "value": text}
+            replace_metadata(g, entity, values)
 
     try:
         rev = graph.apply_mutation(
@@ -605,12 +517,99 @@ def rename_entity(
     return {"ok": True, "revision": rev, "id": eid, "label": text}
 
 
+def _bridge_point_ownership(g: Graph, entity: URIRef) -> None:
+    """Keep the legacy Brick query/tree ownership aligned with an explicit ref.
+
+    Unresolved drafts keep their prior placement so a user can finish editing
+    without losing the row. Structural Brick links are a compatibility bridge;
+    they do not manufacture or verify Haystack metadata.
+    """
+    if entity_level(g, entity) != "point":
+        return
+    values = metadata(g, entity)
+    equip_ref = values.get("equipRef", {})
+    if equip_ref.get("kind") != "Ref":
+        return
+    raw = str(equip_ref["value"])
+    owner = URIRef(raw) if ":" in raw else BLDG[raw]
+    try:
+        level = entity_level(g, owner)
+    except ValueError:
+        return
+    if level not in {"equip", "part"} or _is_hidden(g, owner):
+        return
+    site_ref = values.get("siteRef", {})
+    owner_site = metadata(g, owner).get("siteRef", {})
+    if site_ref.get("kind") == "Ref" and owner_site.get("kind") == "Ref":
+
+        def ref_iri(value: Any) -> URIRef:
+            text = str(value)
+            return URIRef(text) if ":" in text else BLDG[text]
+
+        if ref_iri(site_ref["value"]) != ref_iri(owner_site["value"]):
+            return
+    g.remove((None, BRICK.hasPoint, entity))
+    g.set((entity, BRICK.isPointOf, owner))
+    g.add((owner, BRICK.hasPoint, entity))
+
+
+def apply_metadata(
+    graph: GraphService,
+    *,
+    updates: list[dict[str, Any]],
+    expected_revision: int | None,
+    allow_mutations: bool,
+) -> dict[str, Any]:
+    """Atomic replacement of typed tags, optionally with their marker set.
+
+    Semantically incomplete models may be saved while being authored; tree
+    issues describe their errors. Malformed types and spoofed levels fail the
+    entire copy-on-write batch, leaving both metadata and revision unchanged.
+    """
+    _require_mutations(graph, allow_mutations)
+
+    def mutator(g: Graph) -> None:
+        for item in updates:
+            eid = _safe_id(str(item.get("entity_id") or ""))
+            entity = BLDG[eid]
+            entity_level(g, entity)
+            if _is_hidden(g, entity):
+                raise ValueError(f"entity is hidden: {eid}")
+            if "markers" in item:
+                _write_markers(g, entity, _validated_markers(g, entity, item))
+            values = item.get("metadata")
+            replace_metadata(g, entity, values)
+            dis = values.get("dis", {})
+            if dis.get("kind") == "Str":
+                g.set((entity, RDFS.label, Literal(dis["value"].strip())))
+        # Resolve after the full batch so referenced equipment metadata can be
+        # authored in either order alongside the point's explicit ownership.
+        for item in updates:
+            _bridge_point_ownership(g, BLDG[_safe_id(str(item.get("entity_id") or ""))])
+
+    try:
+        rev = graph.apply_mutation(
+            mutator, note=f"haystack_metadata:{len(updates)}", expected_revision=expected_revision
+        )
+    except ConflictError as exc:
+        return {
+            "ok": False,
+            "conflict": True,
+            "revision": exc.current,
+            "expected_revision": exc.expected,
+        }
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc), "revision": graph.revision}
+    graph.schedule_serialize()
+    return {"ok": True, "revision": rev, "updated": len(updates)}
+
+
 def dashboard(graph: GraphService) -> dict[str, Any]:
-    """Haystack marker coverage across historized points (stored markers only)."""
+    """Explicit point modeling status for the supported Haystack profile."""
     g = graph.state.model
     points: list[dict[str, Any]] = []
     marker_counts: dict[str, int] = {}
-    for s, _, _ in g.triples((None, REF.hasExternalReference, None)):
+    for s in set(g.subjects(REF.hasExternalReference, None)):
         point = URIRef(s)
         if _is_hidden(g, point):
             continue
@@ -623,16 +622,20 @@ def dashboard(graph: GraphService) -> dict[str, Any]:
                 "name": _label(g, point),
                 "timeseries_id": _timeseries_id(g, point),
                 "markers": markers,
-                "complete": _point_complete(markers),
+                **validate_entity(g, point, "point"),
             }
         )
     points.sort(key=lambda p: p["name"].lower())
-    tagged = sum(1 for p in points if p["markers"])
-    complete = sum(1 for p in points if p["complete"])
-    status = _coverage_status(total=len(points), complete=complete)
+    tagged = sum(bool(p["markers"] or p["metadata"]) for p in points)
+    complete = sum(p["complete"] for p in points)
+    errors = sum(i["severity"] == "error" for p in points for i in p["issues"])
+    warnings = sum(i["severity"] == "warning" for p in points for i in p["issues"])
+    status = "red" if errors else ("yellow" if warnings else "green")
     return {
         "revision": graph.revision,
         "status": status,
+        "validation_profile": PROFILE,
+        "validation_limits": PROFILE_LIMITS,
         "totals": {
             "items": len(points),
             "tagged": tagged,
@@ -640,6 +643,8 @@ def dashboard(graph: GraphService) -> dict[str, Any]:
             "untagged": len(points) - tagged,
             "incomplete": len(points) - complete,
             "distinct_markers": len(marker_counts),
+            "errors": errors,
+            "warnings": warnings,
         },
         "marker_counts": dict(sorted(marker_counts.items(), key=lambda kv: (-kv[1], kv[0]))),
         "items": points,

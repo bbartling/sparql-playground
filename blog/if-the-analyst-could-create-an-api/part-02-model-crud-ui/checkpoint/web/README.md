@@ -1,27 +1,21 @@
-# Haystack model + SPARQL UI
+# Haystack model editor
 
-Tutorial React UI for the bldgts API (smart-building IoT):
+Model tree → **Edit** → left-click any row → rename, markers, typed metadata → **Save**. Review suggestions explicitly. Saved model validation uses the supported Haystack profile; Edit suppresses repeated validation colors and details. SPARQL and RDF tabs inspect the same live graph.
 
-- **Model** — site → building → equipment → point tree; **Haystack markers**; hold-to-rename; right-click closest-match suggest
-- **SPARQL** — browser editor with tutorial presets
-- **Coverage** — marker counts across historized points
-
-Turtle serializes to repo-root **`building.ttl`**.
-
-## Run
-
-Terminal 1 — API:
+Run the API from the **repository root**:
 
 ```bash
-cd ..
+uv sync
 BLDGTS_ALLOW_MUTATIONS=true uv run bldgts serve
 ```
 
-Terminal 2 — UI:
+Run the UI from this `checkpoint/web/` directory:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173 · Swagger http://127.0.0.1:8000/docs
+Open http://127.0.0.1:5173. API docs: http://127.0.0.1:8000/docs. Vite proxies API requests to port 8000. `npm run build` checks TypeScript and produces the production bundle. Metadata edits persist to repo-root `building.ttl` and the crash-recovery snapshot.
+
+See the Part 2 [modeling contract](../../HAYSTACK_MODELING.md). Backend regression tests run from the repository root with `uv run pytest -q`.

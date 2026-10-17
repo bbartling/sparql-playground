@@ -32,7 +32,7 @@ uv run pytest -q && uv run ruff check .
 2. Every timeseries id in the model exists in the store; every mapped column is in the model.
 3. No hardcoded CSV column names in API/services/graph/client code.
 4. No hardcoded equipment ids in product code — select by Brick class, tags, or roles.
-5. SPARQL is read-only (no UPDATE/LOAD/SERVICE/FROM); row cap + timeout + length limit.
+5. SPARQL **query** is read-only (no UPDATE/LOAD/SERVICE/FROM); row cap + timeout + length limit. Agent writes use scoped `/api/agent/plan` + `/api/agent/apply` (A19), never `/api/sparql`.
 6. Parameterized SQL only; graph mutations via locked copy-on-write; atomic TTL writes.
 7. No secrets in the graph, repo, or logs — Database nodes hold env-var *names*, not credentials.
 

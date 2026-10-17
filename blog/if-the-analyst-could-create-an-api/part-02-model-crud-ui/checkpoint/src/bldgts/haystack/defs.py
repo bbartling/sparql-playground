@@ -1,65 +1,76 @@
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 
 def _default_defs_path() -> Path:
-    """Locate vendored defs whether package lives at repo-root src/ or a blog checkpoint."""
-    here = Path(__file__).resolve()
-    for parent in here.parents:
+    """Locate the vendored pack from either a checkout or a blog checkpoint."""
+    for parent in Path(__file__).resolve().parents:
         candidate = parent / "data" / "haystack" / "defs.json"
         if candidate.is_file():
             return candidate
     return Path.cwd() / "data" / "haystack" / "defs.json"
 
 
-_DEFAULT_DEFS = _default_defs_path()
-
-# Tree levels in the model UI → which def symbols are legal to apply.
+# Contextual markers which are useful in the tree but do not all descend from
+# equip/quantity/phenomenon. These are candidates, never invented definitions.
+_CONTEXT = frozenset(
+    {
+        "air",
+        "water",
+        "steam",
+        "elec",
+        "discharge",
+        "return",
+        "outside",
+        "exhaust",
+        "mixed",
+        "entering",
+        "leaving",
+        "zone",
+        "duct",
+        "pipe",
+        "hot",
+        "chilled",
+        "cool",
+        "heat",
+        "damper",
+        "valve",
+        "fan",
+        "coil",
+        "filter",
+        "pump",
+        "motor",
+    }
+)
 LEVEL_MARKERS: dict[str, frozenset[str]] = {
     "site": frozenset({"site"}),
-    "building": frozenset({"site", "building"}),
-    "floor": frozenset({"floor", "space", "level"}),
-    "equip": frozenset(
-        {
-            "equip",
-            "ahu",
-            "vav",
-            "fan",
-            "pump",
-            "boiler",
-            "chiller",
-            "coolTower",
-            "meter",
-            "motor",
-            "damper",
-            "coil",
-            "filter",
-            "airHandlingEquip",
-            "airTerminalUnit",
-        }
-    ),
-    "part": frozenset(
-        {
-            "equip",
-            "fan",
-            "damper",
-            "coil",
-            "filter",
-            "motor",
-            "pump",
-        }
-    ),
-    "point": frozenset(
+    # Haystack site normally represents a building; 'building' is not a standard marker.
+    "building": frozenset({"site"}),
+    # 'level' means fluid fill level, not storey of a building.
+    "floor": frozenset({"floor", "space"}),
+    "space": frozenset({"space", "room", "zone", "hvac"}),
+    "equip": _CONTEXT | frozenset({"equip", "ahu", "vav", "boiler", "chiller", "meter"}),
+    "part": _CONTEXT | frozenset({"equip"}),
+    "point": _CONTEXT
+    | frozenset(
         {
             "point",
             "sensor",
             "sp",
             "cmd",
+            "synthetic",
+            "computed",
+            "ml",
+            "sim",
             "his",
+            "cur",
+            "writable",
+            "hisTotalized",
             "temp",
             "pressure",
             "flow",
@@ -68,42 +79,20 @@ LEVEL_MARKERS: dict[str, frozenset[str]] = {
             "occupancy",
             "power",
             "energy",
-            "voltage",
+            "volt",
             "current",
-            "air",
-            "water",
-            "steam",
-            "elec",
-            "discharge",
-            "return",
-            "outside",
-            "exhaust",
-            "mixed",
-            "entering",
-            "leaving",
-            "zone",
-            "duct",
-            "pipe",
-            "hot",
-            "chilled",
-            "cool",
-            "heat",
             "speed",
-            "position",
             "enable",
             "run",
-            "status",
             "alarm",
-            "damper",
-            "valve",
-            "fan",
-            "coil",
-            "filter",
-            "pump",
-            "motor",
+            "delta",
+            "effective",
+            "occupied",
+            "unocc",
         }
     ),
 }
+_TAG_NAME = re.compile(r"[a-z][a-zA-Z0-9]*\Z")
 
 
 def _sym(value: Any) -> str | None:
@@ -125,40 +114,92 @@ def _is_list(row: dict[str, Any]) -> list[str]:
     return [one] if one else []
 
 
-@lru_cache(maxsize=1)
-def load_defs_index(path: str | None = None) -> dict[str, dict[str, str]]:
-    """Map symbol → {doc, kind} from vendored defs.json."""
+@lru_cache(maxsize=8)
+def load_defs_index(path: str | None = None) -> dict[str, dict[str, Any]]:
+    """Index real defs, resolving the complete 'is' ancestry to find value kinds.
+
+    For example sensor -> pointFunction -> choice -> marker. Looking only at a
+    def's immediate parent would incorrectly hide most useful marker tags.
+    """
     defs_path = Path(path) if path else _default_defs_path()
     if not defs_path.is_file():
         raise FileNotFoundError(f"Haystack defs not found: {defs_path}")
     grid = json.loads(defs_path.read_text(encoding="utf-8"))
-    rows = grid.get("rows") or []
-    index: dict[str, dict[str, str]] = {}
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        name = _sym(row.get("def"))
-        if not name:
-            continue
-        kinds = _is_list(row)
-        kind = "marker" if "marker" in kinds else (kinds[0] if kinds else "def")
-        doc = str(row.get("doc") or "").strip()
-        index[name] = {"doc": doc, "kind": kind}
-    # Ensure UI level seeds exist even if taxonomy shifts.
-    for bucket in LEVEL_MARKERS.values():
-        for name in bucket:
-            index.setdefault(name, {"doc": "", "kind": "marker"})
+    rows = {
+        name: row
+        for row in grid.get("rows", [])
+        if isinstance(row, dict) and (name := _sym(row.get("def")))
+    }
+
+    def ancestors(name: str, visiting: frozenset[str] = frozenset()) -> set[str]:
+        if name in visiting:
+            raise ValueError(f"cyclic Haystack definition: {name}")
+        parents = set(_is_list(rows.get(name, {})))
+        result = set(parents)
+        for parent in parents:
+            result.update(ancestors(parent, visiting | {name}))
+        return result
+
+    kinds = (
+        "marker",
+        "bool",
+        "number",
+        "str",
+        "uri",
+        "ref",
+        "symbol",
+        "date",
+        "time",
+        "dateTime",
+        "coord",
+        "list",
+        "dict",
+        "grid",
+        "val",
+    )
+    index: dict[str, dict[str, Any]] = {}
+    for name, row in rows.items():
+        supers = ancestors(name)
+        kind = next((k for k in kinds if k == name or k in supers), "def")
+        index[name] = {
+            "doc": str(row.get("doc") or "").strip(),
+            "kind": kind,
+            "supertypes": tuple(sorted(supers)),
+            "enum": str(row.get("enum") or ""),
+        }
     return index
 
 
+def is_subtype(symbol: str, parent: str, *, path: str | None = None) -> bool:
+    entry = load_defs_index(path).get(symbol)
+    return bool(entry and (symbol == parent or parent in entry["supertypes"]))
+
+
 def catalog_for_level(level: str, *, path: str | None = None) -> dict[str, str]:
-    """Return {symbol: doc} allowed for a tree level."""
+    """Return actual marker tags applicable to the selected tree context.
+
+    This is a curated editor catalog, not a complete Haystack conformance schema.
+    Scalar/ref defs, conjunct names and missing symbols must never become markers.
+    """
     key = level.strip().lower()
-    allowed = LEVEL_MARKERS.get(key)
-    if allowed is None:
+    key = "equip" if key == "equipment" else key
+    if key not in LEVEL_MARKERS:
         raise ValueError(f"unknown level: {level}")
     index = load_defs_index(path)
-    return {name: index.get(name, {}).get("doc", "") for name in sorted(allowed)}
+    allowed = set(LEVEL_MARKERS[key])
+    roots = {
+        "equip": {"equip"},
+        "part": {"equip"},
+        "point": {"pointFunction", "quantity", "phenomenon"},
+    }.get(key, set())
+    for name, entry in index.items():
+        if roots.intersection(entry["supertypes"]):
+            allowed.add(name)
+    return {
+        name: index[name]["doc"]
+        for name in sorted(allowed)
+        if name in index and index[name]["kind"] == "marker" and _TAG_NAME.fullmatch(name)
+    }
 
 
 def corpus_for_level(level: str, *, path: str | None = None) -> list[str]:

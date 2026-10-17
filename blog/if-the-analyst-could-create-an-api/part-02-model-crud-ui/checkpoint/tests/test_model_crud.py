@@ -42,10 +42,36 @@ def test_crud_preserves_timeseries_refs(settings: Settings):
         tagged = client.post(
             "/api/model/tags",
             json={
-                "updates": [{"point_id": "AHU_1_DA_P", "status": "received", "meta": "LATE"}],
+                "updates": [
+                    {
+                        "entity_id": "AHU_1_DA_P",
+                        "level": "point",
+                        "markers": ["point", "sensor", "temp"],
+                    }
+                ],
             },
         )
         assert tagged.status_code == 200, tagged.text
+
+        sug = client.get(
+            "/api/model/haystack/suggest", params={"q": "discharge air temp", "level": "point"}
+        )
+        assert sug.status_code == 200
+        assert sug.json()["suggestions"]
+
+        guessed = client.get(
+            "/api/model/haystack/guess",
+            params={"q": "AHU_1 Discharge Air Temp", "level": "point"},
+        )
+        assert guessed.status_code == 200
+        assert "point" in guessed.json()["markers"]
+        assert "temp" in guessed.json()["markers"]
+
+        renamed = client.post(
+            "/api/model/rename",
+            json={"entity_id": "AHU_1_DA_P", "label": "AHU-1 Discharge Air Temp"},
+        )
+        assert renamed.status_code == 200, renamed.text
 
         after = {
             str(s): str(tid)

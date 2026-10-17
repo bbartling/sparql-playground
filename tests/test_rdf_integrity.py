@@ -36,3 +36,24 @@ def test_tree_exposes_coverage_flags(settings: Settings):
         assert points
         assert all("complete" in p and "coverage" in p for p in points)
         assert any(n.get("coverage") in {"green", "yellow", "red"} for n in flat)
+
+
+def test_repeated_display_labels_do_not_make_model_unhealthy():
+    from bldgts.graph.namespaces import BLDG, BRICK, REF
+    from bldgts.graph.validate import run_rdf_integrity
+    from rdflib import Graph, Literal
+    from rdflib.namespace import RDF, RDFS
+
+    model = Graph()
+    for number in (1, 2):
+        point, owner, reference = (
+            BLDG[f"point{number}"], BLDG[f"ahu{number}"], BLDG[f"reference{number}"]
+        )
+        model.add((point, RDF.type, BRICK.Point))
+        model.add((point, RDFS.label, Literal("Discharge temperature")))
+        model.add((point, BRICK.isPointOf, owner))
+        model.add((point, REF.hasExternalReference, reference))
+        model.add((reference, REF.hasTimeseriesId, Literal(f"opaque-{number}")))
+    report = run_rdf_integrity(model)
+    assert report["status"] == "green"
+    assert report["issues"] == []

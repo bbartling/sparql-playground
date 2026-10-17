@@ -15,7 +15,6 @@ from bldgts.graph.sparql_guard import (
 )
 from bldgts.sparql.results import sparql_results_to_json
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
-from fastapi.concurrency import run_in_threadpool
 
 router = APIRouter(prefix="/api/sparql", tags=["sparql"])
 
@@ -48,16 +47,30 @@ async def _run_query(request: Request, state: AppState, text: str):
     except SparqlRejected as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    def evaluate():
+        # rdflib SELECT results are lazy: consume them inside the timed worker too.
+        results = run_prepared(state.graph.state.union, prepared)
+        return sparql_results_to_json(results, max_rows=settings.sparql_max_rows)
+
     sem = request.app.state.sparql_sem
-    async with sem:
-        try:
-            results = await asyncio.wait_for(
-                run_in_threadpool(run_prepared, state.graph.state.union, prepared),
-                timeout=settings.sparql_timeout_s,
-            )
-        except TimeoutError as exc:
-            raise HTTPException(status_code=504, detail="query timeout") from exc
-    body, meta = sparql_results_to_json(results, max_rows=settings.sparql_max_rows)
+    await sem.acquire()
+    worker = asyncio.create_task(asyncio.to_thread(evaluate))
+
+    def completed(task):
+        sem.release()
+        # Observe late failures after an HTTP timeout, avoiding unhandled task errors.
+        if not task.cancelled():
+            task.exception()
+
+    worker.add_done_callback(completed)
+    try:
+        # A timeout cannot kill a Python thread. Keep its semaphore slot occupied
+        # until it really finishes, so repeated timeouts cannot spawn unlimited work.
+        body, meta = await asyncio.wait_for(
+            asyncio.shield(worker), timeout=settings.sparql_timeout_s
+        )
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="query timeout") from exc
     return {"results": body, "meta": meta}
 
 

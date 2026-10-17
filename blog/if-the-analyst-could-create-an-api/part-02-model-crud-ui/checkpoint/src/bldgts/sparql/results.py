@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from rdflib import BNode, Literal, URIRef
+
 
 def sparql_results_to_json(results, *, max_rows: int) -> tuple[dict[str, Any], dict[str, Any]]:
     started = time.perf_counter()
@@ -21,27 +23,29 @@ def sparql_results_to_json(results, *, max_rows: int) -> tuple[dict[str, Any], d
             "truncated": False,
             "elapsed_ms": elapsed_ms,
         }
-    vars_ = [str(v) for v in results.vars]
+    graph_result = getattr(results, "type", None) in {"CONSTRUCT", "DESCRIBE"}
+    vars_ = ["subject", "predicate", "object"] if graph_result else [str(v) for v in results.vars]
     bindings: list[dict] = []
-    for i, row in enumerate(results):
+    for i, row in enumerate(results.graph if graph_result else results):
         if i >= max_rows:
             truncated = True
             break
         bnd: dict[str, dict] = {}
-        for v in vars_:
-            term = row[v]
+        for column, v in enumerate(vars_):
+            term = row[column] if graph_result else row[v]
             if term is None:
                 continue
-            bnd[v] = {
-                "type": "uri"
-                if getattr(term, "datatype", None) is None and str(term).startswith("http")
-                else "literal",
-                "value": str(term),
-            }
-            if hasattr(term, "language") and term.language:
-                bnd[v]["xml:lang"] = term.language
-            if hasattr(term, "datatype") and term.datatype:
-                bnd[v]["datatype"] = str(term.datatype)
+            kind = (
+                "uri" if isinstance(term, URIRef)
+                else "bnode" if isinstance(term, BNode)
+                else "literal"
+            )
+            bnd[v] = {"type": kind, "value": str(term)}
+            if isinstance(term, Literal):
+                if term.language:
+                    bnd[v]["xml:lang"] = term.language
+                if term.datatype:
+                    bnd[v]["datatype"] = str(term.datatype)
         bindings.append(bnd)
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     head = {"vars": vars_}

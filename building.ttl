@@ -32,8 +32,7 @@
     brick:isPointOf <https://example.org/openfdd/BUILDING_50#AHU_1_CHW_Valve> ;
     ns1:hasExternalReference [ a ns1:TimeseriesReference ;
             ns1:hasTimeseriesId "0b523418-bf4a-5e6f-973e-74fec7210da0" ;
-            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] ;
-    ns2:opsStatus "received" .
+            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] .
 
 <https://example.org/openfdd/BUILDING_50#AHU_1_DAT_Reset_OAT_High> a brick:Outside_Air_Temperature_High_Reset_Setpoint ;
     rdfs:label "AHU1 DAT X2" ;
@@ -112,8 +111,7 @@
     brick:isPointOf <https://example.org/openfdd/BUILDING_50#AHU_1_EA_Damper> ;
     ns1:hasExternalReference [ a ns1:TimeseriesReference ;
             ns1:hasTimeseriesId "d52b1b7b-e130-5fe6-aa70-6f7b131c9724" ;
-            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] ;
-    ns2:opsStatus "not_received" .
+            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] .
 
 <https://example.org/openfdd/BUILDING_50#AHU_1_Emergency_Override> a brick:Status ;
     rdfs:label "HU_50" ;
@@ -143,7 +141,10 @@
     brick:isPointOf <https://example.org/openfdd/BUILDING_50#AHU_1_OA_Damper> ;
     ns1:hasExternalReference [ a ns1:TimeseriesReference ;
             ns1:hasTimeseriesId "df48c9b5-a95c-5eb4-a769-9c5515a135d3" ;
-            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] .
+            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] ;
+    ns2:hasHaystackMarker "his",
+        "point",
+        "temp" .
 
 <https://example.org/openfdd/BUILDING_50#AHU_1_OA_Damper_Min_Pos> a brick:Min_Position_Setpoint_Limit ;
     rdfs:label "OA Minimum Position" ;
@@ -188,7 +189,10 @@
     brick:isPointOf <https://example.org/openfdd/BUILDING_50#AHU_1_Return_Fan> ;
     ns1:hasExternalReference [ a ns1:TimeseriesReference ;
             ns1:hasTimeseriesId "e7fd062a-972f-5c59-96b8-5e1208674878" ;
-            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] .
+            ns1:storedAt <https://example.org/openfdd/BUILDING_50#timeseries_db> ] ;
+    ns2:hasHaystackMarker "his",
+        "hot",
+        "point" .
 
 <https://example.org/openfdd/BUILDING_50#AHU_1_RF_OnOff_Status> a brick:Fan_On_Off_Status ;
     rdfs:label "ReturnFanStatus" ;

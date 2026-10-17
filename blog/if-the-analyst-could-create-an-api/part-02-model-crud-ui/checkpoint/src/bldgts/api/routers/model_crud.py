@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from bldgts.api.deps import AppState, get_app_state
 from bldgts.graph.validate import run_rdf_integrity
 from bldgts.haystack.defs import catalog_for_level
+from bldgts.haystack.metadata import PROFILE, PROFILE_LIMITS
 from bldgts.haystack.suggest import guess_marker_bundle, suggest_markers
 from bldgts.services import model_crud as crud
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -49,6 +50,25 @@ class TagsBody(BaseModel):
     expected_revision: int | None = None
 
 
+class MetadataValue(BaseModel):
+    kind: Literal["Str", "Ref", "Number", "Bool"]
+    value: str | int | float | bool
+
+
+class MetadataUpdate(BaseModel):
+    entity_id: str = Field(min_length=1, max_length=128)
+    # Whole explicit value-tag map; an empty object clears value metadata.
+    metadata: dict[str, MetadataValue]
+    # Optional, so marker and value edits can share one atomic revision.
+    markers: list[str] | None = None
+    level: str | None = None
+
+
+class MetadataBody(BaseModel):
+    updates: list[MetadataUpdate] = Field(min_length=1, max_length=256)
+    expected_revision: int | None = None
+
+
 class RenameBody(BaseModel):
     entity_id: str = Field(min_length=1, max_length=128)
     label: str = Field(min_length=1, max_length=256)
@@ -75,6 +95,8 @@ def get_tree(state: AppState = Depends(get_app_state)) -> dict[str, Any]:
         "ok": True,
         "revision": state.graph.revision,
         "allow_mutations": state.settings.allow_mutations,
+        "validation_profile": PROFILE,
+        "validation_limits": PROFILE_LIMITS,
         "tree": crud.build_tree(state.graph),
     }
 
@@ -146,6 +168,8 @@ def upsert_equip(body: EquipBody, state: AppState = Depends(get_app_state)) -> d
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/point", summary="Add or update a point; keeps existing timeseries refs")
@@ -165,6 +189,8 @@ def upsert_point(body: PointBody, state: AppState = Depends(get_app_state)) -> d
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/hide", summary="Soft-delete (hide) without dropping timeseries refs")
@@ -180,6 +206,8 @@ def hide_entity(body: HideBody, state: AppState = Depends(get_app_state)) -> dic
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/tags", summary="Batch Haystack markers on tree entities")
@@ -195,6 +223,8 @@ def apply_tags(body: TagsBody, state: AppState = Depends(get_app_state)) -> dict
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/rename", summary="Rename a tree entity (rdfs:label)")
@@ -211,6 +241,25 @@ def rename(body: RenameBody, state: AppState = Depends(get_app_state)) -> dict[s
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/metadata", summary="Replace typed Haystack metadata and optional markers atomically")
+def apply_metadata(body: MetadataBody, state: AppState = Depends(get_app_state)) -> dict[str, Any]:
+    try:
+        return _result(
+            crud.apply_metadata(
+                state.graph,
+                updates=[u.model_dump(exclude_none=True) for u in body.updates],
+                expected_revision=body.expected_revision,
+                allow_mutations=state.settings.allow_mutations,
+            )
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/flush", summary="Write building.ttl now (also runs on a background thread)")

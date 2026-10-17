@@ -106,26 +106,8 @@ def run_rdf_integrity(model: Graph, ontology: Graph | None = None) -> dict[str, 
             )
         )
 
-    # Duplicate rdfs:label among points (ambiguous UI names).
-    by_label: dict[str, list[str]] = defaultdict(list)
-    for s, _, _ in g.triples((None, REF.hasExternalReference, None)):
-        point = URIRef(s)
-        labels = list(g.objects(point, RDFS.label))
-        if not labels:
-            continue
-        by_label[str(labels[0]).strip().lower()].append(_local(point))
-    dup_labels = {lab: ids for lab, ids in by_label.items() if len(ids) > 1}
-    if dup_labels:
-        samples = [f"{lab} → {', '.join(ids[:4])}" for lab, ids in list(dup_labels.items())[:5]]
-        issues.append(
-            ValidationIssue(
-                check="duplicate_point_labels",
-                message="Multiple points share the same rdfs:label",
-                count=len(dup_labels),
-                severity="warn",
-                samples=samples,
-            )
-        )
+    # Display labels are not identifiers and may repeat across records.
+    # Only opaque identity/reference collisions are integrity failures.
 
     # Resources typed in the building namespace with no rdf:type (stray subjects).
     typed = {s for s, _, _ in g.triples((None, RDF.type, None))}

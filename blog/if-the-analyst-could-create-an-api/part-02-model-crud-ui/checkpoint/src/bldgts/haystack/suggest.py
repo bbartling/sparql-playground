@@ -4,15 +4,17 @@ import difflib
 import re
 from typing import Any
 
-from bldgts.haystack.defs import LEVEL_MARKERS, catalog_for_level, load_defs_index
+from bldgts.haystack.defs import catalog_for_level, is_subtype
 
 _TOKEN = re.compile(r"[a-z0-9]+", re.I)
 
-# FinStack / Niagara-style: pick at most one marker per role from the point name.
+# Roles organize review; they are not mutually exclusive ontology dimensions.
+# Multiple qualifiers (e.g. chilled + water, discharge + duct) must survive.
 POINT_ROLES: dict[str, tuple[str, ...]] = {
     "entity": ("point",),
-    "function": ("sensor", "sp", "cmd"),
-    "substance": ("air", "water", "steam", "elec", "hot", "chilled", "cool", "heat"),
+    "function": ("sensor", "sp", "cmd", "synthetic", "computed", "ml", "sim"),
+    "substance": ("air", "water", "steam", "elec", "co2"),
+    "qualifier": ("hot", "chilled", "cool", "heat", "delta", "effective"),
     "section": (
         "discharge",
         "return",
@@ -30,18 +32,21 @@ POINT_ROLES: dict[str, tuple[str, ...]] = {
         "pressure",
         "flow",
         "humidity",
-        "co2",
         "occupancy",
         "power",
         "energy",
-        "voltage",
+        "volt",
         "current",
         "speed",
         "position",
+        "concentration",
+        "level",
+        "freq",
+        "enthalpy",
     ),
     "device": ("damper", "valve", "fan", "coil", "filter", "pump", "motor"),
-    "state": ("status", "alarm", "enable", "run"),
-    "history": ("his",),
+    "state": ("alarm", "enable", "run"),
+    "capability": ("his", "cur", "writable", "hisTotalized"),
 }
 
 # Single-token BMS aliases → one Haystack symbol.
@@ -55,14 +60,12 @@ _ALIASES: dict[str, str] = {
     "dp": "pressure",
     "setpoint": "sp",
     "setpoints": "sp",
-    "set": "sp",
     "setpt": "sp",
     "spt": "sp",
     "command": "cmd",
     "commands": "cmd",
     "cmd": "cmd",
     "output": "cmd",
-    "out": "cmd",
     "ao": "cmd",
     "bo": "cmd",
     "do": "cmd",
@@ -125,8 +128,8 @@ _ALIASES: dict[str, str] = {
     "enable": "enable",
     "en": "enable",
     "run": "run",
-    "status": "status",
-    "sts": "status",
+    "status": "sensor",
+    "sts": "sensor",
     "alarm": "alarm",
     "alm": "alarm",
     "position": "position",
@@ -148,20 +151,49 @@ _ALIASES: dict[str, str] = {
     "sp": "sp",
     "point": "point",
     "his": "his",
+    "history": "his",
+    "historized": "his",
+    "trended": "his",
+    "cur": "cur",
+    "realtime": "cur",
+    "writable": "writable",
+    "synthetic": "synthetic",
+    "computed": "computed",
+    "calculated": "computed",
+    "simulation": "sim",
+    "simulated": "sim",
+    "ml": "ml",
+    "sim": "sim",
+    "differential": "delta",
+    "delta": "delta",
+    "voltage": "volt",
+    "current": "current",
+    "concentration": "concentration",
+    "level": "level",
+    "frequency": "freq",
+    "enthalpy": "enthalpy",
 }
 
 # Compound BMS abbreviations (after lower/strip) → several Haystack symbols.
 # Matched as whole tokens after first-pass tokenization.
 _COMPOUND: dict[str, tuple[str, ...]] = {
+    # Status is observed input; fan/pump/motor run state is resolved below.
+    "status": ("sensor",),
+    "sts": ("sensor",),
+    "sa": ("discharge", "air"),
+    "da": ("discharge", "air"),
+    "ra": ("return", "air"),
+    "oa": ("outside", "air"),
+    "ea": ("exhaust", "air"),
     # Fans / commands
     "rfc": ("return", "fan", "cmd"),
-    "rfs": ("return", "fan", "status"),
+    "rfs": ("return", "fan", "run", "sensor"),
     "rf": ("return", "fan"),
     "sfc": ("discharge", "fan", "cmd"),
-    "sfs": ("discharge", "fan", "status"),
+    "sfs": ("discharge", "fan", "run", "sensor"),
     "sf": ("discharge", "fan"),
     "efc": ("exhaust", "fan", "cmd"),
-    "efs": ("exhaust", "fan", "status"),
+    "efs": ("exhaust", "fan", "run", "sensor"),
     "ef": ("exhaust", "fan"),
     "sfan": ("discharge", "fan"),
     "rfan": ("return", "fan"),
@@ -190,10 +222,10 @@ _COMPOUND: dict[str, tuple[str, ...]] = {
     "datsp": ("discharge", "air", "temp", "sp"),
     "ratsp": ("return", "air", "temp", "sp"),
     "zatsp": ("zone", "air", "temp", "sp"),
-    "sas": ("discharge", "air", "temp"),
-    "ras": ("return", "air", "temp"),
+    "sas": ("discharge", "air"),
+    "ras": ("return", "air"),
     # Static / duct pressure
-    "sasp": ("discharge", "air", "pressure", "sp"),
+    "sasp": ("discharge", "air", "sp"),
     "ductstatic": ("duct", "pressure"),
     "ductstaticsp": ("duct", "pressure", "sp"),
     "dsp": ("duct", "pressure"),
@@ -232,6 +264,10 @@ _COMPOUND: dict[str, tuple[str, ...]] = {
     "hwvalve": ("hot", "water", "valve"),
     "chilledwatervalve": ("chilled", "water", "valve"),
     "hotwatervalve": ("hot", "water", "valve"),
+    "chilledwater": ("chilled", "water"),
+    "hotwater": ("hot", "water"),
+    "coolingtower": ("coolingTower",),
+    "machinelearning": ("ml",),
     # Equipment phrases
     "airhandler": ("ahu",),
     "airhandling": ("ahu",),
@@ -241,71 +277,63 @@ _COMPOUND: dict[str, tuple[str, ...]] = {
 
 
 def _normalize(text: str) -> str:
+    # Camel case is common in BAS exports; retain whole-token matches, never substrings
+    # from opaque point IDs (e.g. 'space42' must not imply sp).
+    text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
     return " ".join(_TOKEN.findall(text.lower()))
 
 
-def _expand_tokens(text: str) -> set[str]:
-    """Tokenize a BMS / Haystack-ish name into Haystack-oriented tokens."""
-    raw = _normalize(text)
-    if not raw:
-        return set()
-    # Also try glued forms: "AHU RF-C" → tokens ahu rf c, plus compound "rfc" from rf+c.
-    parts = raw.split()
-    glued_pairs = ["".join(parts[i : i + 2]) for i in range(len(parts) - 1)]
-    glued_triples = ["".join(parts[i : i + 3]) for i in range(len(parts) - 2)]
-    candidates = set(parts) | set(glued_pairs) | set(glued_triples) | {"".join(parts)}
+def _token_evidence(
+    text: str,
+    catalog: dict[str, str] | None = None,
+) -> tuple[set[str], dict[str, dict[str, Any]]]:
+    parts = _normalize(text).split()
+    candidates = set(parts)
+    for size in (2, 3, 4):
+        candidates.update("".join(parts[i : i + size]) for i in range(len(parts) - size + 1))
+    canonical = {_normalize(sym).replace(" ", ""): sym for sym in (catalog or {})}
+    evidence: dict[str, dict[str, Any]] = {}
+    for token in sorted(candidates):
+        symbols = _COMPOUND.get(token)
+        source = "abbreviation"
+        if symbols is None and token in _ALIASES:
+            symbols = (_ALIASES[token],)
+            source = "token" if symbols[0] == token else "alias"
+        if symbols is None and token in canonical:
+            symbols = (canonical[token],)
+            source = "token"
+        if symbols is None:
+            # Exact tag names such as ahu, vav, coolingTower also qualify.
+            symbols = (token,) if token in parts else ()
+            source = "token"
+        for symbol in symbols:
+            hit = evidence.setdefault(symbol, {"source": source, "matches": [], "score": 0.95})
+            hit["matches"].append(token)
+    return set(parts) | set(evidence), evidence
 
-    out: set[str] = set()
-    for tok in candidates:
-        if tok in _COMPOUND:
-            out.update(_COMPOUND[tok])
-            continue
-        alias = _ALIASES.get(tok)
-        if alias:
-            out.add(alias)
-        # Keep original short tokens that are already Haystack symbols.
-        if (
-            tok in _ALIASES.values()
-            or tok
-            in {
-                "point",
-                "his",
-                "sensor",
-                "sp",
-                "cmd",
-                "fan",
-                "ahu",
-                "vav",
-            }
-            or len(tok) > 2
-        ):
-            out.add(tok)
-    # Always keep individual parts for scoring overlap.
-    for tok in parts:
-        alias = _ALIASES.get(tok, tok)
-        out.add(alias)
-        if tok in _COMPOUND:
-            out.update(_COMPOUND[tok])
-    return out
+
+def _expand_tokens(text: str) -> set[str]:
+    return _token_evidence(text)[0]
 
 
 def _score_symbol(query: str, tokens: set[str], sym: str, doc: str) -> float:
-    blob = _normalize(f"{sym} {doc.split(chr(10), 1)[0]}")
-    seq = difflib.SequenceMatcher(None, query, blob).ratio()
-    overlap = len(tokens & set(_normalize(sym).split())) / max(len(tokens), 1)
-    substr = 0.0
-    compact = query.replace(" ", "")
-    if sym in compact or sym in query:
-        substr = 0.45
-    if sym in tokens:
-        substr = max(substr, 0.85)
-    for tok in tokens:
-        if tok == sym or (len(tok) > 2 and (tok in sym or sym in tok)):
-            substr = max(substr, 0.5)
-        alias = _ALIASES.get(tok)
-        if alias == sym:
-            substr = max(substr, 0.7)
-    return max(seq, overlap + substr, substr)
+    """Rank search results without promoting short substrings to exact matches."""
+    normalized_sym = _normalize(sym)
+    if sym in tokens or normalized_sym in tokens:
+        return 0.98
+    parts = query.split()
+    # Docs only contribute whole word overlap; long prose similarity produces noise.
+    doc_words = set(_normalize(doc.split(chr(10), 1)[0]).split())
+    overlap = len(set(parts) & doc_words) / max(len(set(parts)), 1)
+    best = max(
+        (
+            difflib.SequenceMatcher(None, token, normalized_sym).ratio()
+            for token in parts
+            if len(token) >= 4 and len(normalized_sym) >= 4
+        ),
+        default=0.0,
+    )
+    return max(best * 0.75, overlap * 0.4)
 
 
 def suggest_markers(
@@ -316,37 +344,19 @@ def suggest_markers(
     cutoff: float = 0.3,
     path: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Closest Haystack symbols for a node name / freeform query at a tree level."""
+    """Search the real marker catalog. Fuzzy results require a human selection."""
     q = _normalize(query)
-    if not q:
+    if not q or n <= 0:
         return []
     catalog = catalog_for_level(level, path=path)
-    index = load_defs_index(path)
-    tokens = _expand_tokens(query)
-
-    scored: list[tuple[float, str]] = []
-    for sym, doc in catalog.items():
-        score = _score_symbol(q, tokens, sym, doc)
-        if score >= cutoff:
-            scored.append((score, sym))
-
+    tokens = _token_evidence(query, catalog)[0]
+    scored = [(_score_symbol(q, tokens, sym, doc), sym) for sym, doc in catalog.items()]
     scored.sort(key=lambda item: (-item[0], item[1]))
-    out: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for score, sym in scored:
-        if sym in seen:
-            continue
-        seen.add(sym)
-        out.append(
-            {
-                "symbol": sym,
-                "doc": catalog.get(sym) or index.get(sym, {}).get("doc", ""),
-                "score": round(score, 4),
-            }
-        )
-        if len(out) >= n:
-            break
-    return out
+    return [
+        {"symbol": sym, "doc": catalog[sym], "score": round(score, 4)}
+        for score, sym in scored
+        if score >= cutoff
+    ][:n]
 
 
 def guess_marker_bundle(
@@ -356,118 +366,114 @@ def guess_marker_bundle(
     path: str | None = None,
     role_cutoff: float = 0.35,
 ) -> dict[str, Any]:
-    """One-shot FinStack/Niagara-style tag set: best fuzzy pick per role, applied together."""
-    q = _normalize(query)
-    level_key = "equip" if level == "equipment" else level
-    catalog = catalog_for_level(level_key if level_key in LEVEL_MARKERS else "point", path=path)
-    index = load_defs_index(path)
-    tokens = _expand_tokens(query)
+    """Conservative proposal from explicit BAS tokens, with evidence for review.
 
-    roles = (
-        POINT_ROLES
-        if level_key == "point"
-        else {
-            "entity": ("equip", "ahu", "vav", "fan", "pump", "boiler", "chiller"),
-            "device": ("damper", "coil", "filter", "motor"),
-        }
-    )
+    Entity type comes from the selected tree level. Function, live/history/write
+    capability and scalar metadata cannot be established from a vague point name.
+    Fuzzy search is exposed separately rather than silently applying near matches.
+    """
+    level_key = level.strip().lower()
+    level_key = "equip" if level_key == "equipment" else level_key
+    catalog = catalog_for_level(level_key, path=path)
+    tokens, evidence = _token_evidence(query, catalog)
+    warnings: list[str] = []
+    seeds = {
+        "point": ("point",),
+        "equip": ("equip",),
+        "part": ("equip",),
+        "site": ("site",),
+        "building": ("site",),
+        "floor": ("space", "floor"),
+        "space": ("space",),
+    }[level_key]
+    selected = {sym for sym in evidence if sym in catalog and role_cutoff <= evidence[sym]["score"]}
+    for sym in seeds:
+        if sym in catalog:
+            selected.add(sym)
+            evidence[sym] = {"source": "tree-level", "matches": [level_key], "score": 1.0}
 
-    by_role: dict[str, dict[str, Any] | None] = {}
-    markers: list[str] = []
-
-    for role, candidates in roles.items():
-        best: tuple[float, str] | None = None
-        for sym in candidates:
-            if sym not in catalog and sym not in index:
-                continue
-            # Always keep entity/history seeds when present in catalog.
-            forced = role in {"entity", "history"} and sym in {"point", "his", "equip"}
-            # Strong prior when compound/alias expansion already produced this symbol.
-            prior = 0.95 if sym in tokens and not forced else 0.0
-            doc = catalog.get(sym) or index.get(sym, {}).get("doc", "")
-            score = max(_score_symbol(q, tokens, sym, doc), prior)
-            if forced:
-                score = max(score, 0.99 if sym == "point" and level_key == "point" else 0.9)
-            # Quantity/device/state need a real token hit — avoid "valve"≈"voltage" noise.
-            if role in {"quantity", "device", "state", "substance"} and sym not in tokens:
-                continue
-            if score < role_cutoff and not forced:
-                continue
-            if best is None or score > best[0]:
-                best = (score, sym)
-        if best is None:
-            by_role[role] = None
-            continue
-        score, sym = best
-        by_role[role] = {
-            "symbol": sym,
-            "doc": catalog.get(sym) or index.get(sym, {}).get("doc", ""),
-            "score": round(score, 4),
-        }
-        if sym not in markers:
-            markers.append(sym)
-
-    # Include strong compound/alias expansions that roles may have skipped.
-    role_symbols = {sym for cands in roles.values() for sym in cands}
-    for sym in sorted(tokens):
-        if sym in markers or sym not in role_symbols:
-            continue
-        if sym in catalog or sym in index:
-            markers.append(sym)
-
-    # Ensure historized points always carry point+his when guessing points.
     if level_key == "point":
-        for required in ("point", "his"):
-            if (required in catalog or required in index) and required not in markers:
-                markers.insert(0 if required == "point" else len(markers), required)
-        # FinStack-style default: measured quantities without cmd/sp tokens → sensor.
+        if any({"sas", "ras", "sasp"}.intersection(hit["matches"]) for hit in evidence.values()):
+            warnings.append(
+                "SAS/RAS/SA-SP abbreviations are ambiguous; confirm the measured quantity."
+            )
         if (
-            by_role.get("function") is None
-            and by_role.get("quantity") is not None
-            and ("sensor" in catalog or "sensor" in index)
+            {"status", "sts"}.intersection(tokens)
+            and {"fan", "pump", "motor"}.intersection(selected)
+            and "run" in catalog
         ):
-            by_role["function"] = {
-                "symbol": "sensor",
-                "doc": catalog.get("sensor") or index.get("sensor", {}).get("doc", ""),
-                "score": 0.5,
+            selected.add("run")
+            evidence["run"] = {
+                "source": "equipment-status",
+                "matches": ["status"],
+                "score": 0.95,
             }
-            if "sensor" not in markers:
-                markers.append("sensor")
-        # Command/status without quantity still needs a function marker when device tokens hit.
-        if by_role.get("function") is None and "cmd" in tokens:
-            by_role["function"] = {
-                "symbol": "cmd",
-                "doc": catalog.get("cmd") or index.get("cmd", {}).get("doc", ""),
-                "score": 0.9,
-            }
-            if "cmd" not in markers:
-                markers.append("cmd")
-
-        # Air-side sections almost always imply substance=air for HVAC points.
-        air_sections = {"return", "discharge", "outside", "mixed", "exhaust", "zone"}
-        air_companions = {
-            "temp",
-            "humidity",
-            "damper",
-            "fan",
-            "pressure",
-            "flow",
-            "co2",
-            "occupancy",
+        if "position" in tokens:
+            warnings.append(
+                "Position is BAS context, not a standard marker; confirm whether this is "
+                "sensor feedback, cmd output, or an sp limit."
+            )
+        functions = {sym for sym in selected if is_subtype(sym, "pointFunction", path=path)}
+        # A synthetic subtype refines synthetic; it is not a conflicting second function.
+        leaves = {
+            sym
+            for sym in functions
+            if not any(sym != other and is_subtype(other, sym, path=path) for other in functions)
         }
-        have = set(markers)
-        if (
-            have & air_sections
-            and have & air_companions
-            and "air" not in have
-            and ("air" in catalog or "air" in index)
-        ):
-            markers.append("air")
+        if len(leaves) > 1:
+            selected.difference_update(functions)
+            warnings.append(
+                "Conflicting point functions in the name: "
+                + ", ".join(sorted(leaves))
+                + ". Choose the actual function before applying."
+            )
+        elif leaves:
+            selected.difference_update(functions - leaves)
+            # synthetic is mandatory on computed/ml/sim records.
+            if "synthetic" in catalog and any(
+                is_subtype(sym, "synthetic", path=path) for sym in leaves
+            ):
+                selected.add("synthetic")
+                evidence["synthetic"] = {
+                    "source": "synthetic-subtype",
+                    "matches": sorted(leaves),
+                    "score": 0.95,
+                }
+        else:
+            warnings.append("Point function is ambiguous; choose sensor, cmd, sp, or synthetic.")
+        if not selected.intersection({"his", "cur", "writable"}):
+            warnings.append("Confirm actual his, cur, and writable capabilities from the source.")
+        warnings.append(
+            "Confirm kind, units, references, and any history metadata from the source."
+        )
 
+    ordered = [sym for sym in seeds if sym in selected]
+    ordered.extend(sorted(selected - set(ordered)))
+    roles = POINT_ROLES if level_key == "point" else {"entity": tuple(ordered)}
+    by_role: dict[str, dict[str, Any] | None] = {}
+    for role, candidates in roles.items():
+        matches = [sym for sym in ordered if sym in candidates]
+        by_role[role] = (
+            {
+                "symbol": matches[0],
+                "symbols": matches,
+                "doc": catalog[matches[0]],
+                "score": evidence[matches[0]]["score"],
+            }
+            if matches
+            else None
+        )
+    # Keep the historical field name for clients that display its role summary.
+    if level_key == "point":
+        by_role["history"] = by_role["capability"]
     return {
         "query": query,
         "level": level_key,
-        "markers": markers,
+        "markers": ordered,
         "by_role": by_role,
         "tokens": sorted(tokens),
+        "evidence": {sym: evidence[sym] for sym in ordered},
+        "warnings": warnings,
+        "confidence": "review-required",
+        "needs_review": True,
     }

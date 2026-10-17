@@ -30,6 +30,9 @@ class Settings(BaseSettings):
 
     timeseries_max_rows: int = 200000
     allow_mutations: bool = False
+    # Expiring SPARQL agent plans (A19); apply requires the exact stored plan.
+    agent_plan_ttl_s: int = 600
+    agent_plan_max_triples: int = 500
 
     log_level: str = "INFO"
     log_json: bool = True

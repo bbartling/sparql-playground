@@ -9,7 +9,11 @@ from bldgts.settings import Settings
 
 @pytest.fixture(scope="session")
 def project_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    # Checkpoints share fixture/model data with the enclosing tutorial repo.
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "pyproject.toml").is_file() and (parent / "model").is_dir():
+            return parent
+    raise RuntimeError("Run checkpoint tests from the complete tutorial repository")
 
 
 @pytest.fixture(scope="session")
