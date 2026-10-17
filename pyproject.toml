@@ -24,6 +24,11 @@ brickts = "brickts.cli:main"
 requires = ["uv_build>=0.12.13,<0.13.0"]
 build-backend = "uv_build"
 
+# Live app base = Part 2 checkpoint (no repo-root src/). Future parts freeze their own trees.
+[tool.uv.build-backend]
+module-name = "brickts"
+module-root = "blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/src"
+
 [dependency-groups]
 dev = [
     "pytest>=8,<9",
@@ -33,6 +38,9 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [
+    "blog/if-the-analyst-could-create-an-api/part-01-bare-sparql-api/checkpoint",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

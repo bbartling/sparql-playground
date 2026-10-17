@@ -3,26 +3,23 @@
 Blog series companion to the LinkedIn note
 [If the analyst could create an API…](https://www.linkedin.com/posts/activity-7514716015222484993-LHRB).
 
-Each **part** freezes an app base under `checkpoint/` (when shipped) so the next chapter
-can grow without erasing the prior shape.
+**App bases live only under each part’s `checkpoint/`.** There is no repo-root `src/` or `web/`.
+The live install (`uv run brickts`) is wired in `pyproject.toml` to **Part 2** until a later part becomes current.
 
 | Part | Folder | Story |
 |------|--------|--------|
-| **1** | [`part-01-bare-sparql-api/`](part-01-bare-sparql-api/) | Bare FastAPI: Brick graph + read-only SPARQL + SQLite timeseries (historical freeze) |
-| **2** | [`part-02-model-crud-ui/`](part-02-model-crud-ui/) | **Live app base** — Haystack CRUD + Vite UI (`checkpoint/`; root `src/`/`web/` symlink here) |
-| **3** | [`part-03-data-viz-timescale/`](part-03-data-viz-timescale/) | *(placeholder)* Data viz + SQLite → Postgres/Timescale cutover |
-| **4** | [`part-04-fdd-openfdd-postgres/`](part-04-fdd-openfdd-postgres/) | *(placeholder)* Open-FDD on Postgres SQL |
-| **5** | [`part-05-security/`](part-05-security/) | *(placeholder)* API / SPARQL / historian security |
+| **1** | [`part-01-bare-sparql-api/`](part-01-bare-sparql-api/) | Frozen bare Brick + SPARQL + SQLite API |
+| **2** | [`part-02-model-crud-ui/`](part-02-model-crud-ui/) | **Live** — Haystack CRUD + Vite UI |
+| **3** | [`part-03-data-viz-timescale/`](part-03-data-viz-timescale/) | *(empty)* Data viz + Timescale cutover |
+| **4** | [`part-04-fdd-openfdd-postgres/`](part-04-fdd-openfdd-postgres/) | *(empty)* Open-FDD on Postgres |
+| **5** | [`part-05-security/`](part-05-security/) | *(empty)* Security |
 
-Parts 3–5 are **empty scaffolds** (`README` + `checkpoint/.gitkeep`) until those chapters ship.
+## Independent SQL course
 
-## Independent: the SQL course (not part of this series tree)
+[`lessons/sql/INDEX.md`](../../lessons/sql/INDEX.md) — parallel track; not owned by this series.
 
-[`lessons/sql/INDEX.md`](../../lessons/sql/INDEX.md) stays its own track (own DB, own validators).
-Blog parts may **link** into it; they do not relocate or own the course.
+## Checkpoints
 
-## How to use checkpoints
-
-1. Draft the article in that part’s folder (`draft.md` when ready).
-2. Freeze `checkpoint/` + pin `GIT_SHA.txt` when the chapter ships.
-3. Run a frozen part with `PYTHONPATH=blog/…/checkpoint/src` from the repo root (see each README).
+1. Freeze code into that part’s `checkpoint/` when the chapter ships; pin `GIT_SHA.txt`.
+2. To run an older freeze: point `PYTHONPATH` at that `checkpoint/src`, or temporarily change `tool.uv.build-backend.module-root`.
+3. Parts 3–5 stay empty (`README` + `checkpoint/.gitkeep`) until built.

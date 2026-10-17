@@ -40,7 +40,7 @@ uv run pytest -q && uv run ruff check .
 
 - Read-only reference: `/home/ben/Desktop/open-fdd` — never edit it.
 - Don’t commit `var/`, `*.sqlite`, `.venv`, secrets. No Git LFS. Data files under 50 MB each.
-- No auth, no CDN for the core API — Swagger at `/docs`. Optional Vite UI under `web/` for model tag-tree CRUD (dev/tutorial). Live Turtle export: repo-root `building.ttl`.
+- No auth, no CDN for the core API — Swagger at `/docs`. Optional Vite UI under the live part’s `checkpoint/web/` (Part 2). Live Turtle export: repo-root `building.ttl`.
 
 ---
 
@@ -149,7 +149,7 @@ the existing production store via the opaque id — same pattern as Brick timese
 
 ## Blog series checkpoints
 
-[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — Part 1 Brick bare API freeze; **Part 2 is the live app** (`checkpoint/src` + `checkpoint/web`; repo-root `src/`/`web/` are symlinks). Parts 3–5 empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). SQL course stays **independent**.
+[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — **no repo-root `src/`/`web/`**. Each part freezes an app base under `checkpoint/`. Live package = Part 2 (`pyproject.toml` `module-root`). Parts 3–5 are empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). SQL course stays **independent**.
 
 ## Daily SQL course (operator requested, 2026-10-15)
 

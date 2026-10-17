@@ -2,28 +2,19 @@
 
 **Series:** [If the analyst could create an API](../README.md)  
 **Builds on:** [Part 1](../part-01-bare-sparql-api/)  
-**Status:** **live app base** (repo-root `src/` and `web/` are symlinks into this `checkpoint/`)
-
-## What this part is
-
-Smart-building IoT tagging UI on the brickts API:
-
-- Haystack markers (vendored `data/haystack/defs.json` + `difflib` suggest)
-- Hold-to-rename, right-click closest match, Save via CRUD
-- Opaque timeseries refs preserved
-- SPARQL browser + coverage dashboard
+**Status:** **live app base** (uv `module-root` points here; there is no repo-root `src/` or `web/`)
 
 ## Layout
 
 ```
 checkpoint/
-  src/brickts/   ← also repo-root src/  (symlink)
-  web/           ← also repo-root web/  (symlink)
+  src/brickts/     # FastAPI package (Haystack markers + timeseries refs)
+  web/             # Vite UI
   scripts/
   tests/
 ```
 
-Do **not** maintain a second copy of the package under a real root `src/` tree. Edit here (or via the symlinks). Shared `model/` + `data/` stay at the repository root.
+Shared building data stays at the **repository root** (`model/`, `data/`, including `data/haystack/defs.json`).
 
 ## Run
 
@@ -33,9 +24,15 @@ From the **repository root**:
 uv sync
 uv run brickts model build
 uv run brickts bootstrap
-BRICKTS_ALLOW_MUTATIONS=true uv run brickts serve   # :8000/docs
+BRICKTS_ALLOW_MUTATIONS=true uv run brickts serve   # http://127.0.0.1:8000/docs
+```
 
-cd web && npm install && npm run dev                 # :5173
+UI (separate terminal):
+
+```bash
+cd blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web
+npm install
+npm run dev    # http://127.0.0.1:5173
 ```
 
 ## Next

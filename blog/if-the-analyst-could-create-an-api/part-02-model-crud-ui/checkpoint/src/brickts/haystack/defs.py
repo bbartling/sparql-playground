@@ -5,6 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+
 def _default_defs_path() -> Path:
     """Locate vendored defs whether package lives at repo-root src/ or a blog checkpoint."""
     here = Path(__file__).resolve()

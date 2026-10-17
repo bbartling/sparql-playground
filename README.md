@@ -19,13 +19,13 @@ Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api
 
 Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only). That request also writes repo-root **`building.ttl`** on a background thread — easy to open, commit, and push for tutorials.
 
-Optional UI ([`web/`](web/)): model tag-tree + **in-browser SPARQL editor** + dashboard. Mutations need `BRICKTS_ALLOW_MUTATIONS=true`.
+Optional UI (live Part 2 checkpoint [`web/`](blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web/)): Haystack model tag-tree + **in-browser SPARQL editor** + coverage. Mutations need `BRICKTS_ALLOW_MUTATIONS=true`. There is **no** repo-root `src/` or `web/` — each blog part owns its app base under `checkpoint/`.
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
-site.ttl + point maps  ──build──▶  Brick Turtle  ──▶  SPARQL API
+site.ttl + point maps  ──build──▶  model Turtle  ──▶  SPARQL API
 Browser → /docs (Swagger)     Laptop → scripts/lesson_0*.py
-Model UI → web/               Live export → ./building.ttl
+Model UI → part-02/…/checkpoint/web/   Live export → ./building.ttl
 ```
 
 Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md).

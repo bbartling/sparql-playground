@@ -1,9 +1,8 @@
-from fastapi.testclient import TestClient
-
 from brickts.api.app import create_app
 from brickts.graph.namespaces import BLDG, REF
 from brickts.ingest import bootstrap_all
 from brickts.settings import Settings
+from fastapi.testclient import TestClient
 
 
 def test_tree_and_mutations_gate(settings: Settings):
