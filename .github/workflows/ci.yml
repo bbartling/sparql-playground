@@ -16,7 +16,7 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run brickts model build
+      - run: uv run bldgts model build
       - run: uv run pytest -q
       - run: uv run python lessons/sql/validate_course.py
       - run: uv run python lessons/sql/graph_lab.py --check
