@@ -6,11 +6,10 @@ import argparse
 import json
 from pathlib import Path
 
-from rdflib import Graph, Literal, Namespace, URIRef
-from rdflib.namespace import RDF
-
 from bldgts.graph.sparql_guard import SparqlRejected, prepare_sparql, run_prepared
 from bldgts.settings import Settings
+from rdflib import Graph, Literal, Namespace, URIRef
+from rdflib.namespace import RDF
 
 HERE = Path(__file__).resolve().parent
 REF = Namespace("https://brickschema.org/schema/Brick/ref#")

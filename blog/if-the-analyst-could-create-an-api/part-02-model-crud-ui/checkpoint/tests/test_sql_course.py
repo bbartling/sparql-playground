@@ -5,10 +5,9 @@ import json
 from pathlib import Path
 
 import pytest
+from bldgts.graph.sparql_guard import SparqlRejected
 from rdflib import Literal
 from rdflib.namespace import XSD
-
-from bldgts.graph.sparql_guard import SparqlRejected
 
 COURSE = Path(__file__).resolve().parents[1] / "lessons" / "sql"
 

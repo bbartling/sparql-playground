@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from bldgts.graph.render import render_model, write_turtle
 from bldgts.settings import Settings
 

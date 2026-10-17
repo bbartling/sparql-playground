@@ -2,13 +2,12 @@ import csv
 from pathlib import Path
 
 import pytest
-from rdflib import Graph
-
 from bldgts.graph.namespaces import BLDG, BRICK, RDF, REF
 from bldgts.graph.ontology import load_brick_ontology
 from bldgts.graph.validate import run_shacl
 from bldgts.settings import Settings
 from bldgts.store.sqlite import SqliteTimeseriesStore
+from rdflib import Graph
 
 
 @pytest.fixture

@@ -4,11 +4,10 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from fastapi.testclient import TestClient
-
 from bldgts.api.app import create_app
 from bldgts.ingest import bootstrap_all
 from bldgts.settings import Settings
+from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from lesson_02_fc1_points import find_fc1_points  # noqa: E402

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from bldgts.settings import Settings
-
 from rdf_crud import (
     api_client,
     assert_markers,

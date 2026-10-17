@@ -1,5 +1,4 @@
 import pytest
-
 from bldgts.graph.sparql_guard import SparqlRejected, SparqlSyntaxError, prepare_sparql
 from bldgts.settings import Settings
 

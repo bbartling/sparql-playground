@@ -1,9 +1,8 @@
-from fastapi.testclient import TestClient
-
 from bldgts.api.app import create_app
 from bldgts.graph.namespaces import BLDG, REF
 from bldgts.ingest import bootstrap_all
 from bldgts.settings import Settings
+from fastapi.testclient import TestClient
 
 
 def test_tree_and_mutations_gate(settings: Settings):

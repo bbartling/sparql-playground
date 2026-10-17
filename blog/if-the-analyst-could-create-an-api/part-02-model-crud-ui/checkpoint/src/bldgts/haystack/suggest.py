@@ -158,10 +158,14 @@ def guess_marker_bundle(
     index = load_defs_index(path)
     tokens = set(q.split()) | {_ALIASES.get(t, t) for t in q.split()}
 
-    roles = POINT_ROLES if level_key == "point" else {
-        "entity": ("equip", "ahu", "vav", "fan", "pump", "boiler", "chiller"),
-        "device": ("damper", "coil", "filter", "motor"),
-    }
+    roles = (
+        POINT_ROLES
+        if level_key == "point"
+        else {
+            "entity": ("equip", "ahu", "vav", "fan", "pump", "boiler", "chiller"),
+            "device": ("damper", "coil", "filter", "motor"),
+        }
+    )
 
     by_role: dict[str, dict[str, Any] | None] = {}
     markers: list[str] = []
