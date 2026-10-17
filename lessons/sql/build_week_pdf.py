@@ -114,9 +114,7 @@ def build_combined_markdown(week: int) -> str:
         )
         parts.append(body)
         if day != days[-1]:
-            parts.append(
-                '\n\n<div style="page-break-before: always;"></div>\n\n---\n\n'
-            )
+            parts.append('\n\n<div style="page-break-before: always;"></div>\n\n---\n\n')
         else:
             parts.append("\n\n---\n\n")
 
