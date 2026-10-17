@@ -1,0 +1,22 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+
+SELECT ?zone ?point ?label ?cls ?timeseriesId WHERE {
+  ?zone a/(rdfs:subClassOf|owl:equivalentClass)* brick:HVAC_Zone .
+  FILTER(STRSTARTS(STR(?zone), STR(bldg:)))
+  FILTER(CONTAINS(LCASE(STR(?zone)), "vav"))
+  ?point brick:isPointOf ?zone .
+  OPTIONAL { ?point rdfs:label ?label }
+  OPTIONAL {
+    ?point a ?cls .
+    FILTER(STRSTARTS(STR(?cls), STR(brick:)))
+  }
+  OPTIONAL {
+    ?point ref:hasExternalReference ?ref .
+    ?ref ref:hasTimeseriesId ?timeseriesId .
+  }
+}
+ORDER BY ?zone ?point

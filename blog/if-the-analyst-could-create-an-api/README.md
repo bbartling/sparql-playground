@@ -13,8 +13,10 @@ write the post, come back later, and build the next part without losing the prio
 | **3** | [`part-03-sql-postgres-timescale/`](part-03-sql-postgres-timescale/) | *(scaffold)* Blog chapter that *points at* deeper SQL / Timescale themes |
 | **4** | [`part-04-coming-soon/`](part-04-coming-soon/) | *(scaffold)* Next API/blog chapter — fill when you draft it |
 
-The **live app** at the repo root tracks Part 2 (and beyond). Part 1 keeps a **source snapshot**
-under `checkpoint/` taken from git so the bare API does not get overwritten as the mainline grows.
+Each published API part freezes a **`checkpoint/`** of that app base (`src/`, tests, scripts;
+Part 2 also freezes `web/`). Shared `model/` + `data/` stay at the repo root. The **live**
+tree at the root keeps moving; reopen an older part by `PYTHONPATH=…/checkpoint/src` as
+documented in that part’s README.
 
 ## Independent: the SQL course (not part of this series tree)
 
@@ -30,9 +32,9 @@ own the course. Treat `lessons/sql/` as a parallel track you can study anytime.
 ## How to use these checkpoints
 
 1. Write / edit the blog draft for that part in its folder (add or extend `draft.md`).
-2. For Part 1, open `checkpoint/` — frozen bare API surface (no `web/`, no model CRUD).
-3. For Part 2, the runnable app is the **repo root** (`uv run brickts serve`, optional `web/`).
-4. For Parts 3–4, keep article notes here; send hands-on SQL work to `lessons/sql/`.
+2. Freeze the app base into that part’s `checkpoint/` when the chapter ships (pin `GIT_SHA.txt`).
+3. Run a frozen part with `PYTHONPATH=blog/…/checkpoint/src` from the repo root (see each README).
+4. Parts 3–4: article notes here; hands-on SQL stays in independent `lessons/sql/` (link, don’t relocate).
 
 ## Shared building data (API parts)
 

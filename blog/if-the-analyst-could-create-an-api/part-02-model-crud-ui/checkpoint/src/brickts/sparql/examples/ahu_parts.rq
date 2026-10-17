@@ -1,0 +1,12 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?ahu ?part ?partType ?label WHERE {
+  VALUES ?ahu { bldg:AHU_1 bldg:AHU_2 }
+  ?ahu brick:hasPart ?part .
+  ?part a ?partType .
+  FILTER(STRSTARTS(STR(?partType), STR(brick:)))
+  OPTIONAL { ?part rdfs:label ?label }
+}
+ORDER BY ?ahu ?part

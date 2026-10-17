@@ -149,7 +149,7 @@ the existing production store via the opaque id — same pattern as Brick timese
 
 ## Blog series checkpoints
 
-[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — Part 1 frozen bare API snapshot, Part 2 = mainline CRUD/UI story, Parts 3–4 scaffolds. The SQL course below is **independent** of that series (link from blog drafts; do not relocate `lessons/sql/`).
+[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — each API part freezes a `checkpoint/` app base (Part 1 bare SPARQL; Part 2 CRUD+Vite UI). Parts 3–4 scaffolds until frozen. The SQL course below is **independent** of that series (link from blog drafts; do not relocate `lessons/sql/`).
 
 ## Daily SQL course (operator requested, 2026-10-15)
 
