@@ -47,6 +47,9 @@ def validate() -> list[str]:
             if 1 <= neighbor <= 84 and f"(day{neighbor:02}.md)" not in text:
                 errors.append(f"{path.name}: missing neighboring-day navigation")
     for path in HERE.rglob("*.md"):
+        # Generated offline packs under pdf/ are concatenations; skip their relative links.
+        if "pdf" in path.parts:
+            continue
         # Ignore links written inside fenced examples, and check repository-relative targets.
         text = re.sub(r"```[\s\S]*?```", "", path.read_text())
         for target in re.findall(r"(?<!!)\[[^\]]+\]\(([^)]+)\)", text):

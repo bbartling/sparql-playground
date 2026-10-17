@@ -2,7 +2,7 @@
 
 **12 weeks · 84 days · six daily lessons plus one independent weekly challenge.** Start with no database background. Finish able to design, query, test and review a model-driven HVAC time-series/FDD application. This is mostly SQL/database engineering; RDF/SPARQL is the small semantic lookup layer that connects a logical point to its database identity.
 
-[Start: Day 01](day01.md) · [All 84 lessons](INDEX.md) · [Local lab](LAB_GUIDE.md) · [Remote Timescale setup](REMOTE_SETUP.md) · [Primary references](SOURCES.md) · [Production bridge](OPENFDD_BRIDGE.md)
+[Start: Day 01](day01.md) · [All 84 lessons](INDEX.md) · [Local lab](LAB_GUIDE.md) · [Remote Timescale setup](REMOTE_SETUP.md) · [Primary references](SOURCES.md) · [Production bridge](OPENFDD_BRIDGE.md) · [Weekly PDF/EPUB packs](pdf/README.md)
 
 ## Your route
 

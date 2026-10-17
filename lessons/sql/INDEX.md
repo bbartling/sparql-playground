@@ -26,6 +26,8 @@ The weekly challenges provide requirements and acceptance criteria without a wor
 
 SELECT, filters, NULL, sorting and summaries.
 
+Offline pack (Kindle: prefer EPUB): [week-01.epub](pdf/week-01.epub) · [week-01.pdf](pdf/week-01.pdf) · [rebuild](pdf/README.md).
+
 - [ ] [Day 01 — Open the SQL workbench](day01.md)
 - [ ] [Day 02 — Read tables and name the row](day02.md)
 - [ ] [Day 03 — Filter rows with explicit logic](day03.md)
