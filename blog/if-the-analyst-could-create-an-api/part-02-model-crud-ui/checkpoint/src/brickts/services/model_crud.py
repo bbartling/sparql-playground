@@ -1,7 +1,8 @@
-"""Brick model CRUD over the runtime graph (copy-on-write + snapshot TTL).
+"""Haystack-oriented model CRUD over the runtime graph (copy-on-write + snapshot TTL).
 
 Preserves every existing ``ref:TimeseriesReference``. Soft-delete uses ``bts:hidden``.
 New points always mint a TimeseriesReference + opaque timeseries id.
+UI tags are Project Haystack markers (``bts:hasHaystackMarker``), not shipping ops tags.
 """
 
 from __future__ import annotations
@@ -15,17 +16,24 @@ from rdflib.namespace import RDF, RDFS, XSD
 
 from brickts.graph.namespaces import BLDG, BRICK, BTS, REF
 from brickts.graph.service import ConflictError, GraphService
+from brickts.haystack.defs import catalog_for_level
 
-META_TAGS: dict[str, str] = {
-    "LATE": "Late vs expected window",
-    "DAMAGED": "Visible damage",
-    "SHORT": "Quantity / coverage short",
-    "HOLD": "Hold for QA or review",
-    "MISSHIP": "Wrong assignment / mis-wired",
-    "CUSTOM": "Freeform note (requires text)",
+# Seed Haystack markers from legacy Brick classes until the seed TTL is fully Haystack.
+_BRICK_TO_MARKERS: dict[str, tuple[str, ...]] = {
+    "Site": ("site",),
+    "Building": ("site",),
+    "Floor": ("floor",),
+    "Air_Handler_Unit": ("equip", "ahu"),
+    "Fan": ("equip", "fan"),
+    "Supply_Fan": ("equip", "fan"),
+    "Return_Fan": ("equip", "fan"),
+    "Variable_Air_Volume_Box": ("equip", "vav"),
+    "Sensor": ("point", "sensor"),
+    "Setpoint": ("point", "sp"),
+    "Command": ("point", "cmd"),
+    "Status": ("point", "status"),
+    "Point": ("point",),
 }
-
-STATUS_VALUES = {"received", "not_received"}
 
 _EQUIP_KINDS = {
     "ahu": BRICK.Air_Handler_Unit,
@@ -93,8 +101,34 @@ def database_iri(g: Graph) -> URIRef:
     return BLDG.timeseries_db
 
 
-def meta_tag_catalog() -> dict[str, str]:
-    return dict(META_TAGS)
+def _stored_markers(g: Graph, iri: URIRef) -> list[str]:
+    return sorted({str(o) for o in g.objects(iri, BTS.hasHaystackMarker)})
+
+
+def _seed_markers(g: Graph, iri: URIRef, node_type: str) -> list[str]:
+    stored = _stored_markers(g, iri)
+    if stored:
+        return stored
+    seeded: list[str] = []
+    for brick_type in _brick_types(g, iri):
+        seeded.extend(_BRICK_TO_MARKERS.get(brick_type, ()))
+    if not seeded:
+        seeded.extend(
+            {
+                "site": ("site",),
+                "building": ("site",),
+                "floor": ("floor",),
+                "equip": ("equip",),
+                "part": ("equip",),
+                "point": ("point",),
+            }.get(node_type, ())
+        )
+    # Dedupe, preserve order.
+    out: list[str] = []
+    for marker in seeded:
+        if marker not in out:
+            out.append(marker)
+    return out
 
 
 def build_tree(graph: GraphService) -> list[dict[str, Any]]:
@@ -102,22 +136,15 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
     g = graph.state.model
 
     def point_node(point: URIRef) -> dict[str, Any]:
+        tid = _timeseries_id(g, point)
         return {
             "id": _local(point),
             "iri": str(point),
             "name": _label(g, point),
             "node_type": "point",
             "brick_types": _brick_types(g, point),
-            "tags": {
-                k: v
-                for k, v in {
-                    "status": next((str(o) for o in g.objects(point, BTS.opsStatus)), None),
-                    "meta": next((str(o) for o in g.objects(point, BTS.opsMeta)), None),
-                    "custom": next((str(o) for o in g.objects(point, BTS.opsNote)), None),
-                    "timeseries_id": _timeseries_id(g, point),
-                }.items()
-                if v
-            },
+            "markers": _seed_markers(g, point, "point"),
+            "tags": {k: v for k, v in {"timeseries_id": tid}.items() if v},
             "children": [],
         }
 
@@ -154,6 +181,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                     "name": _label(g, p),
                     "node_type": "part",
                     "brick_types": _brick_types(g, p),
+                    "markers": _seed_markers(g, p, "part"),
                     "tags": {},
                     "children": points_of(p),
                 }
@@ -207,6 +235,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                     "name": _label(g, e),
                     "node_type": "equipment",
                     "brick_types": _brick_types(g, e),
+                    "markers": _seed_markers(g, e, "equip"),
                     "tags": {},
                     "children": children,
                 }
@@ -238,6 +267,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                     "name": _label(g, building),
                     "node_type": "building",
                     "brick_types": _brick_types(g, building),
+                    "markers": _seed_markers(g, building, "building"),
                     "tags": {},
                     "children": equip_nodes(building),
                 }
@@ -249,6 +279,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                 "name": _label(g, site),
                 "node_type": "site",
                 "brick_types": _brick_types(g, site),
+                "markers": _seed_markers(g, site, "site"),
                 "tags": {},
                 "children": buildings or equip_nodes(None),
             }
@@ -411,49 +442,75 @@ def hide_entity(
     return {"ok": True, "revision": rev, "id": eid, "hidden": True}
 
 
-def apply_point_tags(
+def _level_for_entity(g: Graph, iri: URIRef) -> str:
+    types = set(_brick_types(g, iri))
+    if "Site" in types:
+        return "site"
+    if "Building" in types:
+        return "building"
+    if "Floor" in types:
+        return "floor"
+    if types & {
+        "Sensor",
+        "Setpoint",
+        "Command",
+        "Status",
+        "Point",
+    } or _timeseries_id(g, iri):
+        return "point"
+    if types & {
+        "Air_Handler_Unit",
+        "Variable_Air_Volume_Box",
+        "Chiller",
+        "Boiler",
+        "Fan",
+        "Pump",
+    }:
+        return "equip"
+    return "equip"
+
+
+def apply_markers(
     graph: GraphService,
     *,
     updates: list[dict[str, Any]],
     expected_revision: int | None,
     allow_mutations: bool,
 ) -> dict[str, Any]:
-    """Batch opsStatus / opsMeta / opsNote updates (Dock Tag Save)."""
+    """Batch Haystack marker writes for any tree entity."""
     _require_mutations(graph, allow_mutations)
 
     def mutator(g: Graph) -> None:
         for item in updates:
-            pid = _safe_id(str(item["point_id"]))
-            point = BLDG[pid]
-            if (point, RDF.type, None) not in g:
-                raise ValueError(f"point not found: {pid}")
-            if _is_hidden(g, point):
-                raise ValueError(f"point is hidden: {pid}")
-            status = item.get("status")
-            meta = item.get("meta")
-            note = item.get("note")
-            if status is not None:
-                status = str(status).strip()
-                if status not in STATUS_VALUES:
-                    raise ValueError("status must be received or not_received")
-                g.set((point, BTS.opsStatus, Literal(status)))
-            if meta is not None:
-                code = str(meta).strip().upper()
-                if code not in META_TAGS:
-                    raise ValueError(f"meta must be one of: {', '.join(META_TAGS)}")
-                g.set((point, BTS.opsMeta, Literal(code)))
-                if code == "CUSTOM":
-                    text = str(note or "").strip()
-                    if not text:
-                        raise ValueError("CUSTOM meta needs a note")
-                    g.set((point, BTS.opsNote, Literal(text)))
-                else:
-                    g.remove((point, BTS.opsNote, None))
+            eid = _safe_id(str(item.get("entity_id") or item.get("point_id") or ""))
+            entity = BLDG[eid]
+            if (entity, RDF.type, None) not in g:
+                raise ValueError(f"entity not found: {eid}")
+            if _is_hidden(g, entity):
+                raise ValueError(f"entity is hidden: {eid}")
+            level = str(item.get("level") or _level_for_entity(g, entity))
+            allowed = catalog_for_level(level)
+            raw = item.get("markers")
+            if raw is None:
+                raise ValueError("markers list required")
+            markers = [str(m).strip() for m in raw]
+            if not markers:
+                raise ValueError("markers must not be empty")
+            bad = [m for m in markers if m not in allowed]
+            if bad:
+                raise ValueError(f"markers not allowed for level {level}: {', '.join(bad)}")
+            g.remove((entity, BTS.hasHaystackMarker, None))
+            # Drop legacy shipping ops tags if present.
+            g.remove((entity, BTS.opsStatus, None))
+            g.remove((entity, BTS.opsMeta, None))
+            g.remove((entity, BTS.opsNote, None))
+            for marker in markers:
+                g.add((entity, BTS.hasHaystackMarker, Literal(marker)))
 
     try:
         rev = graph.apply_mutation(
             mutator,
-            note=f"point_tags:{len(updates)}",
+            note=f"haystack_markers:{len(updates)}",
             expected_revision=expected_revision,
         )
     except ConflictError as exc:
@@ -469,41 +526,77 @@ def apply_point_tags(
     return {"ok": True, "revision": rev, "updated": len(updates)}
 
 
+def rename_entity(
+    graph: GraphService,
+    *,
+    entity_id: str,
+    label: str,
+    expected_revision: int | None,
+    allow_mutations: bool,
+) -> dict[str, Any]:
+    _require_mutations(graph, allow_mutations)
+    eid = _safe_id(entity_id)
+    text = label.strip()
+    if not text:
+        raise ValueError("label must not be empty")
+
+    def mutator(g: Graph) -> None:
+        entity = BLDG[eid]
+        if (entity, RDF.type, None) not in g:
+            raise ValueError(f"entity not found: {eid}")
+        if _is_hidden(g, entity):
+            raise ValueError(f"entity is hidden: {eid}")
+        g.set((entity, RDFS.label, Literal(text)))
+
+    try:
+        rev = graph.apply_mutation(
+            mutator,
+            note=f"rename:{eid}",
+            expected_revision=expected_revision,
+        )
+    except ConflictError as exc:
+        return {
+            "ok": False,
+            "conflict": True,
+            "revision": exc.current,
+            "expected_revision": exc.expected,
+        }
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc), "revision": graph.revision}
+    graph.schedule_serialize()
+    return {"ok": True, "revision": rev, "id": eid, "label": text}
+
+
 def dashboard(graph: GraphService) -> dict[str, Any]:
+    """Haystack marker coverage across historized points."""
     g = graph.state.model
     points: list[dict[str, Any]] = []
+    marker_counts: dict[str, int] = {}
     for s, _, _ in g.triples((None, REF.hasExternalReference, None)):
         point = URIRef(s)
         if _is_hidden(g, point):
             continue
-        if not any(str(t).startswith(str(BRICK)) for t in g.objects(point, RDF.type)):
-            continue
-        status = next((str(o) for o in g.objects(point, BTS.opsStatus)), None)
-        meta = next((str(o) for o in g.objects(point, BTS.opsMeta)), None)
-        note = next((str(o) for o in g.objects(point, BTS.opsNote)), None)
+        markers = _seed_markers(g, point, "point")
+        for marker in markers:
+            marker_counts[marker] = marker_counts.get(marker, 0) + 1
         points.append(
             {
                 "id": _local(point),
                 "name": _label(g, point),
                 "timeseries_id": _timeseries_id(g, point),
-                "status": status,
-                "meta": meta,
-                "custom": note,
+                "markers": markers,
             }
         )
     points.sort(key=lambda p: p["name"].lower())
-    received = sum(1 for p in points if p["status"] == "received")
-    not_received = sum(1 for p in points if p["status"] == "not_received")
-    with_meta = sum(1 for p in points if p["meta"])
-    untagged = sum(1 for p in points if not p["status"])
+    tagged = sum(1 for p in points if p["markers"])
     return {
         "revision": graph.revision,
         "totals": {
             "items": len(points),
-            "received": received,
-            "not_received": not_received,
-            "meta": with_meta,
-            "untagged": untagged,
+            "tagged": tagged,
+            "untagged": len(points) - tagged,
+            "distinct_markers": len(marker_counts),
         },
+        "marker_counts": dict(sorted(marker_counts.items(), key=lambda kv: (-kv[1], kv[0]))),
         "items": points,
     }

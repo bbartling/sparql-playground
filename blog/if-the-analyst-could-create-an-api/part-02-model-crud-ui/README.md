@@ -1,65 +1,43 @@
-# Part 2 — Model CRUD, tag-tree UI, browser SPARQL
+# Part 2 — Haystack model CRUD + Vite UI
 
 **Series:** [If the analyst could create an API](../README.md)  
 **Builds on:** [Part 1](../part-01-bare-sparql-api/)  
-**Git freeze:** see `GIT_SHA.txt` (mainline when this checkpoint was taken)
+**Status:** **live app base** (repo-root `src/` and `web/` are symlinks into this `checkpoint/`)
 
-## What this part adds
+## What this part is
 
-Still the same Brick → SPARQL → opaque timeseries path. Plus:
+Smart-building IoT tagging UI on the brickts API:
 
-| Addition | Where |
-|----------|--------|
-| Site → equip → point tree + soft-delete (keeps timeseries refs) | `checkpoint/src/brickts/services/model_crud.py`, `/api/model/*` |
-| Ops tags (Received / Not received / LATE / DAMAGED / …) | `POST /api/model/tags` |
-| Vite React UI (Model / SPARQL / Dashboard) | [`checkpoint/web/`](checkpoint/web/) |
-| Bundled `.rq` list for the browser editor | `GET /api/sparql/examples` |
-| Beginner Turtle export at repo root | `building.ttl` via background serialize |
+- Haystack markers (vendored `data/haystack/defs.json` + `difflib` suggest)
+- Hold-to-rename, right-click closest match, Save via CRUD
+- Opaque timeseries refs preserved
+- SPARQL browser + coverage dashboard
 
-Mutations require `BRICKTS_ALLOW_MUTATIONS=true`.
+## Layout
 
-## Checkpoint contents
+```
+checkpoint/
+  src/brickts/   ← also repo-root src/  (symlink)
+  web/           ← also repo-root web/  (symlink)
+  scripts/
+  tests/
+```
 
-Frozen sources live under [`checkpoint/`](checkpoint/):
+Do **not** maintain a second copy of the package under a real root `src/` tree. Edit here (or via the symlinks). Shared `model/` + `data/` stay at the repository root.
 
-- `checkpoint/src/brickts/` — FastAPI app including model CRUD / CORS / SPARQL examples
-- `checkpoint/web/` — Vite Model / SPARQL / Dashboard UI
-- `checkpoint/scripts/lesson_0*.py`, SPARQL helpers
-- `checkpoint/tests/` — API / UI / FC1 tests at freeze time
+## Run
 
-Shared building data stays at the **repo root** (`model/`, `data/`). Do not duplicate CSVs here.
-
-As mainline grows (Part 3+), keep running **this** tree via the commands below so the blog stays honest to the Part 2 shape.
-
-## Run the Part 2 checkpoint
-
-From the **repository root** (so `model/` and `data/` resolve). Forces Python to import the frozen package:
+From the **repository root**:
 
 ```bash
 uv sync
 uv run brickts model build
 uv run brickts bootstrap
+BRICKTS_ALLOW_MUTATIONS=true uv run brickts serve   # :8000/docs
 
-export PYTHONPATH="blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/src${PYTHONPATH:+:$PYTHONPATH}"
-BRICKTS_ALLOW_MUTATIONS=true uv run brickts serve   # http://127.0.0.1:8000/docs
+cd web && npm install && npm run dev                 # :5173
 ```
 
-Optional UI (separate terminal, still from repo root):
+## Next
 
-```bash
-cd blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web
-npm install
-npm run dev    # http://127.0.0.1:5173 — API proxy expects :8000
-```
-
-Confirm the freeze is what is loaded:
-
-```bash
-PYTHONPATH=blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/src \
-  uv run python -c "import brickts; print(brickts.__file__)"
-# should print .../part-02-model-crud-ui/checkpoint/src/brickts/__init__.py
-```
-
-## Blog draft
-
-Add your article draft here as `draft.md` when ready. Next: [Part 3](../part-03-sql-postgres-timescale/).
+[Part 3 — Data viz + Timescale](../part-03-data-viz-timescale/) (placeholder until frozen).

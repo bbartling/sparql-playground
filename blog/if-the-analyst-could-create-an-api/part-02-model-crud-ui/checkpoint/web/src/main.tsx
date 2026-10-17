@@ -8,26 +8,21 @@ type TreeNode = {
   iri: string
   name: string
   node_type: string
+  markers?: string[]
   tags: Record<string, string>
   children: TreeNode[]
 }
 
-type PendingDraft = {
-  status?: 'received' | 'not_received'
-  meta?: string
-  note?: string
-}
+type PendingDraft = { markers: string[]; label?: string }
 
 type Tab = 'floor' | 'dashboard' | 'sparql'
+type Suggestion = { symbol: string; doc: string; score: number }
 
 const HOLD_MS = 480
-const FALLBACK_META: Record<string, string> = {
-  LATE: 'Late vs expected window',
-  DAMAGED: 'Visible damage',
-  SHORT: 'Quantity / coverage short',
-  HOLD: 'Hold for QA or review',
-  MISSHIP: 'Wrong assignment / mis-wired',
-  CUSTOM: 'Freeform note (requires text)',
+
+function levelOf(node: TreeNode): string {
+  if (node.node_type === 'equipment') return 'equip'
+  return node.node_type
 }
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
@@ -62,17 +57,17 @@ function branchIds(nodes: TreeNode[]): Set<string> {
   return open
 }
 
-function statusPill(status?: string | null, pending = false) {
-  const cls = pending ? 'pill pending' : 'pill'
-  if (status === 'received') return <span className={`${cls} received`}>Received</span>
-  if (status === 'not_received') return <span className={`${cls} returned`}>Not received</span>
-  return <span className={`${cls} none`}>Open</span>
-}
-
-function metaPill(meta?: string | null, note?: string | null, pending = false) {
-  if (!meta) return null
-  const cls = pending ? 'pill pending custom' : 'pill custom'
-  return <span className={cls}>{meta === 'CUSTOM' && note ? `CUSTOM: ${note}` : meta}</span>
+function MarkerPills({ markers, pending }: { markers: string[]; pending?: boolean }) {
+  if (!markers.length) return <span className="pill none">no markers</span>
+  return (
+    <>
+      {markers.map((m) => (
+        <span key={m} className={`pill ${pending ? 'pending custom' : 'custom'}`}>
+          {m}
+        </span>
+      ))}
+    </>
+  )
 }
 
 function DeepTree(props: {
@@ -81,19 +76,20 @@ function DeepTree(props: {
   editing: boolean
   lockedOpen: boolean
   pending: Record<string, PendingDraft>
-  metaTargetId: string | null
+  activeId: string | null
   expanded: Set<string>
   onToggle: (id: string) => void
-  onItemLeftClick: (node: TreeNode) => void
-  onItemRightClick: (node: TreeNode) => void
-  onItemHold: (node: TreeNode) => void
+  onLeftClick: (node: TreeNode) => void
+  onRightClick: (node: TreeNode) => void
+  onHold: (node: TreeNode) => void
   onSelectOwner: (node: TreeNode) => void
 }) {
-  const { node, depth, lockedOpen, expanded } = props
+  const { node, depth, lockedOpen, expanded, editing } = props
   const isOpen = lockedOpen || expanded.has(node.id)
   const hasChildren = node.children.length > 0
-  const isPoint = node.node_type === 'point'
   const staged = props.pending[node.id]
+  const markers = staged?.markers ?? node.markers ?? []
+  const name = staged?.label ?? node.name
   const holdTimer = useRef<number | null>(null)
   const holdFired = useRef(false)
   const clearHold = () => {
@@ -102,44 +98,42 @@ function DeepTree(props: {
   }
 
   return (
-    <div>
-      <button
-        type="button"
+    <div className="tree-node">
+      <div
         className={[
           'tree-row',
-          isPoint ? 'item' : 'branch',
-          staged?.status ? `staged-${staged.status}` : staged?.meta ? 'staged-meta' : '',
-          props.metaTargetId === node.id ? 'custom-target' : '',
-          props.editing && isPoint ? 'editable' : '',
+          node.node_type === 'point' ? 'item' : 'branch',
+          staged ? 'staged-meta' : '',
+          props.activeId === node.id ? 'custom-target' : '',
+          editing ? 'editable' : '',
         ]
           .filter(Boolean)
           .join(' ')}
         style={{ paddingLeft: `${10 + depth * 18}px` }}
         onContextMenu={(event) => {
-          if (props.editing && isPoint) {
-            event.preventDefault()
-            props.onItemRightClick(node)
-          }
+          if (!editing) return
+          event.preventDefault()
+          props.onRightClick(node)
         }}
         onPointerDown={(event) => {
-          if (!props.editing || !isPoint || event.button !== 0) return
+          if (!editing || event.button !== 0) return
           holdFired.current = false
           clearHold()
           holdTimer.current = window.setTimeout(() => {
             holdFired.current = true
-            props.onItemHold(node)
+            props.onHold(node)
           }, HOLD_MS)
         }}
         onPointerUp={clearHold}
         onPointerLeave={clearHold}
         onPointerCancel={clearHold}
         onClick={() => {
-          if (props.editing && isPoint) {
+          if (editing) {
             if (holdFired.current) {
               holdFired.current = false
               return
             }
-            props.onItemLeftClick(node)
+            props.onLeftClick(node)
             return
           }
           props.onSelectOwner(node)
@@ -157,28 +151,21 @@ function DeepTree(props: {
           {hasChildren ? '▸' : '·'}
         </span>
         <span className="node-copy">
-          <span className="node-name">{node.name}</span>
-          <span className="node-meta">
-            {node.node_type}
+          <span className="node-name">
+            {name}
             {staged ? ' · pending' : ''}
           </span>
-        </span>
-        {isPoint && (
-          <span className="pill-stack">
-            {statusPill(staged?.status ?? node.tags.status, Boolean(staged?.status))}
-            {metaPill(
-              staged?.meta ?? node.tags.meta,
-              staged?.note ?? node.tags.custom,
-              Boolean(staged?.meta),
-            )}
+          <span className="node-meta">
+            <span className="pill none">{node.node_type}</span>
+            <MarkerPills markers={markers} pending={Boolean(staged)} />
           </span>
-        )}
-      </button>
-      {hasChildren &&
-        isOpen &&
-        node.children.map((child) => (
-          <DeepTree key={child.iri} {...props} node={child} depth={depth + 1} />
-        ))}
+        </span>
+      </div>
+      {hasChildren && isOpen
+        ? node.children.map((child) => (
+            <DeepTree key={child.id} {...props} node={child} depth={depth + 1} />
+          ))
+        : null}
     </div>
   )
 }
@@ -188,17 +175,19 @@ function App() {
   const [tree, setTree] = useState<TreeNode[]>([])
   const [revision, setRevision] = useState(0)
   const [allowMutations, setAllowMutations] = useState(false)
-  const [metaCatalog, setMetaCatalog] = useState(FALLBACK_META)
   const [dash, setDash] = useState<{
     totals: Record<string, number>
-    items: Array<Record<string, string | null | undefined>>
+    marker_counts: Record<string, number>
+    items: Array<{ id: string; name: string; markers: string[] }>
   } | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState(false)
   const [pending, setPending] = useState<Record<string, PendingDraft>>({})
-  const [metaTargetId, setMetaTargetId] = useState<string | null>(null)
-  const [metaCode, setMetaCode] = useState('LATE')
-  const [customNote, setCustomNote] = useState('')
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [catalog, setCatalog] = useState<Record<string, string>>({})
+  const [manualMarker, setManualMarker] = useState('')
+  const [renameValue, setRenameValue] = useState('')
   const [ownerId, setOwnerId] = useState('AHU_1')
   const [newEquipId, setNewEquipId] = useState('')
   const [newPointId, setNewPointId] = useState('')
@@ -207,7 +196,7 @@ function App() {
   const [busy, setBusy] = useState(false)
 
   const allNodes = useMemo(() => flatten(tree), [tree])
-  const metaTarget = allNodes.find((n) => n.id === metaTargetId) ?? null
+  const active = allNodes.find((n) => n.id === activeId) ?? null
   const pendingCount = Object.keys(pending).length
 
   const showToast = (text: string) => {
@@ -228,41 +217,86 @@ function App() {
   }
 
   useEffect(() => {
-    Promise.all([loadTree(), api<Record<string, string>>('/api/model/meta-tags')])
-      .then(([, tags]) => setMetaCatalog(tags))
-      .catch((error) => showToast(error.message))
+    loadTree().catch((error) => showToast(error.message))
   }, [])
 
   useEffect(() => {
     if (tab !== 'dashboard') return
-    api<{ totals: Record<string, number>; items: Array<Record<string, string | null>> }>(
-      '/api/model/dashboard',
-    )
+    api<{
+      totals: Record<string, number>
+      marker_counts: Record<string, number>
+      items: Array<{ id: string; name: string; markers: string[] }>
+    }>('/api/model/dashboard')
       .then((body) => setDash(body))
       .catch((error) => showToast(error.message))
   }, [tab, revision])
 
-  const patchPending = (id: string, patch: PendingDraft) => {
-    setPending((current) => ({ ...current, [id]: { ...current[id], ...patch } }))
+  const openSuggest = async (node: TreeNode) => {
+    setActiveId(node.id)
+    setRenameValue(pending[node.id]?.label ?? node.name)
+    const level = levelOf(node)
+    const [sug, cat] = await Promise.all([
+      api<{ suggestions: Suggestion[] }>(
+        `/api/model/haystack/suggest?q=${encodeURIComponent(node.name)}&level=${encodeURIComponent(level)}`,
+      ),
+      api<{ catalog: Record<string, string> }>(
+        `/api/model/haystack/catalog?level=${encodeURIComponent(level)}`,
+      ),
+    ])
+    setSuggestions(sug.suggestions)
+    setCatalog(cat.catalog)
+  }
+
+  const stageMarkers = (node: TreeNode, markers: string[]) => {
+    const unique = [...new Set(markers.filter(Boolean))]
+    setPending((current) => ({
+      ...current,
+      [node.id]: {
+        markers: unique,
+        label: current[node.id]?.label,
+      },
+    }))
   }
 
   const savePending = async () => {
-    const updates = Object.entries(pending).map(([point_id, draft]) => ({
-      point_id,
-      ...draft,
-    }))
-    if (!updates.length || busy) return
+    const markerUpdates = Object.entries(pending)
+      .filter(([, draft]) => draft.markers?.length)
+      .map(([entity_id, draft]) => {
+        const node = allNodes.find((n) => n.id === entity_id)
+        return {
+          entity_id,
+          markers: draft.markers,
+          level: node ? levelOf(node) : 'point',
+        }
+      })
+    const renames = Object.entries(pending).filter(([, draft]) => draft.label)
+    if ((!markerUpdates.length && !renames.length) || busy) return
     setBusy(true)
     try {
-      const body = await api<{ revision: number }>('/api/model/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates, expected_revision: revision }),
-      })
+      if (markerUpdates.length) {
+        const body = await api<{ revision: number }>('/api/model/tags', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: markerUpdates, expected_revision: revision }),
+        })
+        setRevision(body.revision)
+      }
+      for (const [entity_id, draft] of renames) {
+        if (!draft.label) continue
+        const body = await api<{ revision: number }>('/api/model/rename', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entity_id,
+            label: draft.label,
+            expected_revision: revision,
+          }),
+        })
+        setRevision(body.revision)
+      }
       setPending({})
       setEditing(false)
-      setMetaTargetId(null)
-      setRevision(body.revision)
+      setActiveId(null)
       showToast('Saved · writing building.ttl')
       await loadTree()
       await api('/api/model/ttl').catch(() => undefined)
@@ -312,155 +346,155 @@ function App() {
       })
       setNewPointId('')
       setRevision(body.revision)
-      showToast('Point added (timeseries ref minted)')
+      showToast('Point added')
       await loadTree()
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Add point failed')
     }
   }
 
-  const hideSelectedOwner = async () => {
-    if (!ownerId.trim()) return
+  const hideActive = async () => {
+    if (!active) return
     try {
       const body = await api<{ revision: number }>('/api/model/hide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity_id: ownerId.trim(), expected_revision: revision }),
+        body: JSON.stringify({ entity_id: active.id, expected_revision: revision }),
       })
       setRevision(body.revision)
-      showToast('Hidden (timeseries refs kept)')
+      setActiveId(null)
+      showToast('Hidden')
       await loadTree()
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Hide failed')
     }
   }
 
-  const filtered = useMemo(() => {
+  const filteredTree = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return tree
-    const ids = new Set(
-      allNodes
-        .filter((n) => `${n.name} ${n.id} ${n.node_type}`.toLowerCase().includes(q))
-        .map((n) => n.id),
-    )
-    const keep = (nodes: TreeNode[]): TreeNode[] =>
-      nodes
-        .map((n) => {
-          const children = keep(n.children)
-          if (ids.has(n.id) || children.length) return { ...n, children }
-          return null
-        })
-        .filter((n): n is TreeNode => n !== null)
-    return keep(tree)
-  }, [tree, search, allNodes])
+    const match = (node: TreeNode): TreeNode | null => {
+      const self =
+        node.name.toLowerCase().includes(q) ||
+        node.id.toLowerCase().includes(q) ||
+        (node.markers ?? []).some((m) => m.toLowerCase().includes(q))
+      const kids = node.children.map(match).filter(Boolean) as TreeNode[]
+      if (self || kids.length) return { ...node, children: kids }
+      return null
+    }
+    return tree.map(match).filter(Boolean) as TreeNode[]
+  }, [tree, search])
 
   return (
-    <div className="app">
+    <div className="app-shell">
       <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark">B</div>
-          <div className="brand-copy">
-            <h1>Brick Model</h1>
-            <p>
-              Tag-tree tutorial · rev {revision}
-              {allowMutations ? ' · mutations on' : ' · read-only (BRICKTS_ALLOW_MUTATIONS)'}
-            </p>
-          </div>
+        <div>
+          <p className="eyebrow">Project Haystack · smart building IoT</p>
+          <h1>Model tag tree</h1>
         </div>
-        <div className="top-actions">
-          <div className="tabs">
-            <button className={`tab ${tab === 'floor' ? 'active' : ''}`} onClick={() => setTab('floor')}>
-              Model
-            </button>
-            <button
-              className={`tab ${tab === 'sparql' ? 'active' : ''}`}
-              onClick={() => setTab('sparql')}
-            >
-              SPARQL
-            </button>
-            <button
-              className={`tab ${tab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setTab('dashboard')}
-            >
-              Dashboard
-            </button>
-          </div>
-          <button
-            className="ghost"
-            onClick={() =>
-              api('/api/model/flush', { method: 'POST' }).then(() => showToast('Wrote building.ttl'))
-            }
-          >
-            Write TTL
-          </button>
+        <div className="topbar-meta">
+          <span>rev {revision}</span>
+          <span className={allowMutations ? 'pill received' : 'pill none'}>
+            {allowMutations ? 'mutations on' : 'read-only'}
+          </span>
         </div>
       </header>
 
+      <nav className="tabs">
+        {(
+          [
+            ['floor', 'Model'],
+            ['sparql', 'SPARQL'],
+            ['dashboard', 'Coverage'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            className={tab === id ? 'tab active' : 'tab'}
+            onClick={() => setTab(id)}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
       {tab === 'sparql' ? (
-        <SparqlPanel />
-      ) : tab === 'floor' ? (
-        <main className="workspace">
+        <SparqlPanel showToast={showToast} />
+      ) : tab === 'dashboard' ? (
+        <section className="panel">
+          <h2>Haystack marker coverage</h2>
+          <div className="dash-grid">
+            {['items', 'tagged', 'untagged', 'distinct_markers'].map((key) => (
+              <div key={key} className="dash-card">
+                <div className="dash-label">{key}</div>
+                <div className="dash-value">{dash?.totals?.[key] ?? '—'}</div>
+              </div>
+            ))}
+          </div>
+          <h3>Top markers</h3>
+          <ul className="dash-list">
+            {Object.entries(dash?.marker_counts ?? {})
+              .slice(0, 24)
+              .map(([marker, count]) => (
+                <li key={marker}>
+                  <code>{marker}</code> · {count}
+                </li>
+              ))}
+          </ul>
+        </section>
+      ) : (
+        <div className="floor-layout">
           <section className={`panel tree-panel ${editing ? 'is-editing' : ''}`}>
             <div className="panel-head">
               <div>
                 <h2>Building tree</h2>
-                <span>
+                <p className="hint">
                   {editing
-                    ? 'Locked open · left Received · right Not received · hold Meta'
-                    : 'Browse · Edit to tag points'}
-                </span>
+                    ? 'Hold = rename · Right-click = closest Haystack markers · Save writes TTL'
+                    : 'Browse · Edit to tag with Haystack markers'}
+                </p>
               </div>
               <div className="edit-controls">
                 {!editing ? (
-                  <button
-                    className="primary-sm"
-                    onClick={() => {
-                      setExpanded(branchIds(tree))
-                      setEditing(true)
-                    }}
-                  >
+                  <button type="button" disabled={!allowMutations} onClick={() => setEditing(true)}>
                     Edit
                   </button>
                 ) : (
                   <>
+                    <button type="button" className="primary" disabled={busy || !pendingCount} onClick={savePending}>
+                      Save{pendingCount ? ` (${pendingCount})` : ''}
+                    </button>
                     <button
-                      className="ghost"
+                      type="button"
                       onClick={() => {
                         setEditing(false)
                         setPending({})
-                        setMetaTargetId(null)
+                        setActiveId(null)
                       }}
                     >
-                      Discard
-                    </button>
-                    <button
-                      className="primary-sm"
-                      disabled={!pendingCount || busy}
-                      onClick={savePending}
-                    >
-                      Save{pendingCount ? ` (${pendingCount})` : ''}
+                      Cancel
                     </button>
                   </>
                 )}
               </div>
             </div>
-            <div className="search">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search…"
-              />
-            </div>
+            <input
+              className="search"
+              placeholder="Filter by name or marker"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <div className="tree-scroll">
-              {filtered.map((node) => (
+              {filteredTree.map((node) => (
                 <DeepTree
-                  key={node.iri}
+                  key={node.id}
                   node={node}
                   depth={0}
                   editing={editing}
                   lockedOpen={editing}
                   pending={pending}
-                  metaTargetId={metaTargetId}
+                  activeId={activeId}
                   expanded={expanded}
                   onToggle={(id) =>
                     setExpanded((current) => {
@@ -470,178 +504,134 @@ function App() {
                       return next
                     })
                   }
-                  onItemLeftClick={(item) => patchPending(item.id, { status: 'received' })}
-                  onItemRightClick={(item) => patchPending(item.id, { status: 'not_received' })}
-                  onItemHold={(item) => {
-                    setMetaTargetId(item.id)
-                    setMetaCode(pending[item.id]?.meta ?? item.tags.meta ?? 'LATE')
-                    setCustomNote(pending[item.id]?.note ?? item.tags.custom ?? '')
+                  onLeftClick={(node) => {
+                    setActiveId(node.id)
+                    setRenameValue(pending[node.id]?.label ?? node.name)
                   }}
-                  onSelectOwner={(item) => {
-                    if (item.node_type !== 'point') setOwnerId(item.id)
+                  onRightClick={(node) => {
+                    openSuggest(node).catch((error) => showToast(error.message))
+                  }}
+                  onHold={(node) => {
+                    setActiveId(node.id)
+                    setRenameValue(pending[node.id]?.label ?? node.name)
+                    showToast('Rename — edit label below')
+                  }}
+                  onSelectOwner={(node) => {
+                    if (node.node_type === 'equipment' || node.node_type === 'part') {
+                      setOwnerId(node.id)
+                    }
                   }}
                 />
               ))}
             </div>
           </section>
 
-          <aside className="action-panel">
-            <div className="selected-card">
-              <div className="actions-label">Gestures (points)</div>
-              <ul className="gesture-list">
-                <li>
-                  <b>Left</b> Received · <b>Right</b> Not received · <b>Hold</b> Meta
-                </li>
-                <li>
-                  <b>Save</b> writes tags + refreshes <code>building.ttl</code>
-                </li>
-              </ul>
-
-              {metaTarget && editing && (
-                <div className="custom-panel">
-                  <div className="actions-label">Meta · {metaTarget.name}</div>
-                  <label className="field-label">
-                    Tag
-                    <select value={metaCode} onChange={(e) => setMetaCode(e.target.value)}>
-                      {Object.entries(metaCatalog).map(([code, description]) => (
-                        <option key={code} value={code}>
-                          {code} — {description}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {metaCode === 'CUSTOM' && (
-                    <div className="custom-box" style={{ marginTop: 8 }}>
-                      <input
-                        value={customNote}
-                        onChange={(e) => setCustomNote(e.target.value)}
-                        placeholder="Note…"
-                      />
-                    </div>
-                  )}
-                  <button
-                    className="primary-sm"
-                    style={{ marginTop: 10, width: '100%' }}
-                    disabled={metaCode === 'CUSTOM' && !customNote.trim()}
-                    onClick={() => {
-                      patchPending(metaTarget.id, {
-                        meta: metaCode,
-                        note: metaCode === 'CUSTOM' ? customNote.trim() : undefined,
-                      })
-                      setMetaTargetId(null)
-                      showToast(`${metaCode} staged`)
+          <aside className="panel side-panel">
+            <h2>Haystack tags</h2>
+            {!allowMutations && (
+              <p className="hint">Set <code>BRICKTS_ALLOW_MUTATIONS=true</code> to edit.</p>
+            )}
+            {active && editing ? (
+              <>
+                <p className="hint">
+                  Selected <b>{active.id}</b> · level <code>{levelOf(active)}</code>
+                </p>
+                <label className="field">
+                  Display name
+                  <input
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => {
+                      if (renameValue.trim() && renameValue.trim() !== active.name) {
+                        setPending((current) => ({
+                          ...current,
+                          [active.id]: {
+                            markers: current[active.id]?.markers ?? active.markers ?? [],
+                            label: renameValue.trim(),
+                          },
+                        }))
+                      }
                     }}
-                  >
-                    Stage meta
-                  </button>
+                  />
+                </label>
+                <div className="tag-row">
+                  <MarkerPills markers={pending[active.id]?.markers ?? active.markers ?? []} pending />
                 </div>
-              )}
-
-              <div className="actions-label" style={{ marginTop: 16 }}>
-                Add / remove
-              </div>
-              <div className="custom-box" style={{ gridTemplateColumns: '1fr auto' }}>
-                <input
-                  value={newEquipId}
-                  onChange={(e) => setNewEquipId(e.target.value)}
-                  placeholder="New equipment id"
-                />
-                <button className="primary-sm" onClick={addEquipment} disabled={!allowMutations}>
-                  Add equip
-                </button>
-              </div>
-              <div className="custom-box" style={{ gridTemplateColumns: '1fr 1fr auto', marginTop: 8 }}>
-                <input
-                  value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
-                  placeholder="Owner id"
-                />
-                <input
-                  value={newPointId}
-                  onChange={(e) => setNewPointId(e.target.value)}
-                  placeholder="New point id"
-                />
-                <button className="primary-sm" onClick={addPoint} disabled={!allowMutations}>
-                  Add point
-                </button>
-              </div>
-              <button
-                className="ghost"
-                style={{ marginTop: 8 }}
-                onClick={hideSelectedOwner}
-                disabled={!allowMutations}
-              >
-                Hide `{ownerId}` (soft delete)
-              </button>
-              <p className="empty-hint" style={{ marginTop: 12 }}>
-                Soft-delete hides nodes but keeps every TimeseriesReference.
-              </p>
-            </div>
-          </aside>
-        </main>
-      ) : (
-        <main className="dashboard">
-          <div className="stat-grid">
-            {['items', 'received', 'not_received', 'meta', 'untagged'].map((key) => (
-              <div
-                className={`stat ${
-                  key === 'received'
-                    ? 'received'
-                    : key === 'not_received'
-                      ? 'returned'
-                      : key === 'meta'
-                        ? 'custom'
-                        : ''
-                }`}
-                key={key}
-              >
-                <div className="label">{key.replace('_', ' ')}</div>
-                <div className="value">{dash?.totals?.[key] ?? '—'}</div>
-              </div>
-            ))}
-          </div>
-          <div className="card" style={{ marginTop: 12 }}>
-            <div className="card-head">
-              <h3>Points</h3>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Point</th>
-                    <th>Status</th>
-                    <th>Meta</th>
-                    <th>Timeseries</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(dash?.items ?? []).slice(0, 80).map((item) => (
-                    <tr key={String(item.id)}>
-                      <td>{item.name}</td>
-                      <td>{statusPill(item.status as string | null)}</td>
-                      <td>
-                        {metaPill(item.meta as string | null, item.custom as string | null) ?? '—'}
-                      </td>
-                      <td>
-                        <span className="mono">
-                          {String(item.timeseries_id ?? '').slice(0, 13)}
-                        </span>
-                      </td>
-                    </tr>
+                <h3>Closest matches</h3>
+                <ul className="dash-list">
+                  {suggestions.map((s) => (
+                    <li key={s.symbol}>
+                      <button
+                        type="button"
+                        className="linkish"
+                        onClick={() => {
+                          const base = pending[active.id]?.markers ?? active.markers ?? []
+                          stageMarkers(active, [...base, s.symbol])
+                          showToast(`staged ${s.symbol}`)
+                        }}
+                      >
+                        <code>{s.symbol}</code>
+                      </button>
+                      <span className="hint"> {s.doc.slice(0, 72)}</span>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
+                </ul>
+                <label className="field">
+                  Add marker
+                  <select value={manualMarker} onChange={(e) => setManualMarker(e.target.value)}>
+                    <option value="">Select…</option>
+                    {Object.keys(catalog).map((sym) => (
+                      <option key={sym} value={sym}>
+                        {sym}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={!manualMarker}
+                  onClick={() => {
+                    const base = pending[active.id]?.markers ?? active.markers ?? []
+                    stageMarkers(active, [...base, manualMarker])
+                    setManualMarker('')
+                  }}
+                >
+                  Stage marker
+                </button>
+                <button type="button" onClick={hideActive}>
+                  Soft-delete
+                </button>
+              </>
+            ) : (
+              <p className="hint">Enter Edit, then right-click a node for marker suggestions.</p>
+            )}
+
+            <h3>Add equipment / point</h3>
+            <label className="field">
+              New equip id
+              <input value={newEquipId} onChange={(e) => setNewEquipId(e.target.value)} disabled={!allowMutations} />
+            </label>
+            <button type="button" disabled={!allowMutations} onClick={addEquipment}>
+              Add AHU equip
+            </button>
+            <label className="field">
+              Owner
+              <input value={ownerId} onChange={(e) => setOwnerId(e.target.value)} disabled={!allowMutations} />
+            </label>
+            <label className="field">
+              New point id
+              <input value={newPointId} onChange={(e) => setNewPointId(e.target.value)} disabled={!allowMutations} />
+            </label>
+            <button type="button" disabled={!allowMutations} onClick={addPoint}>
+              Add sensor point
+            </button>
+          </aside>
+        </div>
       )}
-      {toast && <div className="toast">{toast}</div>}
+
+      {toast ? <div className="toast">{toast}</div> : null}
     </div>
   )
 }
 
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+createRoot(document.getElementById('root')!).render(<App />)

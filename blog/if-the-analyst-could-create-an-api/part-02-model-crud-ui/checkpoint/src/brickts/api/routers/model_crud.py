@@ -1,13 +1,15 @@
-"""Brick model tree + CRUD + ops tags (gated by BRICKTS_ALLOW_MUTATIONS)."""
+"""Haystack model tree + CRUD + markers (gated by BRICKTS_ALLOW_MUTATIONS)."""
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from brickts.api.deps import AppState, get_app_state
+from brickts.haystack.defs import catalog_for_level
+from brickts.haystack.suggest import suggest_markers
 from brickts.services import model_crud as crud
 
 router = APIRouter(prefix="/api/model", tags=["model-crud"])
@@ -35,15 +37,20 @@ class HideBody(BaseModel):
     expected_revision: int | None = None
 
 
-class TagUpdate(BaseModel):
-    point_id: str = Field(min_length=1, max_length=128)
-    status: Literal["received", "not_received"] | None = None
-    meta: str | None = None
-    note: str | None = None
+class MarkerUpdate(BaseModel):
+    entity_id: str = Field(min_length=1, max_length=128)
+    markers: list[str] = Field(min_length=1)
+    level: str | None = None
 
 
 class TagsBody(BaseModel):
-    updates: list[TagUpdate] = Field(min_length=1)
+    updates: list[MarkerUpdate] = Field(min_length=1)
+    expected_revision: int | None = None
+
+
+class RenameBody(BaseModel):
+    entity_id: str = Field(min_length=1, max_length=128)
+    label: str = Field(min_length=1, max_length=256)
     expected_revision: int | None = None
 
 
@@ -53,6 +60,12 @@ def _result(payload: dict[str, Any]) -> dict[str, Any]:
     if payload.get("ok") is False:
         raise HTTPException(status_code=400, detail=payload)
     return payload
+
+
+def _map_level(node_type: str) -> str:
+    if node_type == "equipment":
+        return "equip"
+    return node_type
 
 
 @router.get("/tree", summary="Site → building → equipment → point tree")
@@ -65,12 +78,29 @@ def get_tree(state: AppState = Depends(get_app_state)) -> dict[str, Any]:
     }
 
 
-@router.get("/meta-tags", summary="Predefined shipping-style meta tags for points")
-def meta_tags() -> dict[str, str]:
-    return crud.meta_tag_catalog()
+@router.get("/haystack/catalog", summary="Haystack markers allowed for a tree level")
+def haystack_catalog(level: str = Query(default="point")) -> dict[str, Any]:
+    try:
+        catalog = catalog_for_level(_map_level(level))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, "level": level, "catalog": catalog}
 
 
-@router.get("/dashboard", summary="Ops tag counts across points")
+@router.get("/haystack/suggest", summary="Closest Haystack markers for a name")
+def haystack_suggest(
+    q: str = Query(min_length=1),
+    level: str = Query(default="point"),
+    n: int = Query(default=8, ge=1, le=25),
+) -> dict[str, Any]:
+    try:
+        hits = suggest_markers(q, _map_level(level), n=n)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, "query": q, "level": level, "suggestions": hits}
+
+
+@router.get("/dashboard", summary="Haystack marker coverage across points")
 def dashboard(state: AppState = Depends(get_app_state)) -> dict[str, Any]:
     return {"ok": True, **crud.dashboard(state.graph)}
 
@@ -127,13 +157,29 @@ def hide_entity(body: HideBody, state: AppState = Depends(get_app_state)) -> dic
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
-@router.post("/tags", summary="Batch point ops tags (Received / Not received / meta)")
+@router.post("/tags", summary="Batch Haystack markers on tree entities")
 def apply_tags(body: TagsBody, state: AppState = Depends(get_app_state)) -> dict[str, Any]:
     try:
         return _result(
-            crud.apply_point_tags(
+            crud.apply_markers(
                 state.graph,
                 updates=[u.model_dump(exclude_none=True) for u in body.updates],
+                expected_revision=body.expected_revision,
+                allow_mutations=state.settings.allow_mutations,
+            )
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.post("/rename", summary="Rename a tree entity (rdfs:label)")
+def rename(body: RenameBody, state: AppState = Depends(get_app_state)) -> dict[str, Any]:
+    try:
+        return _result(
+            crud.rename_entity(
+                state.graph,
+                entity_id=body.entity_id,
+                label=body.label,
                 expected_revision=body.expected_revision,
                 allow_mutations=state.settings.allow_mutations,
             )

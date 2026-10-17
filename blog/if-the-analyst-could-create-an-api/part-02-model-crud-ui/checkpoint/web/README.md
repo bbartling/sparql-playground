@@ -1,16 +1,16 @@
-# Brick model + SPARQL UI
+# Haystack model + SPARQL UI
 
-Tutorial React UI for the brickts API:
+Tutorial React UI for the brickts API (smart-building IoT):
 
-- **Model** — site → building → equipment → point tree; tag points; add / soft-delete
-- **SPARQL** — browser editor with tutorial presets (`.rq` from `scripts/sparql/`), results table, point→timeseries drill, TTL download
-- **Dashboard** — ops tag counts
+- **Model** — site → building → equipment → point tree; **Haystack markers**; hold-to-rename; right-click closest-match suggest
+- **SPARQL** — browser editor with tutorial presets
+- **Coverage** — marker counts across historized points
 
-Turtle serializes to repo-root **`building.ttl`** (background thread).
+Turtle serializes to repo-root **`building.ttl`**.
 
 ## Run
 
-Terminal 1 — API (mutations optional for Model edits):
+Terminal 1 — API:
 
 ```bash
 cd ..
