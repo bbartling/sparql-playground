@@ -39,19 +39,25 @@ def test_tree_exposes_coverage_flags(settings: Settings):
 
 
 def test_repeated_display_labels_do_not_make_model_unhealthy():
-    from bldgts.graph.namespaces import BLDG, BRICK, REF
+    from bldgts.graph.namespaces import BLDG, REF
     from bldgts.graph.validate import run_rdf_integrity
+    from bldgts.haystack.rdf import add_markers, add_tag, declare_entity
     from rdflib import Graph, Literal
-    from rdflib.namespace import RDF, RDFS
+    from rdflib.namespace import RDFS
 
     model = Graph()
     for number in (1, 2):
         point, owner, reference = (
-            BLDG[f"point{number}"], BLDG[f"ahu{number}"], BLDG[f"reference{number}"]
+            BLDG[f"point{number}"],
+            BLDG[f"ahu{number}"],
+            BLDG[f"reference{number}"],
         )
-        model.add((point, RDF.type, BRICK.Point))
+        declare_entity(model, owner)
+        add_markers(model, owner, ["equip", "ahu"])
+        declare_entity(model, point)
+        add_markers(model, point, ["point", "sensor", "his"])
         model.add((point, RDFS.label, Literal("Discharge temperature")))
-        model.add((point, BRICK.isPointOf, owner))
+        add_tag(model, point, "equipRef", "Ref", f"ahu{number}")
         model.add((point, REF.hasExternalReference, reference))
         model.add((reference, REF.hasTimeseriesId, Literal(f"opaque-{number}")))
     report = run_rdf_integrity(model)

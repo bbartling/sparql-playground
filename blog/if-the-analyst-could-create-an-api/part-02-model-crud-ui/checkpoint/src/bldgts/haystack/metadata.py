@@ -3,7 +3,7 @@
 This is an application RDF mapping, not a claim to implement a Haystack wire
 format. Each ``bts:hasHaystackTag`` node carries name, kind and RDF value so the
 same metadata is discoverable through the existing read-only SPARQL endpoint.
-Brick types and relationships remain migration hints, never verified tags.
+Entity levels come from Haystack markers and opaque timeseries refs — not Brick.
 """
 
 from __future__ import annotations
@@ -15,10 +15,9 @@ from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 from rdflib import BNode, Graph, Literal, URIRef
-from rdflib.namespace import OWL, RDF, RDFS, XSD
+from rdflib.namespace import RDF, XSD
 
-from bldgts.graph.namespaces import BLDG, BRICK, BTS, REF
-from bldgts.graph.ontology import load_brick_ontology
+from bldgts.graph.namespaces import BLDG, BTS, REF
 from bldgts.haystack.defs import is_subtype, load_defs_index
 
 TAG_KINDS = frozenset({"Str", "Ref", "Number", "Bool"})
@@ -51,43 +50,41 @@ def local_name(iri: URIRef) -> str:
     return str(iri).rsplit("#", 1)[-1].rsplit("/", 1)[-1]
 
 
-def brick_ancestry(g: Graph, entity: URIRef, ontology: Graph | None = None) -> set[URIRef]:
-    """Resolve declared classes through the ontology, including local subclasses."""
-    ontology = ontology if ontology is not None else load_brick_ontology()
-    pending = [t for t in g.objects(entity, RDF.type) if isinstance(t, URIRef)]
-    classes: set[URIRef] = set()
-    while pending:
-        cls = pending.pop()
-        if cls in classes:
-            continue
-        classes.add(cls)
-        for source in (g, ontology):
-            for predicate in (RDFS.subClassOf, OWL.equivalentClass):
-                pending.extend(
-                    parent
-                    for parent in source.objects(cls, predicate)
-                    if isinstance(parent, URIRef) and parent not in classes
-                )
-    return classes
+def markers_of(g: Graph, entity: URIRef) -> set[str]:
+    return {str(m) for m in g.objects(entity, BTS.hasHaystackMarker)}
 
 
 def entity_level(g: Graph, entity: URIRef, ontology: Graph | None = None) -> str:
-    """Determine the existing entity's level from RDF, never a client claim."""
-    if (entity, RDF.type, None) not in g:
+    """Determine level from Haystack markers / timeseries refs (ontology unused)."""
+    del ontology  # Live app no longer unions a Brick ontology.
+    present = (
+        (entity, RDF.type, None) in g
+        or (entity, BTS.hasHaystackMarker, None) in g
+        or (entity, BTS.hasHaystackTag, None) in g
+        or (entity, REF.hasExternalReference, None) in g
+    )
+    if not present:
         raise ValueError(f"entity not found: {local_name(entity)}")
-    types = brick_ancestry(g, entity, ontology)
-    for cls, level in ((BRICK.Site, "site"), (BRICK.Building, "building"), (BRICK.Floor, "floor")):
-        if cls in types:
-            return level
-    if (entity, REF.hasExternalReference, None) in g or BRICK.Point in types:
+    marks = markers_of(g, entity)
+    if "point" in marks or (entity, REF.hasExternalReference, None) in g:
         return "point"
-    if BRICK.Location in types:
+    if "site" in marks:
+        return "site"
+    if "floor" in marks:
+        return "floor"
+    if "space" in marks:
         return "space"
-    if BRICK.Equipment in types:
-        parents = set(g.subjects(BRICK.hasPart, entity)) | set(g.objects(entity, BRICK.isPartOf))
-        parents.update(g.objects(entity, BRICK.isLocatedIn))
-        if any(BRICK.Equipment in brick_ancestry(g, parent, ontology) for parent in parents):
-            return "part"
+    if "equip" in marks:
+        meta = metadata(g, entity)
+        parent = meta.get("equipRef", {})
+        if parent.get("kind") == "Ref":
+            parent_iri = (
+                URIRef(str(parent["value"]))
+                if ":" in str(parent["value"])
+                else BLDG[str(parent["value"])]
+            )
+            if "equip" in markers_of(g, parent_iri):
+                return "part"
         return "equip"
     raise ValueError(f"entity is not an editable model entity: {local_name(entity)}")
 

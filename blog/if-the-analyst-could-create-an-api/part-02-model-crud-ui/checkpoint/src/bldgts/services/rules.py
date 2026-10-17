@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pandas as pd
+from bldgts.graph.namespaces import BLDG
+from bldgts.haystack.metadata import markers_of
 from bldgts.services.faults import ROLE_REQUIREMENTS, list_faults
 from bldgts.services.points import find_points
 from bldgts.services.timeseries import read_point_timeseries
 from bldgts.store.base import TimeseriesStore
 from open_fdd.rules import RULES, run_rule
-from rdflib import Graph
+from rdflib import Graph, URIRef
 
 
 @dataclass
@@ -45,15 +47,16 @@ def resolve_role_bindings(union: Graph, equipment_id: str, roles: list[str]) -> 
     for role in roles:
         req = ROLE_REQUIREMENTS.get(role)
         if req is None:
-            raise ValueError(f"no Brick mapping for role {role}")
-        brick_class, owner_class = req
-        pts = find_points(
-            union,
-            equipment_id,
-            brick_class=brick_class,
-            parent_class=owner_class,
-            include_subclasses=True,
-        )
+            raise ValueError(f"no Haystack/ofddRole mapping for role {role}")
+        role_tag, owner_markers = req
+        pts = find_points(union, equipment_id, brick_class=role_tag)
+        if owner_markers:
+            filtered = []
+            for p in pts:
+                owner = URIRef(p.owner_id) if ":" in p.owner_id else BLDG[p.owner_id]
+                if owner_markers.issubset(markers_of(union, owner)):
+                    filtered.append(p)
+            pts = filtered
         if len(pts) != 1:
             raise ValueError(f"expected 1 point for role {role}, got {len(pts)}")
         p = pts[0]
@@ -72,46 +75,26 @@ def resolve_role_bindings(union: Graph, equipment_id: str, roles: list[str]) -> 
 def role_lesson_query(equipment_id: str, role: str) -> str:
     req = ROLE_REQUIREMENTS.get(role)
     if req is None:
-        raise ValueError(f"no Brick mapping for role {role}")
-    brick_class, owner_class = req
-    if owner_class:
-        return f"""PREFIX brick: <https://brickschema.org/schema/Brick#>
-PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+        raise ValueError(f"no Haystack/ofddRole mapping for role {role}")
+    role_tag, _owner_markers = req
+    return f"""PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX bts: <https://example.org/openfdd/bldgts#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
 
-SELECT ?point ?label ?cls ?owner ?timeseriesId WHERE {{
+SELECT ?point ?label ?role ?owner ?timeseriesId WHERE {{
   BIND(bldg:{equipment_id} AS ?equip)
-  ?point brick:isPointOf ?owner .
-  ?owner (brick:isPartOf|^brick:hasPart)* ?equip .
-  ?point a/(rdfs:subClassOf|owl:equivalentClass|^owl:equivalentClass)* brick:{brick_class} .
-  ?owner a/(rdfs:subClassOf|owl:equivalentClass|^owl:equivalentClass)* brick:{owner_class} .
+  ?point bts:hasHaystackMarker "point" .
+  ?point bts:hasHaystackTag ?tag .
+  ?tag bts:tagName "ofddRole" ; bts:tagValue "{role_tag}" .
+  ?point bts:hasHaystackTag ?eref .
+  ?eref bts:tagName "equipRef" ; bts:tagValue ?owner .
   OPTIONAL {{ ?point rdfs:label ?label }}
-  OPTIONAL {{ ?point a ?cls . FILTER(STRSTARTS(STR(?cls), STR(brick:))) }}
   OPTIONAL {{
     ?point ref:hasExternalReference ?ref .
     ?ref ref:hasTimeseriesId ?timeseriesId .
   }}
-}}
-"""
-    return f"""PREFIX brick: <https://brickschema.org/schema/Brick#>
-PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
-
-SELECT ?point ?label ?cls ?owner ?timeseriesId WHERE {{
-  BIND(bldg:{equipment_id} AS ?equip)
-  ?point (brick:isPointOf|^brick:hasPoint) ?owner .
-  ?owner (brick:isPartOf|^brick:hasPart)* ?equip .
-  ?point a/(rdfs:subClassOf|owl:equivalentClass|^owl:equivalentClass)* brick:{brick_class} .
-  OPTIONAL {{ ?point rdfs:label ?label }}
-  OPTIONAL {{ ?point a ?cls . FILTER(STRSTARTS(STR(?cls), STR(brick:))) }}
-  OPTIONAL {{
-    ?point ref:hasExternalReference ?ref .
-    ?ref ref:hasTimeseriesId ?timeseriesId .
-  }}
+  BIND("{role_tag}" AS ?role)
 }}
 """
 

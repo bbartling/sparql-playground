@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bldgts.graph.namespaces import BRICK, BTS, RDF, REF
+from bldgts.graph.namespaces import BTS, RDF, REF
 from bldgts.settings import Settings
 from bldgts.store.base import TimeseriesStore
 from bldgts.store.sqlite import SqliteTimeseriesStore
@@ -21,9 +21,7 @@ def build_store_registry(
 ) -> dict[str, TimeseriesStore]:
     stores: dict[str, TimeseriesStore] = {}
     db_path = db_path or settings.db_path
-    db_nodes = set(union.subjects(RDF.type, REF.Database)) | set(
-        union.subjects(RDF.type, BRICK.Database)
-    )
+    db_nodes = set(union.subjects(RDF.type, REF.Database))
     for db_node in db_nodes:
         if not isinstance(db_node, URIRef):
             continue

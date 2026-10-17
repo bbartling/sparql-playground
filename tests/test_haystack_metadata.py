@@ -2,13 +2,12 @@
 
 import pytest
 from bldgts.api.app import create_app
-from bldgts.graph.namespaces import BLDG, BRICK, BTS, REF
+from bldgts.graph.namespaces import BLDG, BTS, REF
 from bldgts.haystack.metadata import metadata, replace_metadata, validate_entity
 from bldgts.ingest import bootstrap_all
 from bldgts.settings import Settings
 from fastapi.testclient import TestClient
 from rdflib import Graph, Literal
-from rdflib.namespace import RDF
 
 
 def tag(kind, value):
@@ -30,7 +29,7 @@ def point(client):
 def post_metadata(client, *, kind="Bool", markers=None, extra=None, revision=None):
     values = {
         "kind": tag("Str", kind),
-        "siteRef": tag("Ref", "Site"),
+        "siteRef": tag("Ref", "Building_50"),
         "equipRef": tag("Ref", "AHU_1"),
         **(extra or {}),
     }
@@ -54,39 +53,27 @@ def editor(settings: Settings):
     settings.allow_mutations = True
     bootstrap_all(settings)
     with TestClient(create_app(settings)) as client:
-        response = client.post(
-            "/api/model/metadata",
-            json={
-                "updates": [
-                    {
-                        "entity_id": "Site",
-                        "markers": ["site"],
-                        "metadata": {"tz": tag("Str", "America/Chicago")},
-                    },
-                    {
-                        "entity_id": "AHU_1",
-                        "markers": ["equip", "ahu"],
-                        "metadata": {"siteRef": tag("Ref", "Site")},
-                    },
-                ]
-            },
-        )
-        assert response.status_code == 200, response.text
+        # Haystack seed already stamps site/equip/point markers + refs.
         yield client
 
 
-def test_seed_hints_never_count_as_authored_metadata(settings: Settings):
+def test_haystack_seed_is_authored_not_empty_hints(settings: Settings):
     bootstrap_all(settings)
     with TestClient(create_app(settings)) as client:
         nodes = flatten(client.get("/api/model/tree").json()["tree"])
-        assert all(n["markers"] == [] and n["metadata"] == {} for n in nodes)
-        assert all(n["status"] == "red" for n in nodes)
-        assert point(client)["hints"]
+        assert any(n["markers"] for n in nodes)
+        current = point(client)
+        assert "point" in current["markers"]
+        assert current["metadata"].get("equipRef", {}).get("value") == "AHU_1"
+        assert current["hints"] == []
         denied = client.post(
             "/api/model/metadata",
             json={
                 "updates": [
-                    {"entity_id": "Site", "metadata": {"tz": tag("Str", "UTC")}},
+                    {
+                        "entity_id": "Building_50",
+                        "metadata": {"tz": tag("Str", "UTC")},
+                    },
                 ]
             },
         )
@@ -134,7 +121,7 @@ def test_historization_requires_valid_timezone_and_mode(editor):
     "extra,issue_tag",
     [
         ({"siteRef": tag("Ref", "AHU_1")}, "siteRef"),
-        ({"equipRef": tag("Ref", "Site")}, "equipRef"),
+        ({"equipRef": tag("Ref", "Building_50")}, "equipRef"),
         ({"equipRef": tag("Ref", "nonexistent")}, "equipRef"),
         ({"kind": tag("Number", 7)}, "kind"),
         ({"tz": tag("Str", "not-a-real-timezone")}, "tz"),
@@ -222,7 +209,7 @@ def test_metadata_batch_revision_and_malformed_value_rollback(editor):
     "entity,level,markers",
     [
         ("nonexistent", "point", ["point"]),
-        ("Site", "point", ["point", "sensor"]),
+        ("Building_50", "point", ["point", "sensor"]),
         ("AHU_1_DA_P", "equip", ["equip", "ahu"]),
         ("AHU_1_DA_P", "point", ["unit"]),
     ],
@@ -247,25 +234,27 @@ def test_marker_endpoint_rejects_unknown_entities_spoofed_levels_and_value_tags(
 
 
 def core_graph():
+    from bldgts.haystack.rdf import add_markers, declare_entity
+
     graph = Graph()
-    for entity, cls, markers in (
-        (BLDG.Site, BRICK.Site, ["site"]),
-        (BLDG.OtherSite, BRICK.Site, ["site"]),
-        (BLDG.AHU_1, BRICK.Air_Handler_Unit, ["equip", "ahu"]),
-        (BLDG.Fan, BRICK.Fan, ["equip", "fan"]),
-        (BLDG.Point, BRICK.Point, ["point", "sensor"]),
+    for entity, markers in (
+        (BLDG.Building_50, ["site"]),
+        (BLDG.OtherSite, ["site"]),
+        (BLDG.AHU_1, ["equip", "ahu"]),
+        (BLDG.Fan, ["equip", "fan"]),
+        (BLDG.Point, ["point", "sensor"]),
     ):
-        graph.add((entity, RDF.type, cls))
-        for marker in markers:
-            graph.add((entity, BTS.hasHaystackMarker, Literal(marker)))
-    replace_metadata(graph, BLDG.Site, {"tz": tag("Str", "America/Chicago")})
-    replace_metadata(graph, BLDG.AHU_1, {"siteRef": tag("Ref", "Site")})
+        declare_entity(graph, entity)
+        add_markers(graph, entity, markers)
+    replace_metadata(graph, BLDG.Building_50, {"tz": tag("Str", "America/Chicago")})
+    replace_metadata(graph, BLDG.OtherSite, {"tz": tag("Str", "America/Chicago")})
+    replace_metadata(graph, BLDG.AHU_1, {"siteRef": tag("Ref", "Building_50")})
     replace_metadata(
         graph,
         BLDG.Point,
         {
             "kind": tag("Str", "Number"),
-            "siteRef": tag("Ref", "Site"),
+            "siteRef": tag("Ref", "Building_50"),
             "equipRef": tag("Ref", "AHU_1"),
             "unit": tag("Str", "Pa"),
         },
@@ -303,7 +292,7 @@ def test_reference_site_consistency_and_equipment_containment_cycle():
         graph,
         BLDG.AHU_1,
         {
-            "siteRef": tag("Ref", "Site"),
+            "siteRef": tag("Ref", "Building_50"),
             "equipRef": tag("Ref", "Fan"),
         },
     )
@@ -311,7 +300,7 @@ def test_reference_site_consistency_and_equipment_containment_cycle():
         graph,
         BLDG.Fan,
         {
-            "siteRef": tag("Ref", "Site"),
+            "siteRef": tag("Ref", "Building_50"),
             "equipRef": tag("Ref", "AHU_1"),
         },
     )
@@ -332,7 +321,7 @@ def test_taxonomy_descendants_and_legacy_fabricated_marker_are_validated():
 
 
 def test_rename_invalid_input_is_400_and_all_levels_keep_stable_ids(editor):
-    for entity in ("Site", "Building_50", "AHU_1", "AHU_1_DA_P"):
+    for entity in ("Building_50", "Floor_1", "AHU_1", "AHU_1_DA_P"):
         response = editor.post(
             "/api/model/rename",
             json={
@@ -361,25 +350,22 @@ def test_explicit_equipment_ref_moves_point_in_tree_and_sparql_without_changing_
     tid = str(graph.state.model.value(before[0], REF.hasTimeseriesId))
     assert post_metadata(editor, extra={"equipRef": tag("Ref", "AHU_2")}).status_code == 200
     model = graph.state.model
-    assert list(model.objects(BLDG.AHU_1_DA_P, BRICK.isPointOf)) == [BLDG.AHU_2]
-    assert (BLDG.AHU_2, BRICK.hasPoint, BLDG.AHU_1_DA_P) in model
-    assert (BLDG.AHU_1, BRICK.hasPoint, BLDG.AHU_1_DA_P) not in model
+    assert metadata(model, BLDG.AHU_1_DA_P)["equipRef"]["value"] == "AHU_2"
     nodes = flatten(editor.get("/api/model/tree").json()["tree"])
     owner = next(n for n in nodes if n["id"] == "AHU_2")
     assert "AHU_1_DA_P" in {n["id"] for n in flatten(owner["children"])}
     assert list(model.objects(BLDG.AHU_1_DA_P, REF.hasExternalReference)) == before
     assert str(model.value(before[0], REF.hasTimeseriesId)) == tid
-    query = """PREFIX brick: <https://brickschema.org/schema/Brick#>
+    query = """PREFIX bts: <https://example.org/openfdd/bldgts#>
     SELECT ?owner WHERE {
-      <https://example.com/bldg#AHU_1_DA_P> brick:isPointOf ?owner
-    }"""
-    # Use the model namespace directly; this assertion checks the same graph
-    # clients query, independently of the frontend tree construction.
-    query = query.replace("https://example.com/bldg#AHU_1_DA_P", str(BLDG.AHU_1_DA_P))
+      ?point bts:hasHaystackTag ?tag .
+      ?tag bts:tagName "equipRef" ; bts:tagValue ?owner .
+      FILTER(?point = <%s>)
+    }""" % str(BLDG.AHU_1_DA_P)
     assert [row.owner for row in graph.state.union.query(query)] == [BLDG.AHU_2]
 
     assert (
         post_metadata(editor, extra={"equipRef": tag("Ref", "not-yet-imported")}).status_code == 200
     )
     assert point(editor)["status"] == "red"
-    assert list(graph.state.model.objects(BLDG.AHU_1_DA_P, BRICK.isPointOf)) == [BLDG.AHU_2]
+    assert metadata(graph.state.model, BLDG.AHU_1_DA_P)["equipRef"]["value"] == "not-yet-imported"

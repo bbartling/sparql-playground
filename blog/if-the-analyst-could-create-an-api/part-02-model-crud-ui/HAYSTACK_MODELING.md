@@ -1,6 +1,6 @@
 # Part 2 modeling contract
 
-This checkpoint is a Haystack authoring UI over an RDF application model. It retains the Brick seed and opaque timeseries references. It does not implement the Haystack HTTP protocol, Zinc/Hayson export, or complete Haystack ontology conformance. The UI calls its checks the **supported Haystack profile** for that reason.
+This checkpoint is a Haystack authoring UI over an RDF application model. The live seed is **Haystack-only** (markers + typed tags + `siteRef`/`equipRef`/`spaceRef`). Opaque timeseries references (`ref:TimeseriesReference`) remain the historian link. It does not implement the Haystack HTTP protocol, Zinc/Hayson export, or complete Haystack ontology conformance. The UI calls its checks the **supported Haystack profile** for that reason.
 
 ## Required, recommended, and conditional
 
@@ -20,7 +20,7 @@ The UI's severity policy is:
 - **Yellow:** no required errors, but recommended information remains missing.
 - **Green:** no issues detected by the supported profile. This is not a certification of the full Haystack ontology, actual device capabilities, or physical unit dimensions.
 
-Parent status includes the parent's own issues and descendant issues. A completed point cannot make an incomplete parent green. Brick seed classifications and relationships are displayed as migration hints; they do not silently count as confirmed Haystack metadata.
+Parent status includes the parent's own issues and descendant issues. A completed point cannot make an incomplete parent green. There is no Brick migration overlay in the live app.
 
 ## Authoring workflow
 

@@ -1,7 +1,7 @@
 # AGENTS.md — sparql-playground (bldgts)
 
-This repo is a **tutorial + near-production pattern**: Brick RDF describes the building;
-timeseries are reached **only through the model** ([Brick timeseries storage](https://docs.brickschema.org/metadata/timeseries-storage.html)).
+This repo is a **tutorial + near-production pattern**: a **Haystack** application RDF model describes the building;
+timeseries are reached **only through the model** via opaque `ref:TimeseriesReference` links.
 Here: FastAPI + read-only SPARQL + SQLite stand-in TSDB + Swagger at `/docs`. Lessons: `scripts/lesson_0*.py`.
 
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
@@ -28,10 +28,10 @@ uv run pytest -q && uv run ruff check .
 
 ## Invariants (do not break)
 
-1. Every `brick:Point` has exactly one `ref:hasExternalReference` → `ref:TimeseriesReference` with exactly one `ref:hasTimeseriesId` and a `ref:storedAt` Database.
+1. Every historized point has exactly one `ref:hasExternalReference` → `ref:TimeseriesReference` with exactly one `ref:hasTimeseriesId` and a `ref:storedAt` Database.
 2. Every timeseries id in the model exists in the store; every mapped column is in the model.
 3. No hardcoded CSV column names in API/services/graph/client code.
-4. No hardcoded equipment ids in product code — select by Brick class, tags, or roles.
+4. No hardcoded equipment ids in product code — select by Haystack markers, refs, or Open-FDD roles.
 5. SPARQL **query** is read-only (no UPDATE/LOAD/SERVICE/FROM); row cap + timeout + length limit. Agent writes use scoped `/api/agent/plan` + `/api/agent/apply` (A19), never `/api/sparql`.
 6. Parameterized SQL only; graph mutations via locked copy-on-write; atomic TTL writes.
 7. No secrets in the graph, repo, or logs — Database nodes hold env-var *names*, not credentials.

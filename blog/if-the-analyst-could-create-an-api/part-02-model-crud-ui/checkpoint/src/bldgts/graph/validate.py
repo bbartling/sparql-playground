@@ -5,7 +5,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from bldgts.graph.namespaces import BLDG, BRICK, REF
+from bldgts.graph.namespaces import BLDG, BTS, REF
+from bldgts.haystack.metadata import metadata
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
 
@@ -57,11 +58,9 @@ def _local(iri: URIRef) -> str:
 def _is_point(g: Graph, iri: URIRef) -> bool:
     if (iri, REF.hasExternalReference, None) in g:
         return True
-    for _, _, t in g.triples((iri, RDF.type, None)):
-        name = _local(URIRef(t))
-        if "Point" in name or "Sensor" in name or "Setpoint" in name or "Status" in name:
-            return True
-    return False
+    from rdflib import Literal
+
+    return (iri, BTS.hasHaystackMarker, Literal("point")) in g
 
 
 def run_rdf_integrity(model: Graph, ontology: Graph | None = None) -> dict[str, Any]:
@@ -69,11 +68,11 @@ def run_rdf_integrity(model: Graph, ontology: Graph | None = None) -> dict[str, 
     g = model
     issues: list[ValidationIssue] = []
 
-    # Points with a timeseries ref but missing owner (orphan points).
+    # Points with a timeseries ref but missing equipRef owner.
     orphans: list[str] = []
     for s, _, _ in g.triples((None, REF.hasExternalReference, None)):
         point = URIRef(s)
-        has_owner = (point, BRICK.isPointOf, None) in g or (None, BRICK.hasPoint, point) in g
+        has_owner = metadata(g, point).get("equipRef", {}).get("kind") == "Ref"
         if not has_owner:
             orphans.append(_local(point))
     if orphans:

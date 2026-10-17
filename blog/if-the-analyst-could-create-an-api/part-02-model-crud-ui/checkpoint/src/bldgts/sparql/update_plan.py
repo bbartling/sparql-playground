@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
 
-from bldgts.graph.namespaces import BLDG, BRICK, BTS, REF
+from bldgts.graph.namespaces import BLDG, BTS, REF
 from bldgts.haystack.metadata import (
     metadata,
     replace_metadata,
@@ -47,12 +47,6 @@ PROTECTED_PREDICATES = frozenset(
         BTS.connectionEnv,
         BTS.schemaDescription,
         BTS.hidden,
-        BRICK.hasPoint,
-        BRICK.isPointOf,
-        BRICK.hasPart,
-        BRICK.isPartOf,
-        BRICK.isLocatedIn,
-        BRICK.feeds,
     }
 )
 _FORBIDDEN_WORDS = re.compile(

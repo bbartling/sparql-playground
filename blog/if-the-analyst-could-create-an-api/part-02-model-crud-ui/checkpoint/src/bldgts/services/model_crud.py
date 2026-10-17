@@ -11,53 +11,40 @@ import re
 import uuid
 from typing import Any
 
-from bldgts.graph.namespaces import BLDG, BRICK, BTS, REF
+from bldgts.graph.namespaces import BLDG, BTS, REF
 from bldgts.graph.service import ConflictError, GraphService
 from bldgts.haystack.defs import catalog_for_level
 from bldgts.haystack.metadata import (
     PROFILE,
     PROFILE_LIMITS,
     entity_level,
+    markers_of,
     metadata,
     replace_metadata,
     validate_entity,
 )
+from bldgts.haystack.rdf import add_markers, add_tag, declare_entity
+from bldgts.haystack.site_seed import SITE_ID
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, RDFS, XSD
 
-# Seed Haystack markers from legacy Brick classes until the seed TTL is fully Haystack.
-_BRICK_TO_MARKERS: dict[str, tuple[str, ...]] = {
-    "Site": ("site",),
-    "Building": ("site",),
-    "Floor": ("floor",),
-    "Air_Handler_Unit": ("equip", "ahu"),
-    "Fan": ("equip", "fan"),
-    "Supply_Fan": ("equip", "fan"),
-    "Return_Fan": ("equip", "fan"),
-    "Variable_Air_Volume_Box": ("equip", "vav"),
-    "Sensor": ("point", "sensor"),
-    "Setpoint": ("point", "sp"),
-    "Command": ("point", "cmd"),
-    "Status": ("point",),
-    "Point": ("point",),
+_EQUIP_MARKERS = {
+    "ahu": ("equip", "ahu"),
+    "air_handler_unit": ("equip", "ahu"),
+    "fan": ("equip", "fan"),
+    "supply_fan": ("equip", "fan"),
+    "return_fan": ("equip", "fan"),
+    "vav": ("equip", "vav"),
+    "damper": ("equip", "damper"),
+    "valve": ("equip", "valve"),
 }
 
-_EQUIP_KINDS = {
-    "ahu": BRICK.Air_Handler_Unit,
-    "air_handler_unit": BRICK.Air_Handler_Unit,
-    "fan": BRICK.Fan,
-    "supply_fan": BRICK.Supply_Fan,
-    "return_fan": BRICK.Return_Fan,
-    "vav": BRICK.Variable_Air_Volume_Box,
-    "sensor": BRICK.Sensor,
-}
-
-_POINT_KINDS = {
-    "point": BRICK.Point,
-    "sensor": BRICK.Sensor,
-    "setpoint": BRICK.Setpoint,
-    "command": BRICK.Command,
-    "status": BRICK.Status,
+_POINT_MARKERS = {
+    "point": ("point", "sensor", "his"),
+    "sensor": ("point", "sensor", "his"),
+    "setpoint": ("point", "sp", "his"),
+    "command": ("point", "cmd", "his"),
+    "status": ("point", "sensor", "his"),
 }
 
 
@@ -85,14 +72,6 @@ def _is_hidden(g: Graph, iri: URIRef) -> bool:
     return (iri, BTS.hidden, Literal(True, datatype=XSD.boolean)) in g
 
 
-def _brick_types(g: Graph, iri: URIRef) -> list[str]:
-    out: list[str] = []
-    for o in g.objects(iri, RDF.type):
-        if str(o).startswith(str(BRICK)):
-            out.append(_local(URIRef(o)))
-    return out
-
-
 def _timeseries_id(g: Graph, point: URIRef) -> str | None:
     for ref in g.objects(point, REF.hasExternalReference):
         for tid in g.objects(ref, REF.hasTimeseriesId):
@@ -103,37 +82,25 @@ def _timeseries_id(g: Graph, point: URIRef) -> str | None:
 def database_iri(g: Graph) -> URIRef:
     for s, _, _ in g.triples((None, RDF.type, REF.Database)):
         return URIRef(s)
-    for s, _, _ in g.triples((None, RDF.type, BRICK.Database)):
-        return URIRef(s)
     return BLDG.timeseries_db
 
 
 def _stored_markers(g: Graph, iri: URIRef) -> list[str]:
-    return sorted({str(o) for o in g.objects(iri, BTS.hasHaystackMarker)})
+    return sorted(markers_of(g, iri))
 
 
-def _seed_markers(g: Graph, iri: URIRef, node_type: str) -> list[str]:
-    """Brick-derived hint markers only — not treated as saved Haystack tags."""
-    seeded: list[str] = []
-    for brick_type in _brick_types(g, iri):
-        seeded.extend(_BRICK_TO_MARKERS.get(brick_type, ()))
-    if not seeded:
-        seeded.extend(
-            {
-                "site": ("site",),
-                "building": ("site",),
-                "floor": ("space", "floor"),
-                "space": ("space",),
-                "equip": ("equip",),
-                "part": ("equip",),
-                "point": ("point",),
-            }.get(node_type, ())
-        )
-    out: list[str] = []
-    for marker in seeded:
-        if marker not in out:
-            out.append(marker)
-    return out
+def _ref_parent(g: Graph, entity: URIRef, *names: str) -> list[URIRef]:
+    values = metadata(g, entity)
+    ordered: list[URIRef] = []
+    for name in names:
+        entry = values.get(name, {})
+        if entry.get("kind") != "Ref":
+            continue
+        raw = str(entry["value"])
+        parent = URIRef(raw) if ":" in raw else BLDG[raw]
+        if parent not in ordered:
+            ordered.append(parent)
+    return ordered
 
 
 def _annotate_coverage(node: dict[str, Any], g: Graph) -> dict[str, Any]:
@@ -142,7 +109,7 @@ def _annotate_coverage(node: dict[str, Any], g: Graph) -> dict[str, Any]:
     level = "equip" if node["node_type"] == "equipment" else node["node_type"]
     node.update(validate_entity(g, iri, level))
     node["markers"] = _stored_markers(g, iri)
-    node["hints"] = _seed_markers(g, iri, level)
+    node["hints"] = []
     node["tagged"] = bool(node["markers"] or node["metadata"])
     kids = [_annotate_coverage(child, g) for child in node.get("children") or []]
     node["children"] = kids
@@ -164,49 +131,46 @@ def _annotate_coverage(node: dict[str, Any], g: Graph) -> dict[str, Any]:
 
 
 def build_tree(graph: GraphService) -> list[dict[str, Any]]:
-    """Project the complete visible model into one deterministic, acyclic tree.
+    """Project the visible Haystack model into one deterministic, acyclic tree.
 
-    Resolve classes through Brick rather than a short equipment-name allowlist.
-    Inverse and forward containment/location edges are equivalent inputs. Every
-    visible model entity appears once, including unattached records as roots;
-    malformed cycles or multiple parents cannot hide points or recurse forever.
+    Parents come from ``spaceRef`` / ``equipRef`` / ``siteRef``. Every visible
+    entity appears once; cycles and multiple parents cannot hide points forever.
     """
     g = graph.state.model
-    ontology = graph.ontology
     levels: dict[URIRef, str] = {}
-    candidates = set(g.subjects(RDF.type, None)) | set(g.subjects(REF.hasExternalReference, None))
+    candidates = (
+        set(g.subjects(BTS.hasHaystackMarker, None))
+        | set(g.subjects(REF.hasExternalReference, None))
+        | set(g.subjects(RDF.type, BTS.Entity))
+    )
     for entity in sorted(candidates, key=str):
         if not isinstance(entity, URIRef) or _is_hidden(g, entity):
             continue
         try:
-            levels[entity] = entity_level(g, entity, ontology)
+            levels[entity] = entity_level(g, entity)
         except ValueError:
-            continue  # Database, unit and metadata-definition records are not tree rows.
+            continue
 
     def parent_candidates(entity: URIRef) -> list[URIRef]:
-        if levels[entity] == "point":
-            groups = (
-                g.objects(entity, BRICK.isPointOf),
-                g.subjects(BRICK.hasPoint, entity),
-                g.objects(entity, BRICK.isLocatedIn),
-            )
+        level = levels[entity]
+        if level == "point":
+            # Prefer space nesting for zone points; otherwise equipment ownership.
+            names = ("spaceRef", "equipRef", "siteRef")
+        elif level in {"equip", "part"}:
+            names = ("equipRef", "siteRef")
+        elif level in {"floor", "space"}:
+            names = ("spaceRef", "siteRef")
         else:
-            groups = (
-                g.objects(entity, BRICK.isPartOf),
-                g.subjects(BRICK.hasPart, entity),
-                g.objects(entity, BRICK.isLocatedIn),
-                g.subjects(BRICK.hasLocation, entity),
-            )
+            names = ()
         ordered: list[URIRef] = []
-        for group in groups:
-            for parent in sorted(set(group), key=str):
-                if (
-                    parent in levels
-                    and parent != entity
-                    and levels[parent] != "point"
-                    and parent not in ordered
-                ):
-                    ordered.append(parent)
+        for parent in _ref_parent(g, entity, *names):
+            if (
+                parent in levels
+                and parent != entity
+                and levels[parent] != "point"
+                and parent not in ordered
+            ):
+                ordered.append(parent)
         return ordered
 
     parents: dict[URIRef, URIRef] = {}
@@ -242,14 +206,13 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
             "iri": str(entity),
             "name": _label(g, entity),
             "node_type": "equipment" if level == "equip" else level,
-            "brick_types": _brick_types(g, entity),
+            "brick_types": [],
             "tags": {"timeseries_id": tid} if tid else {},
             "children": [node(child) for child in sorted(children[entity], key=sort_key)],
         }
 
     roots = sorted((entity for entity in levels if entity not in parents), key=sort_key)
     return [_annotate_coverage(node(entity), g) for entity in roots]
-
 
 def _require_mutations(graph: GraphService, allow: bool) -> None:
     if not allow:
@@ -269,19 +232,18 @@ def upsert_equipment(
     _require_mutations(graph, allow_mutations)
     eid = _safe_id(equipment_id)
     equip = BLDG[eid]
-    brick_class = _EQUIP_KINDS.get((kind or "ahu").strip().lower(), BRICK.Air_Handler_Unit)
-    parent = BLDG[_safe_id(parent_id)] if parent_id else BLDG.Building_50
+    markers = _EQUIP_MARKERS.get((kind or "ahu").strip().lower(), ("equip", "ahu"))
+    parent = BLDG[_safe_id(parent_id)] if parent_id else BLDG[SITE_ID]
 
     def mutator(g: Graph) -> None:
-        if (equip, RDF.type, None) not in g:
-            g.add((equip, RDF.type, brick_class))
-            g.add((equip, BTS.overlay, Literal(True, datatype=XSD.boolean)))
-        else:
-            # Do not strip existing types; ensure requested class present.
-            g.add((equip, RDF.type, brick_class))
+        declare_entity(g, equip)
+        g.add((equip, BTS.overlay, Literal(True, datatype=XSD.boolean)))
         g.set((equip, RDFS.label, Literal(label or eid)))
-        g.set((equip, BRICK.isLocatedIn, parent))
-        g.add((parent, BRICK.hasPart, equip))
+        add_markers(g, equip, list(markers))
+        g.remove((equip, BTS.hasHaystackTag, None))
+        add_tag(g, equip, "siteRef", "Ref", SITE_ID)
+        if parent_id and parent != BLDG[SITE_ID]:
+            add_tag(g, equip, "equipRef", "Ref", _safe_id(parent_id))
         g.remove((equip, BTS.hidden, None))
 
     try:
@@ -317,22 +279,21 @@ def upsert_point(
     oid = _safe_id(owner_id)
     point = BLDG[pid]
     owner = BLDG[oid]
-    cls_key = (brick_class or "sensor").strip()
-    cls = _POINT_KINDS.get(cls_key.lower()) or BRICK[cls_key]
+    cls_key = (brick_class or "sensor").strip().lower()
+    markers = list(_POINT_MARKERS.get(cls_key, ("point", "sensor", "his")))
 
     def mutator(g: Graph) -> None:
         if entity_level(g, owner) not in {"equip", "part"} or _is_hidden(g, owner):
             raise ValueError("point owner must be existing visible equipment")
         existing_tid = _timeseries_id(g, point)
-        if (point, RDF.type, None) not in g:
-            g.add((point, RDF.type, cls))
-            g.add((point, BTS.overlay, Literal(True, datatype=XSD.boolean)))
-        else:
-            g.add((point, RDF.type, cls))
+        declare_entity(g, point)
+        g.add((point, BTS.overlay, Literal(True, datatype=XSD.boolean)))
         g.set((point, RDFS.label, Literal(label or pid)))
-        g.remove((None, BRICK.hasPoint, point))
-        g.set((point, BRICK.isPointOf, owner))
-        g.add((owner, BRICK.hasPoint, point))
+        add_markers(g, point, markers)
+        g.remove((point, BTS.hasHaystackTag, None))
+        add_tag(g, point, "kind", "Str", "Number" if "sp" in markers else "Bool")
+        add_tag(g, point, "siteRef", "Ref", SITE_ID)
+        add_tag(g, point, "equipRef", "Ref", oid)
         g.remove((point, BTS.hidden, None))
 
         # Preserve existing timeseries reference; only create when missing.
@@ -386,8 +347,10 @@ def hide_entity(
     iri = BLDG[eid]
 
     def mutator(g: Graph) -> None:
-        if (iri, RDF.type, None) not in g:
-            raise ValueError(f"entity not found: {eid}")
+        try:
+            entity_level(g, iri)
+        except ValueError as exc:
+            raise ValueError(f"entity not found: {eid}") from exc
         g.set((iri, BTS.hidden, Literal(True, datatype=XSD.boolean)))
 
     try:
@@ -488,8 +451,10 @@ def rename_entity(
 
     def mutator(g: Graph) -> None:
         entity = BLDG[eid]
-        if (entity, RDF.type, None) not in g:
-            raise ValueError(f"entity not found: {eid}")
+        try:
+            entity_level(g, entity)
+        except ValueError as exc:
+            raise ValueError(f"entity not found: {eid}") from exc
         if _is_hidden(g, entity):
             raise ValueError(f"entity is hidden: {eid}")
         g.set((entity, RDFS.label, Literal(text)))
@@ -518,11 +483,10 @@ def rename_entity(
 
 
 def _bridge_point_ownership(g: Graph, entity: URIRef) -> None:
-    """Keep the legacy Brick query/tree ownership aligned with an explicit ref.
+    """No-op structural bridge: tree ownership is ``equipRef`` / ``spaceRef`` only.
 
-    Unresolved drafts keep their prior placement so a user can finish editing
-    without losing the row. Structural Brick links are a compatibility bridge;
-    they do not manufacture or verify Haystack metadata.
+    Kept so apply_metadata / agent apply call sites stay stable. Unresolved
+    drafts keep prior tags; we never fabricate Brick containment triples.
     """
     if entity_level(g, entity) != "point":
         return
@@ -538,19 +502,7 @@ def _bridge_point_ownership(g: Graph, entity: URIRef) -> None:
         return
     if level not in {"equip", "part"} or _is_hidden(g, owner):
         return
-    site_ref = values.get("siteRef", {})
-    owner_site = metadata(g, owner).get("siteRef", {})
-    if site_ref.get("kind") == "Ref" and owner_site.get("kind") == "Ref":
-
-        def ref_iri(value: Any) -> URIRef:
-            text = str(value)
-            return URIRef(text) if ":" in text else BLDG[text]
-
-        if ref_iri(site_ref["value"]) != ref_iri(owner_site["value"]):
-            return
-    g.remove((None, BRICK.hasPoint, entity))
-    g.set((entity, BRICK.isPointOf, owner))
-    g.add((owner, BRICK.hasPoint, entity))
+    # Ownership is already carried by equipRef; nothing else to sync.
 
 
 def apply_metadata(
