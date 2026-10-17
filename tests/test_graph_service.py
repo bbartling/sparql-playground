@@ -67,9 +67,7 @@ def test_revision_write_failure_does_not_publish_mutation(settings: Settings):
         patch.object(graph, "_write_revision", side_effect=OSError("disk full")),
         pytest.raises(OSError, match="disk full"),
     ):
-        graph.apply_mutation(
-            lambda model: model.set((BLDG.AHU_1, RDFS.label, Literal("Unsaved")))
-        )
+        graph.apply_mutation(lambda model: model.set((BLDG.AHU_1, RDFS.label, Literal("Unsaved"))))
     assert graph.state is original_state
     assert graph.revision == 0
     assert not graph.dirty

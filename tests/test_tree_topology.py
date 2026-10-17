@@ -30,10 +30,7 @@ def test_full_seed_exposes_every_point_floor_and_space_once(project_root):
     shown = {n["iri"] for n in nodes if n["node_type"] == "point"}
     assert shown == expected
     assert all(count == 1 for count in counts.values())
-    floors = {
-        str(s)
-        for s, _, o in model.triples((None, BTS.hasHaystackMarker, Literal("floor")))
-    }
+    floors = {str(s) for s, _, o in model.triples((None, BTS.hasHaystackMarker, Literal("floor")))}
     assert {n["iri"] for n in nodes if n["node_type"] == "floor"} == floors
     spaces = {
         str(s)

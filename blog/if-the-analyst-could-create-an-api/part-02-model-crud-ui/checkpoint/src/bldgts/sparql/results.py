@@ -36,8 +36,10 @@ def sparql_results_to_json(results, *, max_rows: int) -> tuple[dict[str, Any], d
             if term is None:
                 continue
             kind = (
-                "uri" if isinstance(term, URIRef)
-                else "bnode" if isinstance(term, BNode)
+                "uri"
+                if isinstance(term, URIRef)
+                else "bnode"
+                if isinstance(term, BNode)
                 else "literal"
             )
             bnd[v] = {"type": kind, "value": str(term)}

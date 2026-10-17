@@ -356,12 +356,12 @@ def test_explicit_equipment_ref_moves_point_in_tree_and_sparql_without_changing_
     assert "AHU_1_DA_P" in {n["id"] for n in flatten(owner["children"])}
     assert list(model.objects(BLDG.AHU_1_DA_P, REF.hasExternalReference)) == before
     assert str(model.value(before[0], REF.hasTimeseriesId)) == tid
-    query = """PREFIX bts: <https://example.org/openfdd/bldgts#>
-    SELECT ?owner WHERE {
+    query = f"""PREFIX bts: <https://example.org/openfdd/bldgts#>
+    SELECT ?owner WHERE {{
       ?point bts:hasHaystackTag ?tag .
       ?tag bts:tagName "equipRef" ; bts:tagValue ?owner .
-      FILTER(?point = <%s>)
-    }""" % str(BLDG.AHU_1_DA_P)
+      FILTER(?point = <{BLDG.AHU_1_DA_P}>)
+    }}"""
     assert [row.owner for row in graph.state.union.query(query)] == [BLDG.AHU_2]
 
     assert (

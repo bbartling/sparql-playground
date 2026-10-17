@@ -214,6 +214,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
     roots = sorted((entity for entity in levels if entity not in parents), key=sort_key)
     return [_annotate_coverage(node(entity), g) for entity in roots]
 
+
 def _require_mutations(graph: GraphService, allow: bool) -> None:
     if not allow:
         raise PermissionError("mutations disabled (set BLDGTS_ALLOW_MUTATIONS=true)")

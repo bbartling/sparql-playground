@@ -47,7 +47,9 @@ def test_repeated_display_labels_do_not_make_model_unhealthy():
     model = Graph()
     for number in (1, 2):
         point, owner, reference = (
-            BLDG[f"point{number}"], BLDG[f"ahu{number}"], BLDG[f"reference{number}"]
+            BLDG[f"point{number}"],
+            BLDG[f"ahu{number}"],
+            BLDG[f"reference{number}"],
         )
         model.add((point, RDF.type, BRICK.Point))
         model.add((point, RDFS.label, Literal("Discharge temperature")))
