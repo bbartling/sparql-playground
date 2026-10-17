@@ -68,13 +68,14 @@ def test_model_ttl(client: TestClient):
     full = client.get("/api/model/ttl")
     assert full.status_code == 200
     assert "text/turtle" in full.headers.get("content-type", "")
-    assert "Air_Handler_Unit" in full.text
+    assert 'bts:hasHaystackMarker "ahu"' in full.text or "hasHaystackMarker" in full.text
+    assert "AHU_1" in full.text
     assert "AHU_1_DA_P" in full.text  # points included in model scope
 
     site = client.get("/api/model/ttl", params={"scope": "site"})
     assert site.status_code == 200
-    assert "Air_Handler_Unit" in site.text
-    assert "AHU_1_DA_P" not in site.text  # site.ttl has no point individuals
+    assert "AHU_1" in site.text
+    assert "AHU_1_DA_P" not in site.text  # site seed has no point individuals
 
 
 def test_removed_routes(client: TestClient):

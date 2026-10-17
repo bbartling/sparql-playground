@@ -15,10 +15,13 @@ from rdflib.namespace import RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
 POINT_QUERY = """
-PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bts: <https://example.org/openfdd/bldgts#>
 PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
 SELECT ?point ?owner ?timeseries WHERE {
-  ?point brick:isPointOf ?owner ; ref:hasExternalReference ?reference .
+  ?point bts:hasHaystackMarker "point" ;
+         bts:hasHaystackTag ?eref ;
+         ref:hasExternalReference ?reference .
+  ?eref bts:tagName "equipRef" ; bts:tagValue ?owner .
   ?reference ref:hasTimeseriesId ?timeseries .
 } ORDER BY ?point LIMIT 1
 """
