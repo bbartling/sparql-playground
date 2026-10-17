@@ -9,7 +9,7 @@
 ```
 checkpoint/
   src/bldgts/      # FastAPI package
-  web/             # Vite UI (FinStack-style one-shot Haystack tags)
+  web/             # Vite UI (Edit → click point → tag menu + raw RDF tab)
   scripts/
   tests/
 ```
@@ -29,7 +29,7 @@ cd blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web
 npm install && npm run dev                        # http://127.0.0.1:5173
 ```
 
-Edit mode: click a point → fuzzy one-shot marker bundle → CRUD into RDF. Checkboxes batch-tag.
+**Edit** locks the tree · click a point · small tag menu (fuzzy Haystack chips from BAS names) · **Tag** writes RDF. Model tab shows green/yellow/red tagging coverage; SPARQL tab shows RDF integrity (orphans/duplicates). **RDF** tab shows live Turtle from `/api/model/ttl`.
 
 ## Next
 

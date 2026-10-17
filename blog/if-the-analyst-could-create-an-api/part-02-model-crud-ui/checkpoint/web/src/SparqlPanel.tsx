@@ -37,7 +37,22 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export function SparqlPanel() {
+type IntegrityIssue = {
+  check: string
+  message: string
+  count: number
+  severity: string
+  samples?: string[] | null
+}
+
+type IntegrityReport = {
+  status: 'green' | 'yellow' | 'red'
+  error_count: number
+  warn_count: number
+  issues: IntegrityIssue[]
+}
+
+export function SparqlPanel({ revision = 0 }: { revision?: number }) {
   const [examples, setExamples] = useState<string[]>([])
   const [selectedExample, setSelectedExample] = useState('')
   const [query, setQuery] = useState(DEFAULT_QUERY)
@@ -49,6 +64,7 @@ export function SparqlPanel() {
   const [drillMsg, setDrillMsg] = useState('')
   const [drillSamples, setDrillSamples] = useState<Array<{ ts: string; value: number }>>([])
   const [ttlMsg, setTtlMsg] = useState('')
+  const [integrity, setIntegrity] = useState<IntegrityReport | null>(null)
 
   useEffect(() => {
     api<{ examples: string[] }>('/api/sparql/examples')
@@ -56,6 +72,11 @@ export function SparqlPanel() {
       .catch((e) => setSparqlErr(String(e)))
   }, [])
 
+  useEffect(() => {
+    api<IntegrityReport>('/api/model/integrity')
+      .then((j) => setIntegrity(j))
+      .catch(() => setIntegrity(null))
+  }, [revision])
   const loadExample = useCallback(async (name: string) => {
     if (!name) return null
     try {
@@ -153,12 +174,39 @@ export function SparqlPanel() {
       v.toLowerCase() === 'point_id',
   )
 
+  const tone = integrity?.status ?? 'yellow'
+  const integrityTitle =
+    tone === 'green'
+      ? 'RDF model healthy'
+      : tone === 'yellow'
+        ? 'RDF warnings'
+        : 'RDF model problems'
+  const integrityDetail = integrity
+    ? `${integrity.error_count} error(s) · ${integrity.warn_count} warning(s)`
+    : 'Checking model…'
+
   return (
     <main className="sparql-page">
+      <div className={`status-bar status-${tone}`} role="status">
+        <span className="status-dot" aria-hidden />
+        <strong>{integrityTitle}</strong>
+        <span>{integrityDetail}</span>
+      </div>
+      {integrity?.issues?.length ? (
+        <ul className="integrity-list">
+          {integrity.issues.slice(0, 8).map((issue) => (
+            <li key={issue.check}>
+              <b>{issue.check}</b> · {issue.message}
+              {issue.samples?.length ? ` · e.g. ${issue.samples.slice(0, 3).join(', ')}` : ''}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       <section className="selected-card sparql-card">
         <div className="actions-label">SPARQL editor</div>
         <p className="empty-hint">
-          Read-only SELECT/ASK against the Brick graph. Presets load tutorial `.rq` files from
+          Read-only SELECT/ASK against the live model graph. Presets load tutorial `.rq` files from
           the repo, then run them in the browser.
         </p>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SparqlPanel } from './SparqlPanel'
 import './styles.css'
@@ -9,11 +9,27 @@ type TreeNode = {
   name: string
   node_type: string
   markers?: string[]
+  hints?: string[]
+  tagged?: boolean
+  complete?: boolean
+  coverage?: 'green' | 'yellow' | 'red'
+  points_total?: number
+  points_complete?: number
   tags: Record<string, string>
   children: TreeNode[]
 }
 
-type Tab = 'floor' | 'dashboard' | 'sparql'
+type SuggestHit = { symbol: string; score?: number; doc?: string }
+
+type Tab = 'floor' | 'rdf' | 'sparql'
+
+type TagMenu = {
+  node: TreeNode
+  x: number
+  y: number
+  selected: string[]
+  suggestions: string[]
+}
 
 function levelOf(node: TreeNode): string {
   if (node.node_type === 'equipment') return 'equip'
@@ -52,10 +68,17 @@ function branchIds(nodes: TreeNode[]): Set<string> {
   return open
 }
 
-function pointIds(nodes: TreeNode[]): string[] {
-  return flatten(nodes)
-    .filter((n) => n.node_type === 'point')
-    .map((n) => n.id)
+function rollupCoverage(nodes: TreeNode[]): {
+  status: 'green' | 'yellow' | 'red'
+  total: number
+  complete: number
+} {
+  const points = flatten(nodes).filter((n) => n.node_type === 'point')
+  const total = points.length
+  const complete = points.filter((n) => n.complete).length
+  if (total === 0 || complete >= total) return { status: 'green', total, complete }
+  if (complete === 0) return { status: 'red', total, complete }
+  return { status: 'yellow', total, complete }
 }
 
 function MarkerPills({ markers }: { markers: string[] }) {
@@ -71,78 +94,90 @@ function MarkerPills({ markers }: { markers: string[] }) {
   )
 }
 
+function StatusBar(props: {
+  tone: 'green' | 'yellow' | 'red'
+  title: string
+  detail: string
+}) {
+  return (
+    <div className={`status-bar status-${props.tone}`} role="status">
+      <span className="status-dot" aria-hidden />
+      <strong>{props.title}</strong>
+      <span>{props.detail}</span>
+    </div>
+  )
+}
+
 function DeepTree(props: {
   node: TreeNode
   depth: number
   editing: boolean
+  lockedOpen: boolean
+  activeId: string | null
   expanded: Set<string>
-  checked: Set<string>
-  busyId: string | null
   onToggle: (id: string) => void
-  onCheck: (id: string, checked: boolean) => void
-  onTagClick: (node: TreeNode) => void
+  onPointClick: (node: TreeNode, event: React.MouseEvent) => void
 }) {
-  const { node, depth, editing, expanded } = props
-  const isOpen = expanded.has(node.id)
+  const { node, depth, lockedOpen, expanded } = props
+  const isOpen = lockedOpen || expanded.has(node.id)
   const hasChildren = node.children.length > 0
   const isPoint = node.node_type === 'point'
   const markers = node.markers ?? []
+  const coverage = node.coverage ?? (isPoint ? (node.complete ? 'green' : 'red') : undefined)
 
   return (
-    <div className="tree-node">
-      <div
+    <div>
+      <button
+        type="button"
         className={[
           'tree-row',
           isPoint ? 'item' : 'branch',
-          editing && isPoint ? 'editable' : '',
-          props.busyId === node.id ? 'staged-meta' : '',
-          props.checked.has(node.id) ? 'custom-target' : '',
+          props.editing && isPoint ? 'editable' : '',
+          props.activeId === node.id ? 'custom-target' : '',
+          coverage ? `coverage-${coverage}` : '',
         ]
           .filter(Boolean)
           .join(' ')}
         style={{ paddingLeft: `${10 + depth * 18}px` }}
-        onClick={() => {
-          if (editing && isPoint) {
-            props.onTagClick(node)
+        onClick={(event) => {
+          if (props.editing && isPoint) {
+            props.onPointClick(node, event)
             return
           }
-          if (hasChildren) props.onToggle(node.id)
+          if (hasChildren && !lockedOpen) props.onToggle(node.id)
         }}
       >
-        {editing && isPoint ? (
-          <input
-            type="checkbox"
-            className="point-check"
-            checked={props.checked.has(node.id)}
-            onClick={(event) => event.stopPropagation()}
-            onChange={(event) => props.onCheck(node.id, event.target.checked)}
-            aria-label={`Select ${node.name}`}
-          />
-        ) : (
-          <span
-            className={`chevron ${hasChildren ? '' : 'placeholder'}`}
-            style={{ transform: hasChildren && isOpen ? 'rotate(90deg)' : undefined }}
-            onClick={(event) => {
-              event.stopPropagation()
-              if (hasChildren) props.onToggle(node.id)
-            }}
-          >
-            {hasChildren ? '▸' : '·'}
-          </span>
-        )}
+        <span
+          className={`chevron ${hasChildren ? '' : 'placeholder'} ${lockedOpen ? 'locked' : ''}`}
+          style={{ transform: hasChildren && isOpen ? 'rotate(90deg)' : undefined }}
+          onClick={(event) => {
+            event.stopPropagation()
+            if (hasChildren && !lockedOpen) props.onToggle(node.id)
+          }}
+        >
+          {hasChildren ? '▸' : '·'}
+        </span>
         <span className="node-copy">
           <span className="node-name">{node.name}</span>
           <span className="node-meta">
-            <span className="pill none">{node.node_type}</span>
-            <MarkerPills markers={markers} />
+            {node.node_type}
+            {!isPoint && node.points_total
+              ? ` · ${node.points_complete ?? 0}/${node.points_total} tagged`
+              : ''}
           </span>
         </span>
-      </div>
-      {hasChildren && isOpen
-        ? node.children.map((child) => (
-            <DeepTree key={child.id} {...props} node={child} depth={depth + 1} />
-          ))
-        : null}
+        {isPoint && (
+          <span className="pill-stack">
+            <MarkerPills markers={markers} />
+          </span>
+        )}
+        {coverage ? <span className={`coverage-chip ${coverage}`} aria-label={coverage} /> : null}
+      </button>
+      {hasChildren &&
+        isOpen &&
+        node.children.map((child) => (
+          <DeepTree key={child.iri} {...props} node={child} depth={depth + 1} />
+        ))}
     </div>
   )
 }
@@ -152,23 +187,20 @@ function App() {
   const [tree, setTree] = useState<TreeNode[]>([])
   const [revision, setRevision] = useState(0)
   const [allowMutations, setAllowMutations] = useState(false)
-  const [dash, setDash] = useState<{
-    totals: Record<string, number>
-    marker_counts: Record<string, number>
-  } | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState(false)
-  const [checked, setChecked] = useState<Set<string>>(new Set())
-  const [busyId, setBusyId] = useState<string | null>(null)
+  const [menu, setMenu] = useState<TagMenu | null>(null)
   const [busy, setBusy] = useState(false)
-  const [search, setSearch] = useState('')
-  const [toast, setToast] = useState('')
+  const [error, setError] = useState('')
+  const [ttlText, setTtlText] = useState('')
+  const [ttlBusy, setTtlBusy] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
 
-  const allPoints = useMemo(() => pointIds(tree), [tree])
+  const coverage = useMemo(() => rollupCoverage(tree), [tree])
 
-  const showToast = (text: string) => {
-    setToast(text)
-    window.setTimeout(() => setToast(''), 2600)
+  const showError = (text: string) => {
+    setError(text)
+    window.setTimeout(() => setError(''), 3200)
   }
 
   const loadTree = async () => {
@@ -183,90 +215,151 @@ function App() {
     setExpanded((current) => (current.size > 0 ? current : branchIds(body.tree)))
   }
 
+  const loadTtl = async () => {
+    setTtlBusy(true)
+    try {
+      const response = await fetch('/api/model/ttl?scope=model')
+      if (!response.ok) throw new Error(`TTL ${response.status}`)
+      setTtlText(await response.text())
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to load Turtle')
+      setTtlText('')
+    } finally {
+      setTtlBusy(false)
+    }
+  }
+
   useEffect(() => {
-    loadTree().catch((error) => showToast(error.message))
+    loadTree().catch((err) => showError(err.message))
   }, [])
 
   useEffect(() => {
-    if (tab !== 'dashboard') return
-    api<{
-      totals: Record<string, number>
-      marker_counts: Record<string, number>
-    }>('/api/model/dashboard')
-      .then((body) => setDash(body))
-      .catch((error) => showToast(error.message))
+    if (tab !== 'rdf') return
+    void loadTtl()
   }, [tab, revision])
 
-  const guessAndSave = async (nodes: TreeNode[]) => {
-    if (!nodes.length || busy) return
+  useEffect(() => {
+    if (!menu) return
+    const onDoc = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenu(null)
+      }
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menu])
+
+  const openTagMenu = async (node: TreeNode, event: React.MouseEvent) => {
+    if (!allowMutations || busy) return
+    const x = Math.min(event.clientX, window.innerWidth - 280)
+    const y = Math.min(event.clientY, window.innerHeight - 220)
+    setMenu({
+      node,
+      x,
+      y,
+      selected: node.markers?.length ? node.markers : node.hints ?? [],
+      suggestions: node.markers?.length ? node.markers : node.hints ?? [],
+    })
+    try {
+      const [guess, suggest] = await Promise.all([
+        api<{ markers: string[] }>(
+          `/api/model/haystack/guess?q=${encodeURIComponent(node.name)}&level=${encodeURIComponent(levelOf(node))}`,
+        ),
+        api<{ suggestions: SuggestHit[] }>(
+          `/api/model/haystack/suggest?q=${encodeURIComponent(node.name)}&level=${encodeURIComponent(levelOf(node))}&n=10`,
+        ),
+      ])
+      const suggestions = [
+        ...new Set([
+          ...(guess.markers ?? []),
+          ...(suggest.suggestions ?? []).map((h) => h.symbol),
+        ]),
+      ]
+      setMenu((current) =>
+        current && current.node.id === node.id
+          ? {
+              ...current,
+              selected: guess.markers?.length ? guess.markers : current.selected,
+              suggestions,
+            }
+          : current,
+      )
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Suggest failed')
+    }
+  }
+
+  const applyTags = async (markers: string[]) => {
+    if (!menu || busy) return
     if (!allowMutations) {
-      showToast('Set BLDGTS_ALLOW_MUTATIONS=true')
+      showError('Set BLDGTS_ALLOW_MUTATIONS=true')
       return
     }
     setBusy(true)
     try {
-      const updates = []
-      for (const node of nodes) {
-        setBusyId(node.id)
-        const bundle = await api<{ markers: string[] }>(
-          `/api/model/haystack/guess?q=${encodeURIComponent(node.name)}&level=${encodeURIComponent(levelOf(node))}`,
-        )
-        updates.push({
-          entity_id: node.id,
-          markers: bundle.markers,
-          level: levelOf(node),
-        })
-      }
       const body = await api<{ revision: number }>('/api/model/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates, expected_revision: revision }),
+        body: JSON.stringify({
+          updates: [
+            {
+              entity_id: menu.node.id,
+              markers,
+              level: levelOf(menu.node),
+            },
+          ],
+          expected_revision: revision,
+        }),
       })
       setRevision(body.revision)
-      showToast(
-        nodes.length === 1
-          ? `Tagged ${nodes[0].id}: ${updates[0].markers.join(' ')}`
-          : `Tagged ${nodes.length} points`,
-      )
-      setChecked(new Set())
+      setMenu(null)
       await loadTree()
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Tag failed')
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Tag failed')
     } finally {
       setBusy(false)
-      setBusyId(null)
     }
   }
 
-  const filteredTree = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return tree
-    const match = (node: TreeNode): TreeNode | null => {
-      const self =
-        node.name.toLowerCase().includes(q) ||
-        node.id.toLowerCase().includes(q) ||
-        (node.markers ?? []).some((m) => m.toLowerCase().includes(q))
-      const kids = node.children.map(match).filter(Boolean) as TreeNode[]
-      if (self || kids.length) return { ...node, children: kids }
-      return null
-    }
-    return tree.map(match).filter(Boolean) as TreeNode[]
-  }, [tree, search])
+  const toggleSelected = (symbol: string) => {
+    setMenu((current) => {
+      if (!current) return current
+      const on = current.selected.includes(symbol)
+      return {
+        ...current,
+        selected: on
+          ? current.selected.filter((m) => m !== symbol)
+          : [...current.selected, symbol],
+      }
+    })
+  }
 
-  const checkedNodes = useMemo(() => {
-    const byId = new Map(flatten(tree).map((n) => [n.id, n]))
-    return [...checked].map((id) => byId.get(id)).filter(Boolean) as TreeNode[]
-  }, [checked, tree])
+  const coverageTitle =
+    coverage.status === 'green'
+      ? 'Tagging complete'
+      : coverage.status === 'yellow'
+        ? 'Tagging in progress'
+        : 'Points still need Haystack tags'
 
   return (
-    <div className="app-shell">
+    <div className="app">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">Project Haystack · FinStack-style tagging</p>
-          <h1>Point tag tree</h1>
+        <div className="brand">
+          <div className="brand-mark">HS</div>
+          <div className="brand-copy">
+            <h1>Haystack point tagger</h1>
+            <p>Edit · click a point · tag · done</p>
+          </div>
         </div>
-        <div className="topbar-meta">
-          <span>rev {revision}</span>
+        <div className="top-actions">
+          <span className="pill none">rev {revision}</span>
           <span className={allowMutations ? 'pill received' : 'pill none'}>
             {allowMutations ? 'mutations on' : 'read-only'}
           </span>
@@ -278,7 +371,7 @@ function App() {
           [
             ['floor', 'Model'],
             ['sparql', 'SPARQL'],
-            ['dashboard', 'Coverage'],
+            ['rdf', 'RDF'],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -293,120 +386,144 @@ function App() {
       </nav>
 
       {tab === 'sparql' ? (
-        <SparqlPanel showToast={showToast} />
-      ) : tab === 'dashboard' ? (
-        <section className="panel">
-          <h2>Haystack marker coverage</h2>
-          <div className="dash-grid">
-            {['items', 'tagged', 'untagged', 'distinct_markers'].map((key) => (
-              <div key={key} className="dash-card">
-                <div className="dash-label">{key}</div>
-                <div className="dash-value">{dash?.totals?.[key] ?? '—'}</div>
+        <SparqlPanel revision={revision} />
+      ) : tab === 'rdf' ? (
+        <main className="dashboard">
+          <section className="panel" style={{ padding: 0, minHeight: 0, flex: 1 }}>
+            <div className="panel-head">
+              <div>
+                <h2>Live RDF (Turtle)</h2>
+                <span>GET /api/model/ttl</span>
               </div>
-            ))}
-          </div>
-          <h3>Top markers</h3>
-          <ul className="dash-list">
-            {Object.entries(dash?.marker_counts ?? {})
-              .slice(0, 24)
-              .map(([marker, count]) => (
-                <li key={marker}>
-                  <code>{marker}</code> · {count}
-                </li>
-              ))}
-          </ul>
-        </section>
-      ) : (
-        <section className={`panel tree-panel tree-panel-full ${editing ? 'is-editing' : ''}`}>
-          <div className="panel-head">
-            <div>
-              <h2>Building tree</h2>
-              <p className="hint">
-                {editing
-                  ? 'Click a point → fuzzy guess all markers (point/sensor/sp/…) and CRUD to RDF. Checkboxes + “Tag selected” for batch.'
-                  : 'Browse markers. Edit to one-shot tag like FinStack / Niagara.'}
-              </p>
-            </div>
-            <div className="edit-controls">
-              {!editing ? (
-                <button type="button" disabled={!allowMutations} onClick={() => setEditing(true)}>
-                  Edit
+              <div className="edit-controls">
+                <button type="button" className="ghost" onClick={() => void loadTtl()} disabled={ttlBusy}>
+                  Refresh
                 </button>
-              ) : (
-                <>
+              </div>
+            </div>
+            <pre className="rdf-raw">{ttlBusy && !ttlText ? 'Loading…' : ttlText}</pre>
+          </section>
+        </main>
+      ) : (
+        <main className="workspace tree-only">
+          <section className={`panel tree-panel tree-panel-full ${editing ? 'is-editing' : ''}`}>
+            <StatusBar
+              tone={coverage.status}
+              title={coverageTitle}
+              detail={`${coverage.complete}/${coverage.total} points complete (point+his+sensor|sp|cmd)`}
+            />
+            <div className="panel-head">
+              <div>
+                <h2>Building tree</h2>
+                <span>{editing ? 'Locked · click a point to tag' : 'Scroll the tree · Edit to tag'}</span>
+              </div>
+              <div className="edit-controls">
+                {!editing ? (
                   <button
                     type="button"
-                    onClick={() => setChecked(new Set(allPoints))}
-                    disabled={!allPoints.length}
+                    className="primary-sm"
+                    disabled={!allowMutations}
+                    onClick={() => {
+                      setExpanded(branchIds(tree))
+                      setEditing(true)
+                    }}
                   >
-                    Select all points
+                    Edit
                   </button>
+                ) : (
                   <button
                     type="button"
-                    className="primary"
-                    disabled={busy || !checkedNodes.length}
-                    onClick={() => guessAndSave(checkedNodes)}
-                  >
-                    Tag selected ({checkedNodes.length})
-                  </button>
-                  <button
-                    type="button"
+                    className="ghost"
                     onClick={() => {
                       setEditing(false)
-                      setChecked(new Set())
+                      setMenu(null)
                     }}
                   >
                     Done
                   </button>
-                </>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-          <div className="search">
-            <input
-              placeholder="Filter by name or marker"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="tree-scroll">
-            {filteredTree.map((node) => (
-              <DeepTree
-                key={node.id}
-                node={node}
-                depth={0}
-                editing={editing}
-                expanded={expanded}
-                checked={checked}
-                busyId={busyId}
-                onToggle={(id) =>
-                  setExpanded((current) => {
-                    const next = new Set(current)
-                    if (next.has(id)) next.delete(id)
-                    else next.add(id)
-                    return next
-                  })
-                }
-                onCheck={(id, on) =>
-                  setChecked((current) => {
-                    const next = new Set(current)
-                    if (on) next.add(id)
-                    else next.delete(id)
-                    return next
-                  })
-                }
-                onTagClick={(node) => {
-                  void guessAndSave([node])
-                }}
-              />
-            ))}
-          </div>
-        </section>
+            <div className="tree-scroll">
+              {tree.map((node) => (
+                <DeepTree
+                  key={node.iri}
+                  node={node}
+                  depth={0}
+                  editing={editing}
+                  lockedOpen={editing}
+                  activeId={menu?.node.id ?? null}
+                  expanded={expanded}
+                  onToggle={(id) =>
+                    setExpanded((current) => {
+                      const next = new Set(current)
+                      if (next.has(id)) next.delete(id)
+                      else next.add(id)
+                      return next
+                    })
+                  }
+                  onPointClick={(item, event) => {
+                    void openTagMenu(item, event)
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        </main>
       )}
 
-      {toast ? <div className="toast">{toast}</div> : null}
+      {menu ? (
+        <div
+          ref={menuRef}
+          className="tag-menu"
+          style={{ left: menu.x, top: menu.y }}
+          role="dialog"
+          aria-label={`Tag ${menu.node.name}`}
+        >
+          <div className="tag-menu-head">{menu.node.name}</div>
+          <div className="tag-menu-chips">
+            {menu.suggestions.map((symbol) => (
+              <button
+                key={symbol}
+                type="button"
+                className={`preset-chip${menu.selected.includes(symbol) ? ' is-active' : ''}`}
+                onClick={() => toggleSelected(symbol)}
+              >
+                {symbol}
+              </button>
+            ))}
+          </div>
+          <div className="tag-menu-actions">
+            <button type="button" className="ghost tiny" onClick={() => setMenu(null)} disabled={busy}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="ghost tiny"
+              onClick={() => void applyTags([])}
+              disabled={busy}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="primary-sm"
+              onClick={() => void applyTags(menu.selected)}
+              disabled={busy || !menu.selected.length}
+            >
+              Tag
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {error ? <div className="toast error">{error}</div> : null}
     </div>
   )
 }
 
-createRoot(document.getElementById('root')!).render(<App />)
+createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)

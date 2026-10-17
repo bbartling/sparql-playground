@@ -105,9 +105,7 @@ def _stored_markers(g: Graph, iri: URIRef) -> list[str]:
 
 
 def _seed_markers(g: Graph, iri: URIRef, node_type: str) -> list[str]:
-    stored = _stored_markers(g, iri)
-    if stored:
-        return stored
+    """Brick-derived hint markers only — not treated as saved Haystack tags."""
     seeded: list[str] = []
     for brick_type in _brick_types(g, iri):
         seeded.extend(_BRICK_TO_MARKERS.get(brick_type, ()))
@@ -122,12 +120,50 @@ def _seed_markers(g: Graph, iri: URIRef, node_type: str) -> list[str]:
                 "point": ("point",),
             }.get(node_type, ())
         )
-    # Dedupe, preserve order.
     out: list[str] = []
     for marker in seeded:
         if marker not in out:
             out.append(marker)
     return out
+
+
+def _point_complete(markers: list[str]) -> bool:
+    """Historized Haystack point: point + his + a function marker."""
+    have = set(markers)
+    return "point" in have and "his" in have and bool(have & {"sensor", "sp", "cmd"})
+
+
+def _coverage_status(*, total: int, complete: int) -> str:
+    if total <= 0:
+        return "green"
+    if complete >= total:
+        return "green"
+    if complete == 0:
+        return "red"
+    return "yellow"
+
+
+def _annotate_coverage(node: dict[str, Any]) -> dict[str, Any]:
+    """Roll up point tagging completeness for branch highlighting."""
+    if node.get("node_type") == "point":
+        done = 1 if node.get("complete") else 0
+        node["points_total"] = 1
+        node["points_complete"] = done
+        node["coverage"] = "green" if done else "red"
+        return node
+    total = 0
+    complete = 0
+    kids = []
+    for child in node.get("children") or []:
+        annotated = _annotate_coverage(child)
+        kids.append(annotated)
+        total += int(annotated.get("points_total") or 0)
+        complete += int(annotated.get("points_complete") or 0)
+    node["children"] = kids
+    node["points_total"] = total
+    node["points_complete"] = complete
+    node["coverage"] = _coverage_status(total=total, complete=complete)
+    return node
 
 
 def build_tree(graph: GraphService) -> list[dict[str, Any]]:
@@ -136,13 +172,17 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
 
     def point_node(point: URIRef) -> dict[str, Any]:
         tid = _timeseries_id(g, point)
+        markers = _stored_markers(g, point)
         return {
             "id": _local(point),
             "iri": str(point),
             "name": _label(g, point),
             "node_type": "point",
             "brick_types": _brick_types(g, point),
-            "markers": _seed_markers(g, point, "point"),
+            "markers": markers,
+            "hints": _seed_markers(g, point, "point"),
+            "tagged": bool(markers),
+            "complete": _point_complete(markers),
             "tags": {k: v for k, v in {"timeseries_id": tid}.items() if v},
             "children": [],
         }
@@ -180,7 +220,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                     "name": _label(g, p),
                     "node_type": "part",
                     "brick_types": _brick_types(g, p),
-                    "markers": _seed_markers(g, p, "part"),
+                    "markers": _stored_markers(g, p) or _seed_markers(g, p, "part"),
                     "tags": {},
                     "children": points_of(p),
                 }
@@ -234,7 +274,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                     "name": _label(g, e),
                     "node_type": "equipment",
                     "brick_types": _brick_types(g, e),
-                    "markers": _seed_markers(g, e, "equip"),
+                    "markers": _stored_markers(g, e) or _seed_markers(g, e, "equip"),
                     "tags": {},
                     "children": children,
                 }
@@ -245,7 +285,7 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
     roots: list[dict[str, Any]] = []
     sites = [URIRef(s) for s, _, _ in g.triples((None, RDF.type, BRICK.Site))]
     if not sites:
-        return equip_nodes(None)
+        return [_annotate_coverage(n) for n in equip_nodes(None)]
 
     for site in sites:
         if _is_hidden(g, site):
@@ -266,7 +306,8 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                     "name": _label(g, building),
                     "node_type": "building",
                     "brick_types": _brick_types(g, building),
-                    "markers": _seed_markers(g, building, "building"),
+                    "markers": _stored_markers(g, building)
+                    or _seed_markers(g, building, "building"),
                     "tags": {},
                     "children": equip_nodes(building),
                 }
@@ -278,12 +319,12 @@ def build_tree(graph: GraphService) -> list[dict[str, Any]]:
                 "name": _label(g, site),
                 "node_type": "site",
                 "brick_types": _brick_types(g, site),
-                "markers": _seed_markers(g, site, "site"),
+                "markers": _stored_markers(g, site) or _seed_markers(g, site, "site"),
                 "tags": {},
                 "children": buildings or equip_nodes(None),
             }
         )
-    return roots
+    return [_annotate_coverage(n) for n in roots]
 
 
 def _require_mutations(graph: GraphService, allow: bool) -> None:
@@ -492,9 +533,7 @@ def apply_markers(
             raw = item.get("markers")
             if raw is None:
                 raise ValueError("markers list required")
-            markers = [str(m).strip() for m in raw]
-            if not markers:
-                raise ValueError("markers must not be empty")
+            markers = [str(m).strip() for m in raw if str(m).strip()]
             bad = [m for m in markers if m not in allowed]
             if bad:
                 raise ValueError(f"markers not allowed for level {level}: {', '.join(bad)}")
@@ -567,7 +606,7 @@ def rename_entity(
 
 
 def dashboard(graph: GraphService) -> dict[str, Any]:
-    """Haystack marker coverage across historized points."""
+    """Haystack marker coverage across historized points (stored markers only)."""
     g = graph.state.model
     points: list[dict[str, Any]] = []
     marker_counts: dict[str, int] = {}
@@ -575,7 +614,7 @@ def dashboard(graph: GraphService) -> dict[str, Any]:
         point = URIRef(s)
         if _is_hidden(g, point):
             continue
-        markers = _seed_markers(g, point, "point")
+        markers = _stored_markers(g, point)
         for marker in markers:
             marker_counts[marker] = marker_counts.get(marker, 0) + 1
         points.append(
@@ -584,16 +623,22 @@ def dashboard(graph: GraphService) -> dict[str, Any]:
                 "name": _label(g, point),
                 "timeseries_id": _timeseries_id(g, point),
                 "markers": markers,
+                "complete": _point_complete(markers),
             }
         )
     points.sort(key=lambda p: p["name"].lower())
     tagged = sum(1 for p in points if p["markers"])
+    complete = sum(1 for p in points if p["complete"])
+    status = _coverage_status(total=len(points), complete=complete)
     return {
         "revision": graph.revision,
+        "status": status,
         "totals": {
             "items": len(points),
             "tagged": tagged,
+            "complete": complete,
             "untagged": len(points) - tagged,
+            "incomplete": len(points) - complete,
             "distinct_markers": len(marker_counts),
         },
         "marker_counts": dict(sorted(marker_counts.items(), key=lambda kv: (-kv[1], kv[0]))),

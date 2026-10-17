@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from bldgts.api.deps import AppState, get_app_state
+from bldgts.graph.validate import run_rdf_integrity
 from bldgts.haystack.defs import catalog_for_level
 from bldgts.haystack.suggest import guess_marker_bundle, suggest_markers
 from bldgts.services import model_crud as crud
@@ -38,7 +39,8 @@ class HideBody(BaseModel):
 
 class MarkerUpdate(BaseModel):
     entity_id: str = Field(min_length=1, max_length=128)
-    markers: list[str] = Field(min_length=1)
+    # Empty list clears all Haystack markers (UI right-click).
+    markers: list[str] = Field(default_factory=list)
     level: str | None = None
 
 
@@ -117,6 +119,15 @@ def haystack_guess(
 @router.get("/dashboard", summary="Haystack marker coverage across points")
 def dashboard(state: AppState = Depends(get_app_state)) -> dict[str, Any]:
     return {"ok": True, **crud.dashboard(state.graph)}
+
+
+@router.get(
+    "/integrity",
+    summary="RDF model hygiene (orphans, duplicate ids/labels, missing refs)",
+)
+def integrity(state: AppState = Depends(get_app_state)) -> dict[str, Any]:
+    report = run_rdf_integrity(state.graph.state.model, state.graph.ontology)
+    return {"ok": True, "revision": state.graph.revision, **report}
 
 
 @router.post("/equip", summary="Add or update equipment (mutations flag required)")
