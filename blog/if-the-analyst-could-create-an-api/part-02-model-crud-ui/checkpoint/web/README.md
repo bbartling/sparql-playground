@@ -1,6 +1,6 @@
 # Haystack model + SPARQL UI
 
-Tutorial React UI for the brickts API (smart-building IoT):
+Tutorial React UI for the bldgts API (smart-building IoT):
 
 - **Model** — site → building → equipment → point tree; **Haystack markers**; hold-to-rename; right-click closest-match suggest
 - **SPARQL** — browser editor with tutorial presets
@@ -14,7 +14,7 @@ Terminal 1 — API:
 
 ```bash
 cd ..
-BRICKTS_ALLOW_MUTATIONS=true uv run brickts serve
+BLDGTS_ALLOW_MUTATIONS=true uv run bldgts serve
 ```
 
 Terminal 2 — UI:

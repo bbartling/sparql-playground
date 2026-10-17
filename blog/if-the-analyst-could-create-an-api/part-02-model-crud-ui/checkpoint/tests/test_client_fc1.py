@@ -6,9 +6,9 @@ from pathlib import Path
 import pandas as pd
 from fastapi.testclient import TestClient
 
-from brickts.api.app import create_app
-from brickts.ingest import bootstrap_all
-from brickts.settings import Settings
+from bldgts.api.app import create_app
+from bldgts.ingest import bootstrap_all
+from bldgts.settings import Settings
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from lesson_02_fc1_points import find_fc1_points  # noqa: E402

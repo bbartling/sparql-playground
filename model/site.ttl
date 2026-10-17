@@ -2,7 +2,7 @@
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix ref: <https://brickschema.org/schema/Brick/ref#> .
-@prefix bts: <https://example.org/openfdd/brickts#> .
+@prefix bts: <https://example.org/openfdd/bldgts#> .
 @prefix unit: <http://qudt.org/vocab/unit/> .
 @prefix qudt: <http://qudt.org/schema/qudt/> .
 
@@ -92,7 +92,7 @@ bldg:AHU_2 brick:feeds bldg:Zone_AHU_2 .
 bldg:timeseries_db a ref:Database, brick:Database ;
   rdfs:label "SQLite timeseries store (tutorial stand-in for a TSDB)" ;
   bts:backend "sqlite" ;
-  bts:connectionEnv "BRICKTS_DB_PATH" ;
+  bts:connectionEnv "BLDGTS_DB_PATH" ;
   bts:schemaDescription "samples(timeseries_id TEXT, ts INTEGER epoch-s UTC, value REAL)" .
 
 bldg:Zone_AHU_1 a brick:HVAC_Zone ;

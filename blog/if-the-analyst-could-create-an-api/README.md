@@ -4,7 +4,7 @@ Blog series companion to the LinkedIn note
 [If the analyst could create an API…](https://www.linkedin.com/posts/activity-7514716015222484993-LHRB).
 
 **App bases live only under each part’s `checkpoint/`.** There is no repo-root `src/` or `web/`.
-The live install (`uv run brickts`) is wired in `pyproject.toml` to **Part 2** until a later part becomes current.
+The live install (`uv run bldgts`) is wired in `pyproject.toml` to **Part 2** until a later part becomes current. Package name is generic **`bldgts`** (not Brick-branded).
 
 | Part | Folder | Story |
 |------|--------|--------|

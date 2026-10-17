@@ -17,7 +17,7 @@
 ## Task 2: Vendor Haystack defs + suggest module
 
 - Pin defs under `data/haystack/` (VERSION + defs JSON or curated markers index)
-- `src/brickts/haystack/defs.py` + `suggest.py` using `difflib.get_close_matches`
+- `src/bldgts/haystack/defs.py` + `suggest.py` using `difflib.get_close_matches`
 - Tests for suggest ranking
 
 ## Task 3: CRUD — markers replace ops tags

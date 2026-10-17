@@ -1,7 +1,6 @@
 import pytest
-
-from brickts.graph.sparql_guard import SparqlRejected, SparqlSyntaxError, prepare_sparql
-from brickts.settings import Settings
+from bldgts.graph.sparql_guard import SparqlRejected, SparqlSyntaxError, prepare_sparql
+from bldgts.settings import Settings
 
 
 def test_allows_select():

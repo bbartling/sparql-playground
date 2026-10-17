@@ -1,8 +1,7 @@
+from bldgts.api.app import create_app
+from bldgts.ingest import bootstrap_all
+from bldgts.settings import Settings
 from fastapi.testclient import TestClient
-
-from brickts.api.app import create_app
-from brickts.ingest import bootstrap_all
-from brickts.settings import Settings
 
 
 def test_docs_and_surface(settings: Settings):

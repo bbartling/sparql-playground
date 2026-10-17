@@ -3,9 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from brickts.graph.render import render_model, write_turtle
-from brickts.settings import Settings
+from bldgts.graph.render import render_model, write_turtle
+from bldgts.settings import Settings
 
 
 @pytest.fixture(scope="session")

@@ -1,6 +1,6 @@
 @prefix brick: <https://brickschema.org/schema/Brick#> .
 @prefix ns1: <https://brickschema.org/schema/Brick/ref#> .
-@prefix ns2: <https://example.org/openfdd/brickts#> .
+@prefix ns2: <https://example.org/openfdd/bldgts#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 <https://example.org/openfdd/BUILDING_50#AHU_1_Alarm> a brick:Alarm ;
@@ -1409,6 +1409,6 @@
         ns1:Database ;
     rdfs:label "SQLite timeseries store (tutorial stand-in for a TSDB)" ;
     ns2:backend "sqlite" ;
-    ns2:connectionEnv "BRICKTS_DB_PATH" ;
+    ns2:connectionEnv "BLDGTS_DB_PATH" ;
     ns2:schemaDescription "samples(timeseries_id TEXT, ts INTEGER epoch-s UTC, value REAL)" .
 

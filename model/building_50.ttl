@@ -1,6 +1,6 @@
 @prefix bldg: <https://example.org/openfdd/BUILDING_50#> .
 @prefix brick: <https://brickschema.org/schema/Brick#> .
-@prefix bts: <https://example.org/openfdd/brickts#> .
+@prefix bts: <https://example.org/openfdd/bldgts#> .
 @prefix qudt: <http://qudt.org/schema/qudt/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix ref: <https://brickschema.org/schema/Brick/ref#> .
@@ -1410,6 +1410,6 @@ bldg:timeseries_db a brick:Database,
         ref:Database ;
     rdfs:label "SQLite timeseries store (tutorial stand-in for a TSDB)" ;
     bts:backend "sqlite" ;
-    bts:connectionEnv "BRICKTS_DB_PATH" ;
+    bts:connectionEnv "BLDGTS_DB_PATH" ;
     bts:schemaDescription "samples(timeseries_id TEXT, ts INTEGER epoch-s UTC, value REAL)" .
 

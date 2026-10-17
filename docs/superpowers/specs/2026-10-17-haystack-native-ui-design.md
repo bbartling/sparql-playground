@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-17  
 **Status:** draft — awaiting operator approval before implementation  
-**Repo:** sparql-playground / brickts  
+**Repo:** sparql-playground / bldgts  
 
 ## Intent
 
@@ -64,7 +64,7 @@ Replace Brick-centric `model/site.ttl` + Brick class rendering with:
 
 - Hand-authored **Haystack site structure** (TTL or Trio→RDF at build time): site, floors, AHU equips, points.
 - Points CSV still freezes `timeseries_id` (A3 stays).
-- `brickts model build` becomes “render Haystack building graph” (CLI name can stay `brickts` this milestone; rename package later if desired).
+- `bldgts model build` becomes “render Haystack building graph” (CLI name can stay `bldgts` this milestone; rename package later if desired).
 
 ### SPARQL
 
@@ -113,7 +113,7 @@ Remove: `meta-tags`, ops status pills, LATE/DAMAGED catalog.
 ### Migration / rollback
 
 - Live `building.ttl` / `model/building_50.ttl` regenerated Haystack-shaped; old Brick TTL kept only under blog checkpoints / git history.
-- `BRICKTS_*` env names may remain this milestone (document); optional later rename to `HS_*` / `HAYSTACK_*`.
+- `BLDGTS_*` env names may remain this milestone (document); optional later rename to `HS_*` / `HAYSTACK_*`.
 
 ## Phased delivery (implementation order)
 

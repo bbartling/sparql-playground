@@ -8,7 +8,7 @@ import pytest
 from rdflib import Literal
 from rdflib.namespace import XSD
 
-from brickts.graph.sparql_guard import SparqlRejected
+from bldgts.graph.sparql_guard import SparqlRejected
 
 COURSE = Path(__file__).resolve().parents[1] / "lessons" / "sql"
 

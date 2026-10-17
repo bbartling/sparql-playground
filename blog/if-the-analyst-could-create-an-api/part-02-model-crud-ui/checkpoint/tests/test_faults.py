@@ -1,6 +1,6 @@
-from brickts.graph.service import GraphService
-from brickts.services import faults as fault_svc
-from brickts.settings import Settings
+from bldgts.graph.service import GraphService
+from bldgts.services import faults as fault_svc
+from bldgts.settings import Settings
 
 
 def test_fault_applicability(settings: Settings):

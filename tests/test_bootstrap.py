@@ -2,9 +2,9 @@ import asyncio
 import csv
 from pathlib import Path
 
-from brickts.ingest import bootstrap_all, bootstrap_dataset
-from brickts.settings import Settings
-from brickts.store.sqlite import SqliteTimeseriesStore
+from bldgts.ingest import bootstrap_all, bootstrap_dataset
+from bldgts.settings import Settings
+from bldgts.store.sqlite import SqliteTimeseriesStore
 
 
 async def _bootstrap_idempotent(settings: Settings, sample_csv: Path, mapping: Path) -> None:

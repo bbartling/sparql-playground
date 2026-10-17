@@ -2,13 +2,12 @@ import csv
 from pathlib import Path
 
 import pytest
+from bldgts.graph.namespaces import BLDG, BRICK, RDF, REF
+from bldgts.graph.ontology import load_brick_ontology
+from bldgts.graph.validate import run_shacl
+from bldgts.settings import Settings
+from bldgts.store.sqlite import SqliteTimeseriesStore
 from rdflib import Graph
-
-from brickts.graph.namespaces import BLDG, BRICK, RDF, REF
-from brickts.graph.ontology import load_brick_ontology
-from brickts.graph.validate import run_shacl
-from brickts.settings import Settings
-from brickts.store.sqlite import SqliteTimeseriesStore
 
 
 @pytest.fixture
@@ -36,9 +35,9 @@ def test_model_counts(union: Graph):
 def test_refs_and_store(project_root: Path, settings: Settings):
     import asyncio
 
-    from brickts.graph.ontology import load_brick_ontology
+    from bldgts.graph.ontology import load_brick_ontology
 
-    bootstrap_from = __import__("brickts.ingest", fromlist=["bootstrap_all"]).bootstrap_all
+    bootstrap_from = __import__("bldgts.ingest", fromlist=["bootstrap_all"]).bootstrap_all
     s = settings
     bootstrap_from(s)
     union = Graph()

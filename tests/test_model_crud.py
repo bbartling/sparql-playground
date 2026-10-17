@@ -1,7 +1,7 @@
-from brickts.api.app import create_app
-from brickts.graph.namespaces import BLDG, REF
-from brickts.ingest import bootstrap_all
-from brickts.settings import Settings
+from bldgts.api.app import create_app
+from bldgts.graph.namespaces import BLDG, REF
+from bldgts.ingest import bootstrap_all
+from bldgts.settings import Settings
 from fastapi.testclient import TestClient
 
 
@@ -58,6 +58,14 @@ def test_crud_preserves_timeseries_refs(settings: Settings):
         )
         assert sug.status_code == 200
         assert sug.json()["suggestions"]
+
+        guessed = client.get(
+            "/api/model/haystack/guess",
+            params={"q": "AHU_1 Discharge Air Temp", "level": "point"},
+        )
+        assert guessed.status_code == 200
+        assert "point" in guessed.json()["markers"]
+        assert "temp" in guessed.json()["markers"]
 
         renamed = client.post(
             "/api/model/rename",

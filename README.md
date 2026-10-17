@@ -1,6 +1,6 @@
-# brickts
+# bldgts
 
-![brickts Swagger API](docs/swagger.jpg)
+![bldgts Swagger API](docs/swagger.jpg)
 
 A small tutorial API for **building data**:
 
@@ -19,7 +19,7 @@ Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api
 
 Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only). That request also writes repo-root **`building.ttl`** on a background thread — easy to open, commit, and push for tutorials.
 
-Optional UI (live Part 2 checkpoint [`web/`](blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web/)): Haystack model tag-tree + **in-browser SPARQL editor** + coverage. Mutations need `BRICKTS_ALLOW_MUTATIONS=true`. There is **no** repo-root `src/` or `web/` — each blog part owns its app base under `checkpoint/`.
+Optional UI (live Part 2 checkpoint [`web/`](blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web/)): Haystack model tag-tree + **in-browser SPARQL editor** + coverage. Mutations need `BLDGTS_ALLOW_MUTATIONS=true`. There is **no** repo-root `src/` or `web/` — each blog part owns its app base under `checkpoint/`.
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
@@ -45,9 +45,9 @@ Use the [isolated local lab](lessons/sql/LAB_GUIDE.md) or [set up Timescale on a
 
 ```bash
 uv sync
-uv run brickts model build
-uv run brickts bootstrap
-uv run brickts serve          # http://127.0.0.1:8000/docs
+uv run bldgts model build
+uv run bldgts bootstrap
+uv run bldgts serve          # http://127.0.0.1:8000/docs
 ```
 
 ## Tutorial scripts (no CLI args)

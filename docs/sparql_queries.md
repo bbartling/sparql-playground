@@ -14,7 +14,7 @@ PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl:   <http://www.w3.org/2002/07/owl#>
 PREFIX ref:   <https://brickschema.org/schema/Brick/ref#>
 PREFIX tag:   <https://brickschema.org/schema/BrickTag#>
-PREFIX bts:   <https://example.org/openfdd/brickts#>
+PREFIX bts:   <https://example.org/openfdd/bldgts#>
 ```
 
 ---
@@ -193,7 +193,7 @@ After you have a `point` local name (e.g. `AHU_1_DA_P`), fetch samples with
 PREFIX brick: <https://brickschema.org/schema/Brick#>
 PREFIX ref:   <https://brickschema.org/schema/Brick/ref#>
 PREFIX bldg:  <https://example.org/openfdd/BUILDING_50#>
-PREFIX bts:   <https://example.org/openfdd/brickts#>
+PREFIX bts:   <https://example.org/openfdd/bldgts#>
 PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?db ?label ?backend WHERE {
@@ -228,5 +228,5 @@ ORDER BY ?point
 
 ## More presets
 
-Machine-readable copies of many queries live under `src/brickts/sparql/examples/*.rq`.  
+Machine-readable copies of many queries live under `src/bldgts/sparql/examples/*.rq`.  
 In Swagger, **GET** `/api/sparql/examples` returns them all as JSON — copy any `query` into **POST** `/api/sparql`.

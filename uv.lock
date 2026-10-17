@@ -43,23 +43,7 @@ wheels = [
 ]
 
 [[package]]
-name = "brickschema"
-version = "0.8.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "owlrl" },
-    { name = "pyshacl" },
-    { name = "pyshifty" },
-    { name = "rdflib" },
-    { name = "reasonable" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6e/e0/232101f85ccf33c7d7d5ef65da88afb5b7a596ae588bdd08958440e7d23b/brickschema-0.8.0.tar.gz", hash = "sha256:52cb8fae17a8b093cc9a0778c1acff98e4ee03baa02614313313617fa781f4e8", size = 1834383, upload-time = "2026-09-25T18:53:36.394Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/c9/f6386d7cc38ff35cc317acb106b9d8e24fb6340e4c41d9a345190d499951/brickschema-0.8.0-py3-none-any.whl", hash = "sha256:8ef3881534d8973da88c86538350c7242eb61285f2dae4a210de6cc8b4346186", size = 1376349, upload-time = "2026-09-25T18:53:34.329Z" },
-]
-
-[[package]]
-name = "brickts"
+name = "bldgts"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -101,6 +85,22 @@ requires-dist = [
 dev = [
     { name = "pytest", specifier = ">=8,<9" },
     { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
+name = "brickschema"
+version = "0.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "owlrl" },
+    { name = "pyshacl" },
+    { name = "pyshifty" },
+    { name = "rdflib" },
+    { name = "reasonable" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6e/e0/232101f85ccf33c7d7d5ef65da88afb5b7a596ae588bdd08958440e7d23b/brickschema-0.8.0.tar.gz", hash = "sha256:52cb8fae17a8b093cc9a0778c1acff98e4ee03baa02614313313617fa781f4e8", size = 1834383, upload-time = "2026-09-25T18:53:36.394Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/c9/f6386d7cc38ff35cc317acb106b9d8e24fb6340e4c41d9a345190d499951/brickschema-0.8.0-py3-none-any.whl", hash = "sha256:8ef3881534d8973da88c86538350c7242eb61285f2dae4a210de6cc8b4346186", size = 1376349, upload-time = "2026-09-25T18:53:34.329Z" },
 ]
 
 [[package]]

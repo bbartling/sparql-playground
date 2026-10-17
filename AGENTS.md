@@ -1,4 +1,4 @@
-# AGENTS.md — sparql-playground (brickts)
+# AGENTS.md — sparql-playground (bldgts)
 
 This repo is a **tutorial + near-production pattern**: Brick RDF describes the building;
 timeseries are reached **only through the model** ([Brick timeseries storage](https://docs.brickschema.org/metadata/timeseries-storage.html)).
@@ -18,10 +18,10 @@ HTTP ──▶ SPARQL / points / timeseries
 
 ```bash
 uv sync
-uv run brickts model build
-uv run brickts bootstrap
-uv run brickts validate [--shacl]
-uv run brickts serve                      # http://127.0.0.1:8000/docs
+uv run bldgts model build
+uv run bldgts bootstrap
+uv run bldgts validate [--shacl]
+uv run bldgts serve                      # http://127.0.0.1:8000/docs
 uv run python scripts/lesson_01_mech_summary.py
 uv run pytest -q && uv run ruff check .
 ```
@@ -145,7 +145,7 @@ the existing production store via the opaque id — same pattern as Brick timese
 2. `model/points/<BUILDING>__<EQUIP>.csv` — freeze `timeseries_id` (UUIDv5 rule in ARCHITECTURE A3).
 3. New equipment/parts/zones → `model/site.ttl`.
 4. Register in `data/datasets.json`.
-5. `uv run brickts model build && uv run brickts validate --shacl && uv run brickts bootstrap && uv run pytest -q`.
+5. `uv run bldgts model build && uv run bldgts validate --shacl && uv run bldgts bootstrap && uv run pytest -q`.
 
 ## Blog series checkpoints
 

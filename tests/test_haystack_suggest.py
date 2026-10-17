@@ -1,5 +1,5 @@
-from brickts.haystack.defs import catalog_for_level, load_defs_index
-from brickts.haystack.suggest import suggest_markers
+from bldgts.haystack.defs import catalog_for_level, load_defs_index
+from bldgts.haystack.suggest import guess_marker_bundle, suggest_markers
 
 
 def test_defs_index_loads_vendored_pack():
@@ -30,3 +30,13 @@ def test_suggest_equip_ahu():
     hits = suggest_markers("AHU_1 air handler", "equip", n=5)
     symbols = [h["symbol"] for h in hits]
     assert "ahu" in symbols or "equip" in symbols
+
+
+def test_guess_bundle_one_shot_dat():
+    bundle = guess_marker_bundle("AHU_1 Discharge Air Temp", "point")
+    markers = set(bundle["markers"])
+    assert "point" in markers
+    assert "his" in markers
+    assert "temp" in markers
+    assert "air" in markers or "discharge" in markers
+    assert "sensor" in markers  # default function when quantity matches

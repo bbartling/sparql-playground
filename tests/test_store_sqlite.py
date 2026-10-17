@@ -1,8 +1,8 @@
 import asyncio
 from pathlib import Path
 
-from brickts.store.base import Sample
-from brickts.store.sqlite import SqliteTimeseriesStore
+from bldgts.store.base import Sample
+from bldgts.store.sqlite import SqliteTimeseriesStore
 
 
 async def _wal_pk_roundtrip(db: Path) -> None:

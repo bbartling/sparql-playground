@@ -2,8 +2,8 @@ import contextlib
 from pathlib import Path
 from unittest.mock import patch
 
-from brickts.graph.service import GraphService
-from brickts.settings import Settings
+from bldgts.graph.service import GraphService
+from bldgts.settings import Settings
 
 
 def test_atomic_snapshot_survives_error(settings: Settings):

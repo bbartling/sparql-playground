@@ -9,8 +9,8 @@ from pathlib import Path
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF
 
-from brickts.graph.sparql_guard import SparqlRejected, prepare_sparql, run_prepared
-from brickts.settings import Settings
+from bldgts.graph.sparql_guard import SparqlRejected, prepare_sparql, run_prepared
+from bldgts.settings import Settings
 
 HERE = Path(__file__).resolve().parent
 REF = Namespace("https://brickschema.org/schema/Brick/ref#")
