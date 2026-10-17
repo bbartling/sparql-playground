@@ -264,16 +264,21 @@ def _expand_tokens(text: str) -> set[str]:
         if alias:
             out.add(alias)
         # Keep original short tokens that are already Haystack symbols.
-        if tok in _ALIASES.values() or tok in {
-            "point",
-            "his",
-            "sensor",
-            "sp",
-            "cmd",
-            "fan",
-            "ahu",
-            "vav",
-        } or len(tok) > 2:
+        if (
+            tok in _ALIASES.values()
+            or tok
+            in {
+                "point",
+                "his",
+                "sensor",
+                "sp",
+                "cmd",
+                "fan",
+                "ahu",
+                "vav",
+            }
+            or len(tok) > 2
+        ):
             out.add(tok)
     # Always keep individual parts for scoring overlap.
     for tok in parts:
