@@ -1,0 +1,22 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+
+SELECT ?ahu ?point ?label ?cls ?timeseriesId WHERE {
+  ?ahu a/(rdfs:subClassOf|owl:equivalentClass)* brick:Air_Handler_Unit .
+  FILTER(STRSTARTS(STR(?ahu), STR(bldg:)))
+  ?point brick:isPointOf ?owner .
+  ?owner (brick:isPartOf|^brick:hasPart)* ?ahu .
+  OPTIONAL { ?point rdfs:label ?label }
+  OPTIONAL {
+    ?point a ?cls .
+    FILTER(STRSTARTS(STR(?cls), STR(brick:)))
+  }
+  OPTIONAL {
+    ?point ref:hasExternalReference ?ref .
+    ?ref ref:hasTimeseriesId ?timeseriesId .
+  }
+}
+ORDER BY ?ahu ?point

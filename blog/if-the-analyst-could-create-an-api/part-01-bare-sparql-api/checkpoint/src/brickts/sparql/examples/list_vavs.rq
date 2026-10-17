@@ -1,0 +1,16 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+# Typed Brick VAV / FPTU equipment (empty until modeled).
+SELECT ?equip ?cls ?label WHERE {
+  VALUES ?cls {
+    brick:Variable_Air_Volume_Box
+    brick:Fan_Powered_Terminal_Unit
+  }
+  ?equip a/(rdfs:subClassOf|owl:equivalentClass)* ?cls .
+  FILTER(STRSTARTS(STR(?equip), STR(bldg:)))
+  OPTIONAL { ?equip rdfs:label ?label }
+}
+ORDER BY ?cls ?equip

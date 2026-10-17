@@ -1,0 +1,27 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
+
+# Points hanging off any instance of the listed equipment kinds (often empty here).
+SELECT ?kind ?equip ?point ?label ?timeseriesId WHERE {
+  VALUES ?kind {
+    brick:Variable_Air_Volume_Box
+    brick:Heat_Pump
+    brick:Boiler
+    brick:Chiller
+    brick:Cooling_Tower
+    brick:Pump
+  }
+  ?equip a/(rdfs:subClassOf|owl:equivalentClass)* ?kind .
+  FILTER(STRSTARTS(STR(?equip), STR(bldg:)))
+  ?point brick:isPointOf ?owner .
+  ?owner (brick:isPartOf|^brick:hasPart)* ?equip .
+  OPTIONAL { ?point rdfs:label ?label }
+  OPTIONAL {
+    ?point ref:hasExternalReference ?ref .
+    ?ref ref:hasTimeseriesId ?timeseriesId .
+  }
+}
+ORDER BY ?kind ?equip ?point

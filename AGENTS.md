@@ -147,6 +147,10 @@ the existing production store via the opaque id — same pattern as Brick timese
 4. Register in `data/datasets.json`.
 5. `uv run brickts model build && uv run brickts validate --shacl && uv run brickts bootstrap && uv run pytest -q`.
 
+## Blog series checkpoints
+
+[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — Part 1 frozen bare API snapshot, Part 2 = mainline CRUD/UI story, Parts 3–4 scaffolds. The SQL course below is **independent** of that series (link from blog drafts; do not relocate `lessons/sql/`).
+
 ## Daily SQL course (operator requested, 2026-10-15)
 
 `lessons/sql/INDEX.md` contains 84 daily lessons and 12 independent weekly challenges.

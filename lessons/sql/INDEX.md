@@ -2,6 +2,8 @@
 
 [Course overview](README.md) · [Local lab](LAB_GUIDE.md) · [Remote lab](REMOTE_SETUP.md) · [Schema picture](SCHEMA.md) · [Glossary](GLOSSARY.md) · [Data contract](CONTRACT.md) · [References](SOURCES.md)
 
+This course is **independent** of the blog series [*If the analyst could create an API*](../../blog/if-the-analyst-could-create-an-api/) (that series may link here; it does not own this curriculum).
+
 **84 days, 12 weeks.** Study six days, then attempt one independent weekly challenge. Allow 45–75 minutes per ordinary day and 2–4 hours per challenge, spread across evenings if useful. Progress by understanding, not a calendar deadline.
 
 ## Before Day 1

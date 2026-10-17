@@ -1,0 +1,10 @@
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?point ?label WHERE {
+  ?point a/(rdfs:subClassOf|owl:equivalentClass)* brick:Supply_Air_Static_Pressure_Sensor .
+  FILTER(STRSTARTS(STR(?point), STR(bldg:)))
+  OPTIONAL { ?point rdfs:label ?label }
+}
