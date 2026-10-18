@@ -8,8 +8,26 @@ Before you invent a cloud historian UI, prove you can **read live OT** the way a
 app should: through Normal Framework’s HTTP API over the **Cloudflare Normal Online**
 tunnel, with an **API key** — not scraped console cookies, not Tailscale-as-product.
 
-Lab context (OptiPlex BACnet FEC, poll policy, license footguns):
-[`agent_spec/NORMAL_FRAMEWORK.md`](../../../agent_spec/NORMAL_FRAMEWORK.md).
+Lab context (**bosspi** Pi = live edge, OptiPlex standby, FEC 5007, portal switch,
+poll policy): [`agent_spec/NORMAL_FRAMEWORK.md`](../../../agent_spec/NORMAL_FRAMEWORK.md).
+
+**Remote (internet server):** use the bosspi Cloudflare tunnel + API key — that is what
+`read_sensors.py` is for.
+
+1. Portal → device **bosspi** → Tunnel → **Allow unauthenticated** (not Require sign-in).  
+2. Open console → **Settings → Authorization → API keys** → create; copy secret once.  
+3. `checkpoint/.env`:
+
+   ```bash
+   NFURL=https://6639ffc3-4264-45d3-ba48-e81f451b33d1.normal-online.net
+   NF_CLIENT_ID=…
+   NF_CLIENT_SECRET=…
+   ```
+
+4. On any host with Python + `requests`: `python read_sensors.py`
+
+LAN `http://192.168.204.12:8090` is optional for bench debugging (no key today). OptiPlex
+keys / old tunnel UUID do **not** work.
 
 ## Story
 

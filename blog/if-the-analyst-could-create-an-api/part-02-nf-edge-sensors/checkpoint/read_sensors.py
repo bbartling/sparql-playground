@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""App-ready NF client: OAuth API key → Cloudflare tunnel → live sensor values.
+"""App-ready NF client: run on any internet host → Cloudflare tunnel → bosspi sensors.
 
-Secrets from environment or a local ``.env`` / ``api.env`` next to this file
-(never commit secrets). Docs: https://docs.normal.dev/howto/auth/
-Lab notes: agent_spec/NORMAL_FRAMEWORK.md
+Uses OAuth API key against ``NFURL`` (bosspi ``*.normal-online.net``). Portal tunnel
+must be **Allow unauthenticated**; NF still requires the API key for ``point/query``.
+
+Secrets from environment or ``.env`` next to this file (never commit). Docs:
+https://docs.normal.dev/howto/auth/ · Lab: agent_spec/NORMAL_FRAMEWORK.md
 """
 
 from __future__ import annotations
@@ -52,14 +54,13 @@ def bearer_token(base: str, client_id: str, client_secret: str) -> str:
     return token
 
 
-def query_points(base: str, token: str) -> list[dict]:
+def query_points(base: str, token: str = "") -> list[dict]:
+    headers = {**UA, "Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     resp = requests.post(
         f"{base}/api/v1/point/query",
-        headers={
-            **UA,
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
+        headers=headers,
         json={"pageSize": 200},
         timeout=60,
     )
@@ -75,14 +76,22 @@ def main() -> int:
     base = os.environ.get("NFURL", "").rstrip("/")
     client_id = os.environ.get("NF_CLIENT_ID", "")
     client_secret = os.environ.get("NF_CLIENT_SECRET", "")
-    if not base or not client_id or not client_secret:
+    if not base:
+        print("Set NFURL (env or checkpoint/.env).", file=sys.stderr)
+        return 1
+
+    # Tunnel / production: API key required. Lab LAN to bosspi often allows open query.
+    token = ""
+    if client_id and client_secret:
+        token = bearer_token(base, client_id, client_secret)
+    elif "normal-online.net" in base:
         print(
-            "Set NFURL, NF_CLIENT_ID, NF_CLIENT_SECRET (env or checkpoint/.env).",
+            "Cloudflare tunnel needs NF_CLIENT_ID + NF_CLIENT_SECRET "
+            "(create on that NF site’s Settings → Authorization → API keys).",
             file=sys.stderr,
         )
         return 1
 
-    token = bearer_token(base, client_id, client_secret)
     want = set(SENSORS)
     found = 0
     for point in query_points(base, token):

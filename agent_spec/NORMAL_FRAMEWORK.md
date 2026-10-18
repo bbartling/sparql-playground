@@ -215,29 +215,63 @@ port or run it as part of this repo’s bootstrap.
 
 ---
 
-## This machine checklist (OptiPlex test bench)
+## Lab fleet (BACnet bench)
+
+Shared field device (either host can poll it when NF is up on that box):
 
 | Fact | Value |
 |------|--------|
-| Host | `ben-OptiPlex-7070` (Dell OptiPlex 7070) |
-| Install dir | `~/nf` (`docker compose`, **host** network) |
-| Console (local) | `http://127.0.0.1:8090/` |
-| NF remote (product) | Cloudflare Normal Online — `https://<instance-uuid>.normal-online.net` (portal device page; browser Sign-in) |
-| Host Tailscale (not NF) | `100.104.255.84` — Ben’s mesh VPN on this OptiPlex only; useful lab shortcut to hit `:8090`, **not** part of Normal Framework |
-| LAN | `eno1` → `192.168.204.11` |
-| BACnet FEC | device instance **5007**, JCI MS-FEC2611-0, `192.168.204.200` |
-| Port conflict | open-fdd often owns `:8080` → always use **`NF_PORT=8090`** here |
+| BACnet FEC | device instance **5007**, JCI MS-FEC2611-0, `192.168.204.200:47808` |
+| LAN | `192.168.204.0/24` |
+| Keep set @ 60s | temp/humidity AIs + basic physical I/O (see Lab story above) |
+| Object Explorer | **`BENS BENCHTEST BOX`** = FEC; **`NF`** = gateway’s own BACnet device id (ignore for HVAC) |
+
+### Current edge — `bosspi` (Raspberry Pi) — **live** (migrated 2026-10-18)
+
+SSH: `ssh ben@bosspi` (from OptiPlex). Free-tier site name **bosspi**.
+
+| Fact | Value |
+|------|--------|
+| Host | `bosspi` — Linux `aarch64`; `nf-full:3.10.9-1` **arm64** image |
+| Install | `~/nf` — set **`NF_DATA_DIR=$HOME/nf/data`** + **`NF_REDIS_DIR=$HOME/nf/redis`** (without these, installer tries `/var/nf` and fails rootless) |
+| Console | `http://192.168.204.12:8090/` (on-box: `http://127.0.0.1:8090/`) |
+| Tunnel | `https://6639ffc3-4264-45d3-ba48-e81f451b33d1.normal-online.net` |
+| LAN | `eth0` → `192.168.204.12` |
+| RAM | ~905 Mi — **tight**; ~270 Mi free after NF up — watch OOM / add swap if flaky |
+| TCP 8080 | busy (python3) → **`NF_PORT=8090`** |
+| BACnet | FEC 5007 imported; **19** points @ **60s** (temp/humidity + basic I/O) |
 
 ```bash
-docker --version
-free -h
-ss -ulpn | grep 47808 || echo "BACnet UDP free"
-ss -tlnp | grep -E '8080|8090' || true
-
-# Fresh install (interactive portal sign-in in browser):
-NF_PORT=8090 NF_ASSUME_YES=1 INSTALL_DIR="$HOME/nf" \
+# bosspi install (rootless dirs — required on this Pi)
+NF_PORT=8090 NF_ASSUME_YES=1 NF_TAG=3.10.9-1 \
+  INSTALL_DIR="$HOME/nf" NF_DATA_DIR="$HOME/nf/data" NF_REDIS_DIR="$HOME/nf/redis" \
   curl -fsSL https://raw.githubusercontent.com/normalframework/nf-sdk/master/install.sh | sh
+# If docker group already set: PATH shim so sudo is a no-op (see license footgun).
 ```
+
+### Standby — OptiPlex (`ben-OptiPlex-7070`) — **stopped** (was live)
+
+| Fact | Value |
+|------|--------|
+| Role | Portal site **ben-OptiPlex-7070** still exists; local NF **compose stopped** 2026-10-18 so only Pi polls |
+| Install | `~/nf` on OptiPlex; restart with `cd ~/nf && docker compose up -d` if falling back |
+| Console | was `http://127.0.0.1:8090/` |
+| LAN | `eno1` → `192.168.204.11` |
+| Note | Also stop `openfdd-edge-fieldbus-1` if it steals UDP **47808** on the OptiPlex |
+
+### Portal switch checklist (new box ≠ port of old license)
+
+You **cannot** move an OptiPlex `license.jwt` onto the Pi. Each activate creates a
+**new** portal device row + tunnel UUID.
+
+1. **Stop** the old poller (zero periods and/or `docker compose stop` on OptiPlex; free 47808).  
+2. Run installer on the new host → approve **one** `portal…/activate?code=…&name=<hostname>` (Free demo).  
+3. If install fails mid-way (e.g. `/var/nf`), fix env and **re-run** — you may need a **second** activate (new code). Harmless extras: retire unused portal rows later.  
+4. Portal device page for **bosspi**: wait until **Healthy / Tunnel up**; copy new tunnel URL.  
+5. Optionally **retire / archive** the old **ben-OptiPlex-7070** portal row once Pi is solid (does not delete backups you downloaded).  
+6. In bosspi console: **Settings → Authorization → API keys** → new key for Part 2.  
+7. Update Part 2 `.env`: `NFURL=https://6639ffc3-….normal-online.net` + new client id/secret.  
+8. Old OptiPlex API keys / tunnel URL stop being the edge of record.
 
 ### After reboot / “NF looks dead”
 
@@ -266,89 +300,37 @@ Portal can show **Activated!** while the box still has **no** `license.jwt` if
    `/api/v1/license/device/complete` then `$NF/api/v1/platform/license`.  
 4. Confirm: `ls ~/nf/data/license.jwt` and `license.name` on `/api/v1/platform/info`.
 
-### Remote read: NF Cloudflare vs localhost (vs host Tailscale)
+### Remote read from any internet host (Part 2)
 
-**Normal Framework’s** remote path is the bundled **cloudflared** tunnel →
-`*.normal-online.net`. Tailscale on this PC is unrelated host networking.
+**Goal:** a VPS / laptop on the public internet prints bosspi FEC sensors via NF —
+not LAN, not Tailscale-as-product.
 
-```bash
-# A) Localhost (on the OptiPlex) — lab API without Clerk
-curl -s -X POST http://127.0.0.1:8090/api/v1/point/query -H 'Content-Type: application/json' \
-  -d '{"pageSize":100}' | jq -r '.points[] | select(.name=="OA-T") | "\(.name) \(.latestValue)"'
-
-# B) NF Cloudflare tunnel (product remote access)
-# - Browser: open tunnel URL from portal → Sign in → Object Explorer (live points).
-# - Bare curl often → CF Error 1010; send a browser User-Agent for public GETs.
-# - /api/v1/platform/info OK with UA; /api/v1/point/* → 401 until Sign-in
-#   (or device page: Allow unauthenticated / API token).
-UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-curl -s -A "$UA" "https://<uuid>.normal-online.net/api/v1/platform/info" | jq '{site:.siteName,auth:.enableAuth}'
-
-# C) Optional lab only — host Tailscale IP:8090 (NOT an NF feature)
-# curl -s -X POST http://100.104.255.84:8090/api/v1/point/query ...
-```
-
-Verified 2026-10-18: sensors polling locally; CF tunnel healthy + Sign-in gate;
-`latestValue` on `OA-T` / `OA-H` / `DUCT-T` / `SSPLATE-T` / `STAT ZN-T`. Tunnel
-hostname is on the portal device page.
-
-Wire BACnet only when the bench switch/device is on the `192.168.204.0/24` LAN.
-
-### Python: read sensors via tunnel (API key — not Clerk scrape)
-
-Do **not** automate the portal “Sign in” button. Create an **API key** in the NF
-console (`Settings → Authorization → API keys`), copy `client_id` /
-`client_secret` once, then OAuth2 client-credentials against the **same** base
-URL you use for API calls (`https://<uuid>.normal-online.net` or localhost).
-
-Docs: [Tokens](https://docs.normal.dev/howto/auth/) · [examples](https://docs.normal.dev/examples/).
+| Layer | Setting |
+|-------|---------|
+| Portal → bosspi → Tunnel | **Allow unauthenticated** (Require sign-in blocks scripts; no Clerk cookie) |
+| NF console → API keys | Create key on **bosspi**; OptiPlex keys do not transfer |
+| Client | [Part 2 `read_sensors.py`](../blog/if-the-analyst-could-create-an-api/part-02-nf-edge-sensors/checkpoint/read_sensors.py) + gitignored `.env` |
 
 ```bash
-export NFURL='https://<uuid>.normal-online.net'   # or http://127.0.0.1:8090
-export NF_CLIENT_ID='…'
-export NF_CLIENT_SECRET='…'
-# Preferred: blog Part 2 checkpoint (also accepts checkpoint/.env)
-python3 blog/if-the-analyst-could-create-an-api/part-02-nf-edge-sensors/checkpoint/read_sensors.py
+# checkpoint/.env  (never commit)
+NFURL=https://6639ffc3-4264-45d3-ba48-e81f451b33d1.normal-online.net
+NF_CLIENT_ID=…
+NF_CLIENT_SECRET=…
+
+cd blog/if-the-analyst-could-create-an-api/part-02-nf-edge-sensors/checkpoint
+pip install -r requirements.txt
+python read_sensors.py
+# → OA-T / OA-H / DUCT-T / SSPLATE-T / STAT ZN-T with latestValue
 ```
 
-```python
-import os, requests
+Flow: `POST /api/v1/auth/token` (client_credentials) → Bearer →
+`POST /api/v1/point/query`. Docs: [Tokens](https://docs.normal.dev/howto/auth/).
 
-NFURL = os.environ["NFURL"].rstrip("/")
-SENSORS = ["OA-T", "OA-H", "DUCT-T", "SSPLATE-T", "STAT ZN-T"]
+**Do not** scrape portal Sign-in. Send a normal `User-Agent` (CF 1010 otherwise).
+Verified 2026-10-18 over that tunnel from the OptiPlex (acting as “remote” client).
 
-tok = requests.post(
-    f"{NFURL}/api/v1/auth/token",
-    json={
-        "client_id": os.environ["NF_CLIENT_ID"],
-        "client_secret": os.environ["NF_CLIENT_SECRET"],
-        "grant_type": "client_credentials",
-    },
-    headers={"User-Agent": "nf-lab-script/1.0"},
-    timeout=30,
-)
-tok.raise_for_status()
-bearer = tok.json().get("accessToken") or tok.json().get("access_token")
-
-r = requests.post(
-    f"{NFURL}/api/v1/point/query",
-    headers={
-        "Authorization": f"Bearer {bearer}",
-        "Content-Type": "application/json",
-        "User-Agent": "nf-lab-script/1.0",
-    },
-    json={"pageSize": 100},
-    timeout=60,
-)
-r.raise_for_status()
-for p in r.json().get("points", []):
-    if p.get("name") in SENSORS and (p.get("attrs") or {}).get("type") == "OBJECT_ANALOG_INPUT":
-        lv = p.get("latestValue") or {}
-        print(f"{p['name']:10} {lv.get('double')} {p.get('units')} @ {lv.get('ts')}")
-```
-
-Send a normal `User-Agent` on the tunnel (bare curl/python-requests default can
-hit Cloudflare 1010). Keep secrets in env / user store — never in the graph or git.
+Lab LAN shortcut (optional): `NFURL=http://192.168.204.12:8090` may work without a
+key on this bench; production story is always tunnel + API key.
 
 ---
 
@@ -394,6 +376,7 @@ Tunnel stays down until a licensed instance is running and can heartbeat outboun
 | Locked playground architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Haystack authoring / agent tagging | Part 3 `HAYSTACK_MODELING.md` |
 | Part 2 sensor client | `blog/…/part-02-nf-edge-sensors/checkpoint/read_sensors.py` |
+| Lab hosts | `bosspi` `192.168.204.12` (**live** NF); OptiPlex `192.168.204.11` (standby) |
 | Public NF product findings (upstream notes) | `docs/NF_PRODUCT_FINDINGS.md` in normal-framework-notes |
 | Installer source | `normalframework/nf-sdk` `install.sh` |
 

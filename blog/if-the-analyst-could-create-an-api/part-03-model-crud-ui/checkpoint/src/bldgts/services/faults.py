@@ -14,17 +14,19 @@ from rdflib import Graph, URIRef
 ROLE_REQUIREMENTS: dict[str, tuple[str, frozenset[str] | None]] = {
     "duct-static-pressure": ("duct-static-pressure", None),
     "duct-static-pressure-sp": ("duct-static-pressure-sp", None),
-    "fan-cmd": ("fan-cmd", frozenset({"fan"})),
-    "fan-status": ("fan-status", frozenset({"fan"})),
-    "return-fan-cmd": ("return-fan-cmd", frozenset({"fan"})),
+    # Flat seed hangs SF/RF cmds on the AHU (no nested fan equip). Role tag is enough;
+    # do not require owner markers {"fan"} (that matched the old part hierarchy).
+    "fan-cmd": ("fan-cmd", None),
+    "fan-status": ("fan-status", None),
+    "return-fan-cmd": ("return-fan-cmd", None),
     "discharge-air-temp": ("discharge-air-temp", None),
     "discharge-air-temp-sp": ("discharge-air-temp-sp", None),
     "mixed-air-temp": ("mixed-air-temp", None),
     "return-air-temp": ("return-air-temp", None),
     "outside-air-temp": ("outside-air-temp", None),
-    "outside-air-damper": ("outside-air-damper", frozenset({"damper"})),
-    "cooling-valve": ("cooling-valve", frozenset({"valve"})),
-    "heating-valve": ("heating-valve", frozenset({"valve"})),
+    "outside-air-damper": ("outside-air-damper", None),
+    "cooling-valve": ("cooling-valve", None),
+    "heating-valve": ("heating-valve", None),
     "occupied": ("occupied", None),
     "web-outside-air-temp": ("web-outside-air-temp", None),
 }

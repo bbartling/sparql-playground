@@ -5,7 +5,7 @@ timeseries are reached **only through the model** via opaque `ref:TimeseriesRefe
 Here: FastAPI + read-only SPARQL + SQLite stand-in TSDB + Swagger at `/docs`. Lessons: `scripts/lesson_0*.py`.
 
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
-- **Normal Framework (edge OT / BACnet / portal):** [`agent_spec/NORMAL_FRAMEWORK.md`](agent_spec/NORMAL_FRAMEWORK.md) — OptiPlex bench, BACnet 5007, CF tunnel + API keys; blog Part 2 client; no secrets
+- **Normal Framework (edge OT / BACnet / portal):** [`agent_spec/NORMAL_FRAMEWORK.md`](agent_spec/NORMAL_FRAMEWORK.md) — **bosspi** Pi live edge + OptiPlex standby, BACnet 5007, portal switch notes, CF tunnel + API keys; blog Part 2; no secrets
 - **Build plan (if rebuilding from scratch):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 
 ```
