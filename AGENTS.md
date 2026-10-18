@@ -5,6 +5,7 @@ timeseries are reached **only through the model** via opaque `ref:TimeseriesRefe
 Here: FastAPI + read-only SPARQL + SQLite stand-in TSDB + Swagger at `/docs`. Lessons: `scripts/lesson_0*.py`.
 
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
+- **Normal Framework (edge OT / BACnet / portal):** [`agent_spec/NORMAL_FRAMEWORK.md`](agent_spec/NORMAL_FRAMEWORK.md) — OptiPlex bench, BACnet 5007, CF tunnel + API keys; blog Part 2 client; no secrets
 - **Build plan (if rebuilding from scratch):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 
 ```
@@ -40,7 +41,7 @@ uv run pytest -q && uv run ruff check .
 
 - Read-only reference: `/home/ben/Desktop/open-fdd` — never edit it.
 - Don’t commit `var/`, `*.sqlite`, `.venv`, secrets. No Git LFS. Data files under 50 MB each.
-- No auth, no CDN for the core API — Swagger at `/docs`. Optional Vite UI under the live part’s `checkpoint/web/` (Part 2). Live Turtle export: repo-root `building.ttl`.
+- No auth, no CDN for the core API — Swagger at `/docs`. Optional Vite UI under the live part’s `checkpoint/web/` (Part 3). Live Turtle export: repo-root `building.ttl`.
 
 ---
 
@@ -149,7 +150,7 @@ the existing production store via the opaque id — same pattern as Brick timese
 
 ## Blog series checkpoints
 
-[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — **no repo-root `src/`/`web/`**. Each part freezes an app base under `checkpoint/`. Live package = Part 2 (`pyproject.toml` `module-root`). Parts 3–5 are empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). SQL course stays **independent**.
+[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — **no repo-root `src/`/`web/`**. Each part freezes an app base under `checkpoint/`. Live package = Part 3 Haystack CRUD (`pyproject.toml` `module-root`). Part 2 = NF edge sensor client. Parts 4–6 are empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). SQL course stays **independent**.
 
 ## Daily SQL course (operator requested, 2026-10-15)
 

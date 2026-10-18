@@ -19,25 +19,25 @@ Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api
 
 Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only). That request also writes repo-root **`building.ttl`** on a background thread — easy to open, commit, and push for tutorials.
 
-Optional UI (live Part 2 checkpoint [`web/`](blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web/)): Haystack model tag-tree + **in-browser SPARQL editor** + coverage. Mutations need `BLDGTS_ALLOW_MUTATIONS=true`. There is **no** repo-root `src/` or `web/` — each blog part owns its app base under `checkpoint/`.
+Optional UI (live Part 3 checkpoint [`web/`](blog/if-the-analyst-could-create-an-api/part-03-model-crud-ui/checkpoint/web/)): Haystack model tag-tree + **in-browser SPARQL editor** + coverage. Mutations need `BLDGTS_ALLOW_MUTATIONS=true`. There is **no** repo-root `src/` or `web/` — each blog part owns its app base under `checkpoint/`.
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
 site.ttl + point maps  ──build──▶  model Turtle  ──▶  SPARQL API
 Browser → /docs (Swagger)     Laptop → scripts/lesson_0*.py
-Model UI → part-02/…/checkpoint/web/   Live export → ./building.ttl
+Model UI → part-03/…/checkpoint/web/   Live export → ./building.ttl
 ```
 
-Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md).
+Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md). Edge OT: [`agent_spec/NORMAL_FRAMEWORK.md`](agent_spec/NORMAL_FRAMEWORK.md).
 
 ## Blog series — If the analyst could create an API
 
-Checkpoint folders for the LinkedIn / blog arc (Part 1 bare API → Part 2 CRUD UI → later parts):
+Checkpoint folders for the LinkedIn / blog arc (Part 1 bare API → Part 2 NF edge sensors → Part 3 CRUD UI → later parts):
 [`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/).
 
 ## Daily SQL / PostgreSQL / Timescale course *(independent)*
 
-[**84 daily lessons and 12 weekly challenges**](lessons/sql/INDEX.md) are a **standalone** track — not nested under the blog series. Blog Parts 3–4 may link here; the course keeps its own lab DB and docs.
+[**84 daily lessons and 12 weekly challenges**](lessons/sql/INDEX.md) are a **standalone** track — not nested under the blog series. Blog Parts 4–5 may link here; the course keeps its own lab DB and docs.
 
 Use the [isolated local lab](lessons/sql/LAB_GUIDE.md) or [set up Timescale on a remote lab machine](lessons/sql/REMOTE_SETUP.md). This independent course database leaves the existing SQLite API tutorial intact.
 

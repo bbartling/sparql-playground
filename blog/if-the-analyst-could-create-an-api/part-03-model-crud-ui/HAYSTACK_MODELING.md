@@ -1,4 +1,4 @@
-# Part 2 modeling contract
+# Part 3 modeling contract
 
 This checkpoint is a Haystack authoring UI over an RDF application model. The live seed is **Haystack-only** (markers + typed tags + `siteRef`/`equipRef`/`spaceRef`). Opaque timeseries references (`ref:TimeseriesReference`) remain the historian link. It does not implement the Haystack HTTP protocol, Zinc/Hayson export, or complete Haystack ontology conformance. The UI calls its checks the **supported Haystack profile** for that reason.
 

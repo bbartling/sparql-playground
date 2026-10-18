@@ -1,7 +1,7 @@
-# Part 2 — Haystack model CRUD + Vite UI
+# Part 3 — Haystack model CRUD + Vite UI
 
 **Series:** [If the analyst could create an API](../README.md)  
-**Builds on:** [Part 1](../part-01-bare-sparql-api/)  
+**Builds on:** [Part 2](../part-02-nf-edge-sensors/) (NF edge sensors) · [Part 1](../part-01-bare-sparql-api/)  
 **Status:** **live app base** — Python package **`bldgts`** (generic building/timeseries name; not Brick-specific)
 
 ## Layout
@@ -25,7 +25,7 @@ uv run bldgts model build
 uv run bldgts bootstrap
 BLDGTS_ALLOW_MUTATIONS=true uv run bldgts serve   # http://127.0.0.1:8000/docs
 
-cd blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web
+cd blog/if-the-analyst-could-create-an-api/part-03-model-crud-ui/checkpoint/web
 npm install && npm run dev                        # http://127.0.0.1:5173
 ```
 
@@ -40,7 +40,7 @@ From the repository root:
 ```bash
 uv run pytest -q
 uv run ruff check .
-cd blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/web
+cd blog/if-the-analyst-could-create-an-api/part-03-model-crud-ui/checkpoint/web
 npm ci
 npm run build
 ```
@@ -49,4 +49,4 @@ The checkpoint uses shared repository `data/`, `model/`, and the root Python env
 
 ## Next
 
-[Part 3 — Data viz + Timescale](../part-03-data-viz-timescale/)
+[Part 4 — Data viz + Timescale](../part-04-data-viz-timescale/)

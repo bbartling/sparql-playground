@@ -24,10 +24,10 @@ bldgts = "bldgts.cli:main"
 requires = ["uv_build>=0.12.13,<0.13.0"]
 build-backend = "uv_build"
 
-# Live app base = Part 2 checkpoint (no repo-root src/). Future parts freeze their own trees.
+# Live app base = Part 3 checkpoint (no repo-root src/). Future parts freeze their own trees.
 [tool.uv.build-backend]
 module-name = "bldgts"
-module-root = "blog/if-the-analyst-could-create-an-api/part-02-model-crud-ui/checkpoint/src"
+module-root = "blog/if-the-analyst-could-create-an-api/part-03-model-crud-ui/checkpoint/src"
 
 [dependency-groups]
 dev = [

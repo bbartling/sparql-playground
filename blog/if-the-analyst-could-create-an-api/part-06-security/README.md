@@ -1,7 +1,7 @@
-# Part 5 — Security *(placeholder)*
+# Part 6 — Security *(placeholder)*
 
 **Series:** [If the analyst could create an API](../README.md)  
-**Builds on:** [Part 4](../part-04-fdd-openfdd-postgres/)
+**Builds on:** [Part 5](../part-05-fdd-openfdd-postgres/)
 
 ## Intent (future freeze)
 

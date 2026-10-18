@@ -43,4 +43,4 @@ git show 2d3c72e:src/brickts/api/app.py | less
 
 ## Blog draft
 
-Add your article draft here as `draft.md` when ready. Next: [Part 2](../part-02-model-crud-ui/).
+Add your article draft here as `draft.md` when ready. Next: [Part 2 — NF edge sensors](../part-02-nf-edge-sensors/).

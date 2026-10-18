@@ -1,7 +1,7 @@
-# Part 4 — FDD with Open-FDD on Postgres *(placeholder)*
+# Part 5 — FDD with Open-FDD on Postgres *(placeholder)*
 
 **Series:** [If the analyst could create an API](../README.md)  
-**Builds on:** [Part 3](../part-03-data-viz-timescale/)
+**Builds on:** [Part 4](../part-04-data-viz-timescale/)
 
 ## Intent (future freeze)
 
@@ -17,4 +17,4 @@ Bare placeholder only:
 
 ## Next
 
-[Part 5 — Security](../part-05-security/)
+[Part 6 — Security](../part-06-security/)
