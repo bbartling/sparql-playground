@@ -143,6 +143,7 @@ def _add_points_csv(g: Graph, points_csv: Path, db_iri) -> None:
             g.add((ref, REF.hasTimeseriesId, Literal(row["timeseries_id"])))
             g.add((ref, REF.storedAt, db_iri))
 
+
 def render_model(
     site_path: Path | None,
     points_csv: Path | list[Path],
