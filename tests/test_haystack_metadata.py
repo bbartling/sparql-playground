@@ -321,7 +321,7 @@ def test_taxonomy_descendants_and_legacy_fabricated_marker_are_validated():
 
 
 def test_rename_invalid_input_is_400_and_all_levels_keep_stable_ids(editor):
-    for entity in ("Building_50", "Floor_1", "AHU_1", "AHU_1_DA_P"):
+    for entity in ("Building_50", "AHU_1", "AHU_1_DA_P"):
         response = editor.post(
             "/api/model/rename",
             json={

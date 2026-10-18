@@ -12,17 +12,17 @@ bldg:AHU_1_Alarm a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ] .
@@ -37,24 +37,24 @@ bldg:AHU_1_BLD_P a bts:Entity ;
         "point",
         "pressure",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "inH₂O" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_1_BLD_P_SP a bts:Entity ;
     rdfs:label "AHU1 BLD-P SetPoint" ;
@@ -66,21 +66,21 @@ bldg:AHU_1_BLD_P_SP a bts:Entity ;
         "point",
         "pressure",
         "sp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "inH₂O" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "inH₂O" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ] .
@@ -94,27 +94,27 @@ bldg:AHU_1_CHW_Valve_Cmd a bts:Entity ;
         "his",
         "point",
         "valve" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "%" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "cooling-valve" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_CHW_Valve ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ] .
 
 bldg:AHU_1_DAT_Reset_OAT_High a bts:Entity ;
     rdfs:label "AHU1 DAT X2" ;
@@ -131,20 +131,20 @@ bldg:AHU_1_DAT_Reset_OAT_High a bts:Entity ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_1_DAT_Reset_OAT_Low a bts:Entity ;
     rdfs:label "AHU1 DAT X1" ;
@@ -157,24 +157,24 @@ bldg:AHU_1_DAT_Reset_OAT_Low a bts:Entity ;
         "point",
         "sp",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_1_DAT_Reset_SAT_High a bts:Entity ;
     rdfs:label "AHU1 DAT Y1" ;
@@ -187,21 +187,21 @@ bldg:AHU_1_DAT_Reset_SAT_High a bts:Entity ;
         "point",
         "sp",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ] .
@@ -218,23 +218,23 @@ bldg:AHU_1_DAT_Reset_SAT_Low a bts:Entity ;
         "sp",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:AHU_1_DAT_SP a bts:Entity ;
     rdfs:label "AHU1 DAT Reset" ;
@@ -248,26 +248,26 @@ bldg:AHU_1_DAT_SP a bts:Entity ;
         "sp",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "discharge-air-temp-sp" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_1_DA_Alarm a bts:Entity ;
     rdfs:label "DischargeAir Alarm" ;
@@ -277,21 +277,21 @@ bldg:AHU_1_DA_Alarm a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ] .
+            bts:tagValue "Bool" ] .
 
 bldg:AHU_1_DA_P a bts:Entity ;
     rdfs:label "AHU1 DA-P" ;
@@ -305,47 +305,14 @@ bldg:AHU_1_DA_P a bts:Entity ;
         "pressure",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "inH₂O" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "duct-static-pressure" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
-
-bldg:AHU_1_DA_P_SP a bts:Entity ;
-    rdfs:label "AHU1 DA-P SetPoint" ;
-    ref:hasExternalReference [ a ref:TimeseriesReference ;
-            ref:hasTimeseriesId "761c2b61-4982-5157-bc66-2010cf6e2a47" ;
-            ref:storedAt bldg:timeseries_db ] ;
-    bts:hasHaystackMarker "air",
-        "discharge",
-        "his",
-        "point",
-        "pressure",
-        "sp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "inH₂O" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "duct-static-pressure-sp" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
@@ -359,6 +326,39 @@ bldg:AHU_1_DA_P_SP a bts:Entity ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ] .
 
+bldg:AHU_1_DA_P_SP a bts:Entity ;
+    rdfs:label "AHU1 DA-P SetPoint" ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "761c2b61-4982-5157-bc66-2010cf6e2a47" ;
+            ref:storedAt bldg:timeseries_db ] ;
+    bts:hasHaystackMarker "air",
+        "discharge",
+        "his",
+        "point",
+        "pressure",
+        "sp" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "ofddRole" ;
+            bts:tagValue "duct-static-pressure-sp" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "inH₂O" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
+
 bldg:AHU_1_DA_T a bts:Entity ;
     rdfs:label "AHU1 DA-T" ;
     ref:hasExternalReference [ a ref:TimeseriesReference ;
@@ -370,21 +370,21 @@ bldg:AHU_1_DA_T a bts:Entity ;
         "point",
         "sensor",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "discharge-air-temp" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
@@ -401,9 +401,12 @@ bldg:AHU_1_EA_Damper_Fan_Enable_Pos a bts:Entity ;
         "his",
         "point",
         "sp" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "%" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_EA_Damper ],
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
@@ -415,10 +418,7 @@ bldg:AHU_1_EA_Damper_Fan_Enable_Pos a bts:Entity ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "%" ] .
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_1_Emergency_Override a bts:Entity ;
     rdfs:label "HU_50" ;
@@ -438,11 +438,11 @@ bldg:AHU_1_Emergency_Override a bts:Entity ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:AHU_1_Low_DA_P_Alarm a bts:Entity ;
     rdfs:label "LowDapAlarm" ;
@@ -452,21 +452,21 @@ bldg:AHU_1_Low_DA_P_Alarm a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ] .
 
 bldg:AHU_1_MA_T a bts:Entity ;
     rdfs:label "AHU1 MA-T" ;
@@ -479,7 +479,10 @@ bldg:AHU_1_MA_T a bts:Entity ;
         "point",
         "sensor",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
@@ -489,17 +492,14 @@ bldg:AHU_1_MA_T a bts:Entity ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:AHU_1_OA_Damper_Cmd a bts:Entity ;
     rdfs:label "AHU1 MAD-C" ;
@@ -510,27 +510,27 @@ bldg:AHU_1_OA_Damper_Cmd a bts:Entity ;
         "damper",
         "his",
         "point" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "ofddRole" ;
+            bts:tagValue "outside-air-damper" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "%" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "outside-air-damper" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_OA_Damper ] .
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_1_OA_Damper_Min_Pos a bts:Entity ;
     rdfs:label "OA Minimum Position" ;
@@ -541,24 +541,24 @@ bldg:AHU_1_OA_Damper_Min_Pos a bts:Entity ;
         "his",
         "point",
         "sp" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "%" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_OA_Damper ] .
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_1_OA_T a bts:Entity ;
     rdfs:label "AHU1 OA-T" ;
@@ -571,24 +571,24 @@ bldg:AHU_1_OA_T a bts:Entity ;
         "point",
         "sensor",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "outside-air-temp" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ] .
@@ -604,21 +604,21 @@ bldg:AHU_1_Occ_Cmd a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "occupied" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_1_RA_T a bts:Entity ;
     rdfs:label "AHU1 RA-T" ;
@@ -632,20 +632,20 @@ bldg:AHU_1_RA_T a bts:Entity ;
         "sensor",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "return-air-temp" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "ofddRole" ;
+            bts:tagValue "return-air-temp" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
@@ -661,21 +661,21 @@ bldg:AHU_1_RF_Alarm a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Return_Fan ],
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_1_RF_Cmd a bts:Entity ;
     rdfs:label "AHU1 RF-C" ;
@@ -685,18 +685,18 @@ bldg:AHU_1_RF_Cmd a bts:Entity ;
     bts:hasHaystackMarker "cmd",
         "his",
         "point" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Return_Fan ],
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ] .
@@ -710,21 +710,21 @@ bldg:AHU_1_RF_OnOff_Status a bts:Entity ;
         "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Return_Fan ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_1_RF_Run_Status a bts:Entity ;
     rdfs:label "ReturnFan" ;
@@ -735,20 +735,20 @@ bldg:AHU_1_RF_Run_Status a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Return_Fan ] .
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_1_RF_Speed_Cmd a bts:Entity ;
     rdfs:label "AHU1 RF-VFD" ;
@@ -761,26 +761,26 @@ bldg:AHU_1_RF_Speed_Cmd a bts:Entity ;
         "point",
         "speed" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "%" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "return-fan-cmd" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+            bts:tagName "unit" ;
+            bts:tagValue "%" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Return_Fan ],
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_1_RF_Status a bts:Entity ;
     rdfs:label "AHU1 RF-S" ;
@@ -796,16 +796,16 @@ bldg:AHU_1_RF_Status a bts:Entity ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Return_Fan ],
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ] .
 
 bldg:AHU_1_SF_Alarm a bts:Entity ;
     rdfs:label "SupplyFanAlarm" ;
@@ -818,15 +818,15 @@ bldg:AHU_1_SF_Alarm a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Supply_Fan ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ] .
@@ -842,6 +842,9 @@ bldg:AHU_1_SF_Cmd a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
@@ -850,10 +853,7 @@ bldg:AHU_1_SF_Cmd a bts:Entity ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Supply_Fan ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:AHU_1_SF_OnOff_Status a bts:Entity ;
     rdfs:label "SupplyfanStatus" ;
@@ -864,21 +864,21 @@ bldg:AHU_1_SF_OnOff_Status a bts:Entity ;
         "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Supply_Fan ],
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_1_SF_Run_Status a bts:Entity ;
     rdfs:label "SupplyFan" ;
@@ -888,21 +888,21 @@ bldg:AHU_1_SF_Run_Status a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Supply_Fan ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_1_SF_Speed_Cmd a bts:Entity ;
     rdfs:label "AHU1 SF-VFD" ;
@@ -914,27 +914,27 @@ bldg:AHU_1_SF_Speed_Cmd a bts:Entity ;
         "his",
         "point",
         "speed" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "%" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Supply_Fan ],
-        [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
-            bts:tagValue "fan-cmd" ] .
+            bts:tagValue "fan-cmd" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "%" ] .
 
 bldg:AHU_1_SF_Status a bts:Entity ;
     rdfs:label "AHU1 SF-S" ;
@@ -946,23 +946,23 @@ bldg:AHU_1_SF_Status a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1_Supply_Fan ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "fan-status" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:AHU_1_Tstat_Status a bts:Entity ;
     rdfs:label "Tstat" ;
@@ -972,21 +972,21 @@ bldg:AHU_1_Tstat_Status a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:AHU_1_Unocc_Clg_SP a bts:Entity ;
     rdfs:label "Unoccupied Cool Setpt" ;
@@ -999,24 +999,24 @@ bldg:AHU_1_Unocc_Clg_SP a bts:Entity ;
         "point",
         "sp",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_2_Alarm a bts:Entity ;
     rdfs:label "50Ahu2Aalrm" ;
@@ -1026,21 +1026,21 @@ bldg:AHU_2_Alarm a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_2_BLD_P a bts:Entity ;
     rdfs:label "AHU2 BLD-Pressure" ;
@@ -1053,23 +1053,23 @@ bldg:AHU_2_BLD_P a bts:Entity ;
         "pressure",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "inH₂O" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "inH₂O" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_2_BLD_P_SP a bts:Entity ;
     rdfs:label "AHU2 BLD-P SetPoint" ;
@@ -1084,21 +1084,21 @@ bldg:AHU_2_BLD_P_SP a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "inH₂O" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_CHW_Valve_Cmd a bts:Entity ;
     rdfs:label "AHU2 CHW-Valve" ;
@@ -1112,24 +1112,24 @@ bldg:AHU_2_CHW_Valve_Cmd a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "cooling-valve" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_CHW_Valve ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "%" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagName "unit" ;
+            bts:tagValue "%" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:AHU_2_DAT_Reset_OAT_High a bts:Entity ;
     rdfs:label "AHU2 DAT X2" ;
@@ -1143,23 +1143,23 @@ bldg:AHU_2_DAT_Reset_OAT_High a bts:Entity ;
         "sp",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_2_DAT_Reset_OAT_Low a bts:Entity ;
     rdfs:label "AHU2 DAT X1" ;
@@ -1175,21 +1175,21 @@ bldg:AHU_2_DAT_Reset_OAT_Low a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_DAT_Reset_SAT_High a bts:Entity ;
     rdfs:label "AHU2 DAT Y1" ;
@@ -1206,20 +1206,20 @@ bldg:AHU_2_DAT_Reset_SAT_High a bts:Entity ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue "°F" ] .
 
 bldg:AHU_2_DAT_Reset_SAT_Low a bts:Entity ;
     rdfs:label "AHU2 DAT Y2" ;
@@ -1232,21 +1232,21 @@ bldg:AHU_2_DAT_Reset_SAT_Low a bts:Entity ;
         "point",
         "sp",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ] .
@@ -1262,15 +1262,12 @@ bldg:AHU_2_DAT_SP a bts:Entity ;
         "point",
         "sp",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "discharge-air-temp-sp" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
@@ -1278,11 +1275,14 @@ bldg:AHU_2_DAT_SP a bts:Entity ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "ofddRole" ;
+            bts:tagValue "discharge-air-temp-sp" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ] .
 
 bldg:AHU_2_DA_Alarm a bts:Entity ;
     rdfs:label "DischargeAir Alarm" ;
@@ -1293,20 +1293,20 @@ bldg:AHU_2_DA_Alarm a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_2_DA_P a bts:Entity ;
     rdfs:label "AHU2 DA-P" ;
@@ -1319,27 +1319,27 @@ bldg:AHU_2_DA_P a bts:Entity ;
         "point",
         "pressure",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "inH₂O" ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "duct-static-pressure" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagName "unit" ;
+            bts:tagValue "inH₂O" ] .
 
 bldg:AHU_2_DA_P_SP a bts:Entity ;
     rdfs:label "AHU2 DA-P SetPoint" ;
@@ -1352,27 +1352,27 @@ bldg:AHU_2_DA_P_SP a bts:Entity ;
         "point",
         "pressure",
         "sp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "duct-static-pressure-sp" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
+            bts:tagName "ofddRole" ;
+            bts:tagValue "duct-static-pressure-sp" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "inH₂O" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_2_DA_T a bts:Entity ;
     rdfs:label "AHU2 DA-T" ;
@@ -1386,26 +1386,26 @@ bldg:AHU_2_DA_T a bts:Entity ;
         "sensor",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "discharge-air-temp" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:AHU_2_EA_Damper_Fan_Enable_Pos a bts:Entity ;
     rdfs:label "Ex Dmpr Pos Fan Enable" ;
@@ -1416,24 +1416,24 @@ bldg:AHU_2_EA_Damper_Fan_Enable_Pos a bts:Entity ;
         "his",
         "point",
         "sp" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "%" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_EA_Damper ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue "%" ] .
 
 bldg:AHU_2_Low_DA_P_Alarm a bts:Entity ;
     rdfs:label "LowDapAlarm" ;
@@ -1443,18 +1443,18 @@ bldg:AHU_2_Low_DA_P_Alarm a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ] .
@@ -1473,24 +1473,24 @@ bldg:AHU_2_MA_T a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "mixed-air-temp" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_2_OA_Damper_Cmd a bts:Entity ;
     rdfs:label "AHU2 MAD-C" ;
@@ -1501,27 +1501,27 @@ bldg:AHU_2_OA_Damper_Cmd a bts:Entity ;
         "damper",
         "his",
         "point" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "ofddRole" ;
+            bts:tagValue "outside-air-damper" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_OA_Damper ],
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "%" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "outside-air-damper" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "%" ] .
+            bts:tagValue "sampled" ] .
 
 bldg:AHU_2_OA_Damper_Min_Pos a bts:Entity ;
     rdfs:label "OA Minimum Position" ;
@@ -1535,21 +1535,21 @@ bldg:AHU_2_OA_Damper_Min_Pos a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "%" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_OA_Damper ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagValue "America/Chicago" ] .
 
 bldg:AHU_2_OA_T a bts:Entity ;
     rdfs:label "AHU2 OA-T" ;
@@ -1563,26 +1563,26 @@ bldg:AHU_2_OA_T a bts:Entity ;
         "sensor",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "ofddRole" ;
-            bts:tagValue "outside-air-temp" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "ofddRole" ;
+            bts:tagValue "outside-air-temp" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_Occ_Cmd a bts:Entity ;
     rdfs:label "AHU2 OCC-C" ;
@@ -1593,23 +1593,23 @@ bldg:AHU_2_Occ_Cmd a bts:Entity ;
         "his",
         "point" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "occupied" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_RA_T a bts:Entity ;
     rdfs:label "AHU2 RA-T" ;
@@ -1622,27 +1622,27 @@ bldg:AHU_2_RA_T a bts:Entity ;
         "return",
         "sensor",
         "temp" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
-            bts:tagValue "return-air-temp" ] .
+            bts:tagValue "return-air-temp" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_RF_Alarm a bts:Entity ;
     rdfs:label "ReturnFanAalrm" ;
@@ -1652,21 +1652,21 @@ bldg:AHU_2_RF_Alarm a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Return_Fan ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ] .
 
 bldg:AHU_2_RF_Cmd a bts:Entity ;
     rdfs:label "AHU2 RF-C" ;
@@ -1681,7 +1681,7 @@ bldg:AHU_2_RF_Cmd a bts:Entity ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Return_Fan ],
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
@@ -1702,20 +1702,20 @@ bldg:AHU_2_RF_OnOff_Status a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Return_Fan ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:AHU_2_RF_Run_Status a bts:Entity ;
     rdfs:label "ReturnFan" ;
@@ -1726,20 +1726,20 @@ bldg:AHU_2_RF_Run_Status a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Return_Fan ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ] .
 
 bldg:AHU_2_RF_Speed_Cmd a bts:Entity ;
     rdfs:label "AHU2 RF-VFD" ;
@@ -1752,26 +1752,26 @@ bldg:AHU_2_RF_Speed_Cmd a bts:Entity ;
         "point",
         "speed" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "%" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Return_Fan ],
-        [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "return-fan-cmd" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "%" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:AHU_2_RF_Status a bts:Entity ;
     rdfs:label "AHU2 RF-S" ;
@@ -1782,21 +1782,21 @@ bldg:AHU_2_RF_Status a bts:Entity ;
         "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Return_Fan ],
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ] .
 
 bldg:AHU_2_SF_Alarm a bts:Entity ;
     rdfs:label "SupplyFanAlarm" ;
@@ -1807,20 +1807,20 @@ bldg:AHU_2_SF_Alarm a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Supply_Fan ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:AHU_2_SF_Cmd a bts:Entity ;
     rdfs:label "AHU2 SF-C" ;
@@ -1831,20 +1831,20 @@ bldg:AHU_2_SF_Cmd a bts:Entity ;
         "his",
         "point" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Supply_Fan ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_SF_OnOff_Status a bts:Entity ;
     rdfs:label "SupplyfanStatus" ;
@@ -1855,21 +1855,21 @@ bldg:AHU_2_SF_OnOff_Status a bts:Entity ;
         "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Supply_Fan ] .
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:AHU_2_SF_Run_Status a bts:Entity ;
     rdfs:label "SupplyFan" ;
@@ -1879,18 +1879,18 @@ bldg:AHU_2_SF_Run_Status a bts:Entity ;
     bts:hasHaystackMarker "his",
         "point",
         "sensor" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Supply_Fan ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ] .
@@ -1906,6 +1906,12 @@ bldg:AHU_2_SF_Speed_Cmd a bts:Entity ;
         "point",
         "speed" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
@@ -1917,12 +1923,6 @@ bldg:AHU_2_SF_Speed_Cmd a bts:Entity ;
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Supply_Fan ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "%" ] .
@@ -1937,20 +1937,20 @@ bldg:AHU_2_SF_Status a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2_Supply_Fan ],
+            bts:tagName "kind" ;
+            bts:tagValue "Bool" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "ofddRole" ;
             bts:tagValue "fan-status" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Bool" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ] .
@@ -1964,17 +1964,17 @@ bldg:AHU_2_Tstat_Status a bts:Entity ;
         "point",
         "sensor" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Bool" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ] .
@@ -1991,23 +1991,23 @@ bldg:AHU_2_Unocc_Clg_SP a bts:Entity ;
         "sp",
         "temp" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:Zone_AHU_1_ZN_T a bts:Entity ;
     rdfs:label "AHU1 ZN-T" ;
@@ -2023,34 +2023,21 @@ bldg:Zone_AHU_1_ZN_T a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_AHU_1 ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_AHU_2 a bts:Entity ;
-    rdfs:label "Zone AHU 2" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_2 ] .
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ] .
 
 bldg:Zone_VAVFC_125_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2063,27 +2050,24 @@ bldg:Zone_VAVFC_125_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVFC_125 ] .
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:Zone_VAVHM_110_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2096,12 +2080,15 @@ bldg:Zone_VAVHM_110_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
@@ -2110,13 +2097,7 @@ bldg:Zone_VAVHM_110_ZN_T a bts:Entity ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVHM_110 ] .
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAVH_102_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2129,27 +2110,24 @@ bldg:Zone_VAVH_102_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_102 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAVH_122_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2162,32 +2140,59 @@ bldg:Zone_VAVH_122_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
+
+bldg:Zone_VAVH_2D302_ZN_T a bts:Entity ;
+    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
+    ref:hasExternalReference [ a ref:TimeseriesReference ;
+            ref:hasTimeseriesId "4fa4020d-396a-5d29-a657-52ea8a445e5c" ;
+            ref:storedAt bldg:timeseries_db ] ;
+    bts:hasHaystackMarker "air",
+        "his",
+        "point",
+        "sensor",
+        "temp",
+        "zone" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_122 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ] .
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ] .
 
-bldg:Zone_VAVH_2D302_ZN_T a bts:Entity ;
+bldg:Zone_VAVH_2D306_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
     ref:hasExternalReference [ a ref:TimeseriesReference ;
-            ref:hasTimeseriesId "4fa4020d-396a-5d29-a657-52ea8a445e5c" ;
+            ref:hasTimeseriesId "2280406d-c67a-52cb-b648-c84b150cdacf" ;
             ref:storedAt bldg:timeseries_db ] ;
     bts:hasHaystackMarker "air",
         "his",
@@ -2201,54 +2206,18 @@ bldg:Zone_VAVH_2D302_ZN_T a bts:Entity ;
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D302 ] .
-
-bldg:Zone_VAVH_2D306_ZN_T a bts:Entity ;
-    rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
-    ref:hasExternalReference [ a ref:TimeseriesReference ;
-            ref:hasTimeseriesId "2280406d-c67a-52cb-b648-c84b150cdacf" ;
-            ref:storedAt bldg:timeseries_db ] ;
-    bts:hasHaystackMarker "air",
-        "his",
-        "point",
-        "sensor",
-        "temp",
-        "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D306 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAVH_2D311_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2262,26 +2231,23 @@ bldg:Zone_VAVH_2D311_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D311 ] .
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:Zone_VAVH_2D313_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2294,27 +2260,24 @@ bldg:Zone_VAVH_2D313_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D313 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:Zone_VAVH_2D316_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2334,20 +2297,17 @@ bldg:Zone_VAVH_2D316_ZN_T a bts:Entity ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D316 ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAVH_2D319_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2360,27 +2320,24 @@ bldg:Zone_VAVH_2D319_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D319 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:Zone_VAVH_2D324_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2394,26 +2351,23 @@ bldg:Zone_VAVH_2D324_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D324 ] .
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAVH_2D325_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2426,27 +2380,24 @@ bldg:Zone_VAVH_2D325_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D325 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAVH_2D326_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2460,23 +2411,20 @@ bldg:Zone_VAVH_2D326_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVH_2D326 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ] .
@@ -2493,26 +2441,23 @@ bldg:Zone_VAVM_123_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAVM_123 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAV_100_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2529,23 +2474,20 @@ bldg:Zone_VAV_100_ZN_T a bts:Entity ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_100 ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ] .
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAV_104_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2558,27 +2500,24 @@ bldg:Zone_VAV_104_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_104 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:Zone_VAV_105_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2591,27 +2530,24 @@ bldg:Zone_VAV_105_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_105 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ] .
 
 bldg:Zone_VAV_107_ZN_T a bts:Entity ;
     rdfs:label "SpaceTemp" ;
@@ -2625,26 +2561,23 @@ bldg:Zone_VAV_107_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_107 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:Zone_VAV_107_ZN_T_2 a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2658,26 +2591,23 @@ bldg:Zone_VAV_107_ZN_T_2 a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_107 ],
-        [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAV_111_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2690,27 +2620,24 @@ bldg:Zone_VAV_111_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_111 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:Zone_VAV_116_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2724,26 +2651,23 @@ bldg:Zone_VAV_116_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_116 ],
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAV_120_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2757,11 +2681,14 @@ bldg:Zone_VAV_120_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
@@ -2769,14 +2696,8 @@ bldg:Zone_VAV_120_ZN_T a bts:Entity ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_120 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:Zone_VAV_121_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2789,24 +2710,21 @@ bldg:Zone_VAV_121_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_121 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ] .
@@ -2823,26 +2741,23 @@ bldg:Zone_VAV_124_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_124 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_1 ] .
 
 bldg:Zone_VAV_2D301_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2856,26 +2771,23 @@ bldg:Zone_VAV_2D301_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D301 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ] .
 
 bldg:Zone_VAV_2D303_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2888,24 +2800,21 @@ bldg:Zone_VAV_2D303_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D303 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ] .
@@ -2922,26 +2831,23 @@ bldg:Zone_VAV_2D304_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D304 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:Zone_VAV_2D305_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2954,7 +2860,13 @@ bldg:Zone_VAV_2D305_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
@@ -2964,17 +2876,8 @@ bldg:Zone_VAV_2D305_ZN_T a bts:Entity ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D305 ],
-        [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:Zone_VAV_2D307_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -2990,24 +2893,21 @@ bldg:Zone_VAV_2D307_ZN_T a bts:Entity ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D307 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:Zone_VAV_2D308_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3024,8 +2924,11 @@ bldg:Zone_VAV_2D308_ZN_T a bts:Entity ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
@@ -3033,14 +2936,8 @@ bldg:Zone_VAV_2D308_ZN_T a bts:Entity ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D308 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:Zone_VAV_2D309_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3053,27 +2950,24 @@ bldg:Zone_VAV_2D309_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D309 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagValue "America/Chicago" ] .
 
 bldg:Zone_VAV_2D310_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3086,27 +2980,24 @@ bldg:Zone_VAV_2D310_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D310 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ] .
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAV_2D312_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3120,26 +3011,23 @@ bldg:Zone_VAV_2D312_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D312 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
-            bts:tagValue "°F" ] .
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ] .
 
 bldg:Zone_VAV_2D314_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3161,18 +3049,15 @@ bldg:Zone_VAV_2D314_ZN_T a bts:Entity ;
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D314 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue "Number" ] .
 
 bldg:Zone_VAV_2D315_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3186,26 +3071,23 @@ bldg:Zone_VAV_2D315_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D315 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAV_2D317_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3218,27 +3100,24 @@ bldg:Zone_VAV_2D317_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D317 ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAV_2D318_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3251,27 +3130,24 @@ bldg:Zone_VAV_2D318_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D318 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAV_2D320_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3284,24 +3160,21 @@ bldg:Zone_VAV_2D320_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D320 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ] .
@@ -3317,27 +3190,24 @@ bldg:Zone_VAV_2D321_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D321 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAV_2D322_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3350,27 +3220,24 @@ bldg:Zone_VAV_2D322_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D322 ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ] .
 
 bldg:Zone_VAV_2D323_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3383,9 +3250,12 @@ bldg:Zone_VAV_2D323_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D323 ],
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
@@ -3393,17 +3263,11 @@ bldg:Zone_VAV_2D323_ZN_T a bts:Entity ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ] .
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:Zone_VAV_2D327_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3416,24 +3280,21 @@ bldg:Zone_VAV_2D327_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D327 ],
-        [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "kind" ;
             bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ] .
@@ -3449,27 +3310,24 @@ bldg:Zone_VAV_2D328_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
         [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
         [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D328 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAV_2D329_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3483,26 +3341,23 @@ bldg:Zone_VAV_2D329_ZN_T a bts:Entity ;
         "temp",
         "zone" ;
     bts:hasHaystackTag [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D329 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagValue bldg:Building_50 ] .
 
 bldg:Zone_VAV_2D330_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3515,27 +3370,24 @@ bldg:Zone_VAV_2D330_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
             bts:tagName "equipRef" ;
             bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D330 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "tz" ;
-            bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "hisMode" ;
-            bts:tagValue "sampled" ],
         [ bts:tagKind "Str" ;
             bts:tagName "unit" ;
             bts:tagValue "°F" ],
         [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ] .
+            bts:tagName "tz" ;
+            bts:tagValue "America/Chicago" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "siteRef" ;
+            bts:tagValue bldg:Building_50 ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "hisMode" ;
+            bts:tagValue "sampled" ] .
 
 bldg:Zone_VAV_2D331_ZN_T a bts:Entity ;
     rdfs:label "bld_100_BOILERS_PUMPS SpaceTemp" ;
@@ -3548,621 +3400,24 @@ bldg:Zone_VAV_2D331_ZN_T a bts:Entity ;
         "sensor",
         "temp",
         "zone" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Zone_VAV_2D331 ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "unit" ;
-            bts:tagValue "°F" ],
-        [ bts:tagKind "Str" ;
+    bts:hasHaystackTag [ bts:tagKind "Str" ;
             bts:tagName "tz" ;
             bts:tagValue "America/Chicago" ],
-        [ bts:tagKind "Str" ;
-            bts:tagName "kind" ;
-            bts:tagValue "Number" ],
+        [ bts:tagKind "Ref" ;
+            bts:tagName "equipRef" ;
+            bts:tagValue bldg:AHU_2 ],
         [ bts:tagKind "Str" ;
             bts:tagName "hisMode" ;
             bts:tagValue "sampled" ],
         [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
-
-bldg:AHU_1_CHW_Valve a bts:Entity ;
-    rdfs:label "CHW Valve" ;
-    bts:hasHaystackMarker "equip",
-        "valve" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
             bts:tagName "siteRef" ;
             bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ] .
-
-bldg:AHU_1_EA_Damper a bts:Entity ;
-    rdfs:label "Exhaust Air Damper" ;
-    bts:hasHaystackMarker "damper",
-        "equip" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ] .
-
-bldg:AHU_2_CHW_Valve a bts:Entity ;
-    rdfs:label "CHW Valve" ;
-    bts:hasHaystackMarker "equip",
-        "valve" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
-
-bldg:AHU_2_EA_Damper a bts:Entity ;
-    rdfs:label "Exhaust Air Damper" ;
-    bts:hasHaystackMarker "damper",
-        "equip" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ] .
-
-bldg:Floor_2 a bts:Entity ;
-    rdfs:label "Second Floor" ;
-    bts:hasHaystackMarker "floor",
-        "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_AHU_1 a bts:Entity ;
-    rdfs:label "Zone AHU 1" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVFC_125 a bts:Entity ;
-    rdfs:label "Zone VAVFC 125" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVHM_110 a bts:Entity ;
-    rdfs:label "Zone VAVHM 110" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_102 a bts:Entity ;
-    rdfs:label "Zone VAVH 102" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ] .
-
-bldg:Zone_VAVH_122 a bts:Entity ;
-    rdfs:label "Zone VAVH 122" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_2D302 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D302" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_2D306 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D306" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_2D311 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D311" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_2D313 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D313" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAVH_2D316 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D316" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAVH_2D319 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D319" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_2D324 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D324" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAVH_2D325 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D325" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVH_2D326 a bts:Entity ;
-    rdfs:label "Zone VAVH 2D326" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAVM_123 a bts:Entity ;
-    rdfs:label "Zone VAVM 123" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ] .
-
-bldg:Zone_VAV_100 a bts:Entity ;
-    rdfs:label "Zone VAV 100" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_104 a bts:Entity ;
-    rdfs:label "Zone VAV 104" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ] .
-
-bldg:Zone_VAV_105 a bts:Entity ;
-    rdfs:label "Zone VAV 105" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ] .
-
-bldg:Zone_VAV_111 a bts:Entity ;
-    rdfs:label "Zone VAV 111" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ] .
-
-bldg:Zone_VAV_116 a bts:Entity ;
-    rdfs:label "Zone VAV 116" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_120 a bts:Entity ;
-    rdfs:label "Zone VAV 120" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_121 a bts:Entity ;
-    rdfs:label "Zone VAV 121" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_124 a bts:Entity ;
-    rdfs:label "Zone VAV 124" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ] .
-
-bldg:Zone_VAV_2D301 a bts:Entity ;
-    rdfs:label "Zone VAV 2D301" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D303 a bts:Entity ;
-    rdfs:label "Zone VAV 2D303" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D304 a bts:Entity ;
-    rdfs:label "Zone VAV 2D304" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D305 a bts:Entity ;
-    rdfs:label "Zone VAV 2D305" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D307 a bts:Entity ;
-    rdfs:label "Zone VAV 2D307" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D308 a bts:Entity ;
-    rdfs:label "Zone VAV 2D308" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D309 a bts:Entity ;
-    rdfs:label "Zone VAV 2D309" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D310 a bts:Entity ;
-    rdfs:label "Zone VAV 2D310" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D312 a bts:Entity ;
-    rdfs:label "Zone VAV 2D312" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D314 a bts:Entity ;
-    rdfs:label "Zone VAV 2D314" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D315 a bts:Entity ;
-    rdfs:label "Zone VAV 2D315" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D317 a bts:Entity ;
-    rdfs:label "Zone VAV 2D317" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D318 a bts:Entity ;
-    rdfs:label "Zone VAV 2D318" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D320 a bts:Entity ;
-    rdfs:label "Zone VAV 2D320" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D321 a bts:Entity ;
-    rdfs:label "Zone VAV 2D321" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D322 a bts:Entity ;
-    rdfs:label "Zone VAV 2D322" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D323 a bts:Entity ;
-    rdfs:label "Zone VAV 2D323" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D327 a bts:Entity ;
-    rdfs:label "Zone VAV 2D327" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D328 a bts:Entity ;
-    rdfs:label "Zone VAV 2D328" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D329 a bts:Entity ;
-    rdfs:label "Zone VAV 2D329" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_2D330 a bts:Entity ;
-    rdfs:label "Zone VAV 2D330" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:Zone_VAV_2D331 a bts:Entity ;
-    rdfs:label "Zone VAV 2D331" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_3 ] .
-
-bldg:AHU_1_OA_Damper a bts:Entity ;
-    rdfs:label "Outside Air Damper" ;
-    bts:hasHaystackMarker "damper",
-        "equip" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:AHU_2_OA_Damper a bts:Entity ;
-    rdfs:label "Outside Air Damper" ;
-    bts:hasHaystackMarker "damper",
-        "equip" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Zone_VAV_107 a bts:Entity ;
-    rdfs:label "Zone VAV 107" ;
-    bts:hasHaystackMarker "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "spaceRef" ;
-            bts:tagValue bldg:Floor_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:AHU_1_Return_Fan a bts:Entity ;
-    rdfs:label "Return Fan" ;
-    bts:hasHaystackMarker "equip",
-        "fan" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:AHU_1_Supply_Fan a bts:Entity ;
-    rdfs:label "Supply Fan" ;
-    bts:hasHaystackMarker "equip",
-        "fan" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_1 ] .
-
-bldg:AHU_2_Return_Fan a bts:Entity ;
-    rdfs:label "Return Fan" ;
-    bts:hasHaystackMarker "equip",
-        "fan" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:AHU_2_Supply_Fan a bts:Entity ;
-    rdfs:label "Supply Fan" ;
-    bts:hasHaystackMarker "equip",
-        "fan" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "equipRef" ;
-            bts:tagValue bldg:AHU_2 ],
-        [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Floor_1 a bts:Entity ;
-    rdfs:label "First Floor" ;
-    bts:hasHaystackMarker "floor",
-        "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
-
-bldg:Floor_3 a bts:Entity ;
-    rdfs:label "Third Floor" ;
-    bts:hasHaystackMarker "floor",
-        "space" ;
-    bts:hasHaystackTag [ bts:tagKind "Ref" ;
-            bts:tagName "siteRef" ;
-            bts:tagValue bldg:Building_50 ] .
+        [ bts:tagKind "Str" ;
+            bts:tagName "unit" ;
+            bts:tagValue "°F" ],
+        [ bts:tagKind "Str" ;
+            bts:tagName "kind" ;
+            bts:tagValue "Number" ] .
 
 bldg:AHU_1 a bts:Entity ;
     rdfs:label "AHU_1" ;

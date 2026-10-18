@@ -204,3 +204,23 @@ def catalog_for_level(level: str, *, path: str | None = None) -> dict[str, str]:
 
 def corpus_for_level(level: str, *, path: str | None = None) -> list[str]:
     return sorted(catalog_for_level(level, path=path))
+
+
+@lru_cache(maxsize=1)
+def unit_choices(*, path: str | None = None) -> tuple[str, ...]:
+    """Haystack unit symbols from the vendored unit enum (editor dropdown)."""
+    enum = str(load_defs_index(path).get("unit", {}).get("enum", ""))
+    symbols: list[str] = []
+    for line in enum.splitlines():
+        match = re.match(r"- (.+?): ", line)
+        if match:
+            symbols.append(match.group(1).strip())
+    return tuple(sorted(set(symbols), key=lambda s: (s.casefold(), s)))
+
+
+@lru_cache(maxsize=1)
+def timezone_choices() -> tuple[str, ...]:
+    """IANA timezone keys for the editor dropdown."""
+    from zoneinfo import available_timezones
+
+    return tuple(sorted(available_timezones()))

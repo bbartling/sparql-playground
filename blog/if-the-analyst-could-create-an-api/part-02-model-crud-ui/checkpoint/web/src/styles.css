@@ -204,7 +204,8 @@ button:disabled { cursor: default; opacity: 0.45; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-left: 8px;
+  margin-left: auto;
+  margin-top: 6px;
   flex-shrink: 0;
 }
 .coverage-chip.green { background: var(--received); }
@@ -326,10 +327,12 @@ button:disabled { cursor: default; opacity: 0.45; }
 
 .tree-row {
   width: 100%;
-  min-height: 42px;
+  min-height: 48px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  padding-top: 6px;
+  padding-bottom: 6px;
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -351,8 +354,54 @@ button:disabled { cursor: default; opacity: 0.45; }
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  justify-content: flex-end;
-  max-width: 46%;
+  justify-content: flex-start;
+  max-width: 100%;
+}
+
+.tag-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+  max-width: 100%;
+}
+
+.hs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 160px;
+  padding: 2px 6px 2px 4px;
+  border-radius: 4px 8px 8px 4px;
+  font: 650 9px/1.2 var(--font-mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hs-tag-icon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.hs-tag-marker {
+  background: #d8f0eb;
+  color: #0b5f55;
+  border: 1px solid #9ed5cb;
+}
+
+.hs-tag-value {
+  background: #e7eef8;
+  color: #2a4f7a;
+  border: 1px solid #b7cfe3;
+}
+
+.hs-tag-empty {
+  background: var(--surface-2);
+  color: #7b8794;
+  border: 1px dashed var(--line);
 }
 
 .field-label {
@@ -409,6 +458,8 @@ button:disabled { cursor: default; opacity: 0.45; }
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
 }
 .node-name {
   font-size: 13px;
@@ -1022,8 +1073,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .status-bar { flex-wrap: wrap; gap: 5px 8px; margin: 10px 10px 0; font-size: 12px; }
   .status-bar > span:last-of-type { width: 100%; padding-left: 18px; font-size: 11px; }
   .panel-head { padding: 14px 10px 10px; }
-  .pill-stack { max-width: 35%; max-height: 42px; overflow: hidden; }
-  .pill-stack .pill { padding: 3px 5px; font-size: 8px; }
+  .tag-stack { max-height: 36px; overflow: hidden; }
+  .hs-tag { max-width: 120px; font-size: 8px; }
   .node-name { font-size: 12px; }
   .tree-scroll { padding-left: 4px; padding-right: 4px; }
   .metadata-row { grid-template-columns: 91px minmax(0, 1fr) 20px; gap: 4px; }

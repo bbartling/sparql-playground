@@ -7,10 +7,10 @@ This checkpoint is a Haystack authoring UI over an RDF application model. The li
 | Entity | Required in this app profile | Recommended / conditional |
 |---|---|---|
 | Site / building | Explicit `site` marker; existing RDF identity and display name | Site `tz` recommended, required when referenced by a historized point; address and area are useful enrichment |
-| Equipment / part | Explicit `equip`; valid `siteRef` to an explicitly tagged site | Equipment subtype such as `ahu`/`fan`; `equipRef` when nesting equipment; optional `spaceRef` |
-| Floor / space | `space`; valid `siteRef` | Appropriate location marker such as `floor`; the legacy Brick hierarchy remains visible |
-| Point | `point`; exactly one `sensor`, `cmd`, `sp`, `synthetic`; `kind` (`Number`, `Bool`, `Str`); valid `siteRef` and `equipRef` | Numeric `unit`; `enum` for a string enumeration; descriptive subject/quantity markers |
-| Point with `his` | Point requirements plus valid `tz`, matching the referenced site's explicit timezone; `hisMode` | `hisMode` values come from vendored definitions: `sampled`, `cov`, `consumption`; only use `his` when history exists |
+| Equipment | Explicit `equip`; valid `siteRef` to an explicitly tagged site | Equipment subtype such as `ahu`; nest with `equipRef` **only when a part is intentional** |
+| Floor / space / part | **Optional — omit by default** | Add only when the operator asks; never invent floors/zones/parts to “look complete” |
+| Point | `point`; exactly one `sensor`, `cmd`, `sp`, `synthetic`; `kind` (`Number`, `Bool`, `Str`); valid `siteRef` and `equipRef` (usually the AHU) | Numeric `unit`; `enum` for string enumerations; subject/quantity markers only when useful |
+| Point with `his` | Point requirements plus valid `tz`, matching the referenced site's explicit timezone; `hisMode` | `hisMode` values: `sampled`, `cov`, `consumption`; only use `his` when history exists |
 
 Haystack tags have values as well as markers. `kind: "Number"`, `unit: "°F"`, and `siteRef: @Building_50` are not markers. `hisTotalized` is a marker. A numeric kind alone cannot tell whether a fan command is a percentage, frequency, or Boolean enable; inspect the source.
 
@@ -26,7 +26,7 @@ Parent status includes the parent's own issues and descendant issues. A complete
 
 Use **Edit**, then left-click any tree row to edit its display name, markers, and typed metadata. A display-name change preserves the stable entity ID and timeseries ID. Keep Edit focused on authoring; inspect saved validation through the single validation surface when needed. Guesses are proposals to review and explicitly add. They cannot infer timezone, engineering units, or a point's actual capabilities from an ambiguous BAS name.
 
-Use the building with its own street address as the site for a new Haystack-native model. The tree recursively includes sites, buildings, floors, spaces, equipment, parts, and every visible point. Unattached records remain visible as roots instead of disappearing. The current `Site → Building` structure is inherited from the Brick tutorial. Saving a valid point `equipRef` updates its Brick ownership and inverse relationship together, so the point moves in the tree and SPARQL consistently. Equipment `siteRef` describes Haystack membership; it does not relocate the legacy physical site/building hierarchy. Reworking that hierarchy requires an explicit topology decision for the next part. Avoid treating campus and building as two independent Haystack sites for the same physical facility; choose the correct site record and reference it consistently.
+Default seed topology is **flat**: one site → AHUs → points (no floors, zones, or parts). Unattached records remain visible as roots. Prefer a single site record with a real street address; do not invent a second campus/building site for the same facility. Points `equipRef` the AHU directly.
 
 ## Typed metadata API and RDF mapping
 
@@ -65,6 +65,16 @@ ORDER BY ?entity ?name
 ## AI agent boundary
 
 `POST /api/sparql` remains read-only. Agents discover markers, typed metadata, relationships, revision, and opaque timeseries references with SELECT/ASK/CONSTRUCT/DESCRIBE against the parsed graph. There is no filesystem/shell tool for agents, no Turtle text-search endpoint, and no raw-RDF grep. The fuzzy marker catalog matches BAS display labels only; it is not a graph query. Portable Turtle is an export/recovery artifact parsed and serialized with rdflib — never treated as a searchable string database.
+
+### Bare-minimum tagging (agents)
+
+Agents must keep the graph **lean**:
+
+1. Do **not** create floor, space, zone, or part entities unless the human explicitly requests them.
+2. Attach points to the AHU (`equipRef` + `siteRef`); do not invent nesting for dampers/fans/valves.
+3. Markers: `point` + exactly one function (`sensor`/`cmd`/`sp`/`synthetic`); add `his` only for historized points. Skip long decorative marker lists unless asked.
+4. Value tags: `kind`, `siteRef`, `equipRef`; add `tz` / `hisMode` / `unit` only when the profile requires them or the source clearly provides them.
+5. Prefer editing labels and fixing missing required tags over expanding topology.
 
 ### Scoped SPARQL plan / apply (A19)
 

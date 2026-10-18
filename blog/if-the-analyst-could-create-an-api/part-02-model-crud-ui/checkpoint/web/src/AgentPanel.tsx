@@ -142,7 +142,8 @@ export function AgentPanel(props: {
         <div className="actions-label">Scope + UPDATE</div>
         <p className="empty-hint">
           Ground <code>DELETE DATA</code> / <code>INSERT DATA</code> only. Scope locks which entity
-          IRIs may change. Timeseries refs and ontology triples are rejected.
+          IRIs may change. Timeseries refs and ontology triples are rejected. Tag bare-minimum:
+          no floors/zones/parts unless asked; points hang on the AHU; skip decorative marker piles.
         </p>
         <label className="field-label">
           Scope (local ids or IRIs)

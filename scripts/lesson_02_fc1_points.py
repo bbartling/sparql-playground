@@ -42,15 +42,8 @@ SELECT ?role ?point ?label ?timeseriesId WHERE {
   ?point bts:hasHaystackMarker "point" .
   ?point bts:hasHaystackTag ?roleTag .
   ?roleTag bts:tagName "ofddRole" ; bts:tagValue ?role .
-  {
-    ?point bts:hasHaystackTag ?direct .
-    ?direct bts:tagName "equipRef" ; bts:tagValue ?ahu .
-  } UNION {
-    ?point bts:hasHaystackTag ?partRef .
-    ?partRef bts:tagName "equipRef" ; bts:tagValue ?part .
-    ?part bts:hasHaystackTag ?parentTag .
-    ?parentTag bts:tagName "equipRef" ; bts:tagValue ?ahu .
-  }
+  ?point bts:hasHaystackTag ?direct .
+  ?direct bts:tagName "equipRef" ; bts:tagValue ?ahu .
   OPTIONAL { ?point rdfs:label ?label }
   OPTIONAL {
     ?point ref:hasExternalReference ?ref .

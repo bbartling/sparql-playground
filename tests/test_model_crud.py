@@ -23,6 +23,19 @@ def test_tree_and_mutations_gate(settings: Settings):
         assert denied.status_code == 403
 
 
+def test_haystack_enums_for_editor_dropdowns(settings: Settings):
+    bootstrap_all(settings)
+    app = create_app(settings)
+    with TestClient(app) as client:
+        enums = client.get("/api/model/haystack/enums")
+        assert enums.status_code == 200
+        body = enums.json()
+        assert body["ok"] is True
+        assert "°F" in body["units"]
+        assert "%" in body["units"]
+        assert "America/Chicago" in body["timezones"]
+
+
 def test_crud_preserves_timeseries_refs(settings: Settings):
     settings.allow_mutations = True
     bootstrap_all(settings)

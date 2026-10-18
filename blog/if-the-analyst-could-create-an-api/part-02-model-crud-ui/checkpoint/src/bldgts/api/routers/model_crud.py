@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from bldgts.api.deps import AppState, get_app_state
 from bldgts.graph.validate import run_rdf_integrity
-from bldgts.haystack.defs import catalog_for_level
+from bldgts.haystack.defs import catalog_for_level, timezone_choices, unit_choices
 from bldgts.haystack.metadata import PROFILE, PROFILE_LIMITS
 from bldgts.haystack.suggest import guess_marker_bundle, suggest_markers
 from bldgts.services import model_crud as crud
@@ -14,6 +14,30 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/model", tags=["model-crud"])
+
+# Prefer common HVAC units at the top of the editor dropdown.
+_UNIT_PRIORITY = (
+    "%",
+    "%RH",
+    "°F",
+    "°C",
+    "K",
+    "inH₂O",
+    "Pa",
+    "kPa",
+    "psi",
+    "cfm",
+    "m³/h",
+    "L/s",
+    "gal/min",
+    "kW",
+    "W",
+    "V",
+    "A",
+    "Hz",
+    "rpm",
+    "ppm",
+)
 
 
 class EquipBody(BaseModel):
@@ -108,6 +132,18 @@ def haystack_catalog(level: str = Query(default="point")) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True, "level": level, "catalog": catalog}
+
+
+@router.get("/haystack/enums", summary="Unit and timezone choices for metadata editors")
+def haystack_enums() -> dict[str, Any]:
+    units = list(unit_choices())
+    preferred = [u for u in _UNIT_PRIORITY if u in units]
+    rest = [u for u in units if u not in preferred]
+    return {
+        "ok": True,
+        "units": preferred + rest,
+        "timezones": list(timezone_choices()),
+    }
 
 
 @router.get("/haystack/suggest", summary="Closest Haystack markers for a name")

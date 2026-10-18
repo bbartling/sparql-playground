@@ -100,16 +100,8 @@ def _point_markers(brick_class: str, point_id: str) -> list[str]:
     return markers
 
 
-def _zone_for_point(point_id: str, owner_id: str) -> str | None:
-    if owner_id.startswith("Zone_"):
-        return owner_id
-    if point_id.startswith("Zone_") and "_ZN_" in point_id:
-        # Zone_VAV_100_ZN_T → Zone_VAV_100
-        return point_id.rsplit("_ZN_", 1)[0]
-    return None
-
-
 def _serving_ahu(owner_id: str, point_id: str) -> str:
+    """Collapse CSV part/zone owners onto the parent AHU (flat tree)."""
     if owner_id.startswith("AHU_1") or point_id.startswith("AHU_1"):
         return "AHU_1"
     if owner_id.startswith("AHU_2") or point_id.startswith("AHU_2"):
@@ -139,15 +131,8 @@ def _add_points_csv(g: Graph, points_csv: Path, db_iri) -> None:
             add_tag(g, point_iri, "hisMode", "Str", "sampled")
             if unit_raw and kind == "Number":
                 add_tag(g, point_iri, "unit", "Str", _UNIT_MAP.get(unit_raw, unit_raw))
-            # Ownership: equipment/part owner is equipRef; zone points also get spaceRef.
-            equip_owner = owner_id
-            zone = _zone_for_point(point_id, owner_id)
-            if zone:
-                add_tag(g, point_iri, "spaceRef", "Ref", zone)
-                equip_owner = _serving_ahu(owner_id, point_id)
-            elif owner_id.startswith("Zone_"):
-                equip_owner = _serving_ahu(owner_id, point_id)
-            add_tag(g, point_iri, "equipRef", "Ref", equip_owner)
+            # Flat ownership: every point equipRefs its AHU (no parts / spaceRef).
+            add_tag(g, point_iri, "equipRef", "Ref", _serving_ahu(owner_id, point_id))
             role = (row.get("openfdd_role") or "").strip()
             if role:
                 add_tag(g, point_iri, "ofddRole", "Str", role)
@@ -157,7 +142,6 @@ def _add_points_csv(g: Graph, points_csv: Path, db_iri) -> None:
             g.add((ref, RDF.type, REF.TimeseriesReference))
             g.add((ref, REF.hasTimeseriesId, Literal(row["timeseries_id"])))
             g.add((ref, REF.storedAt, db_iri))
-
 
 def render_model(
     site_path: Path | None,

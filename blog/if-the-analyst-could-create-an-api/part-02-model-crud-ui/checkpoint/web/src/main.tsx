@@ -70,9 +70,22 @@ function hasChanges(menu: TagMenu): boolean {
     [...menu.selected].sort().join('|') !== [...(menu.node.markers ?? [])].sort().join('|') ||
     JSON.stringify(menu.metadata) !== JSON.stringify(draftMetadata(menu.node.metadata))
 }
-function MarkerPills({ markers }: { markers: string[] }) {
-  if (!markers.length) return <span className="pill none">no markers</span>
-  return <>{markers.map((marker) => <span key={marker} className="pill custom">{marker}</span>)}</>
+function HsTagIcon() {
+  return <svg className="hs-tag-icon" viewBox="0 0 12 12" aria-hidden focusable="false">
+    <path d="M1.2 6.2 5.8 1.6h4.5v4.5L5.8 10.8Z" fill="currentColor" opacity=".22" />
+    <path d="M1.2 6.2 5.8 1.6h4.5v4.5L5.8 10.8Z" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+    <circle cx="8.2" cy="3.8" r="0.9" fill="currentColor" />
+  </svg>
+}
+function NodeTags({ markers, metadata }: { markers: string[]; metadata?: Metadata }) {
+  const values = Object.entries(metadata ?? {}).filter(([key]) => key !== 'dis')
+  if (!markers.length && !values.length) return <span className="hs-tag hs-tag-empty">untagged</span>
+  return <span className="tag-stack">
+    {markers.map((marker) => <span key={`m-${marker}`} className="hs-tag hs-tag-marker" title={`marker · ${marker}`}>
+      <HsTagIcon />{marker}</span>)}
+    {values.map(([name, item]) => <span key={`v-${name}`} className="hs-tag hs-tag-value" title={`value tag · ${name}`}>
+      <HsTagIcon />{name}:{String(item.value)}</span>)}
+  </span>
 }
 function DeepTree(props: {
   node: TreeNode; depth: number; editing: boolean; activeId: string | null; expanded: Set<string>
@@ -86,19 +99,23 @@ function DeepTree(props: {
     className={['tree-row', node.node_type === 'point' ? 'item' : 'branch', editing ? 'editable' : '',
       props.activeId === node.id ? 'custom-target' : ''].filter(Boolean).join(' ')}
     style={{ paddingLeft: `${10 + depth * 18}px` }} aria-expanded={hasChildren ? isOpen : undefined}
-    aria-haspopup={editing || !hasChildren ? 'dialog' : undefined}
-    title={editing ? `Edit or inspect ${node.name}` : hasChildren ? `Expand or collapse ${node.name}` : `Inspect ${node.name}`}
-    onClick={(event) => { if (editing || !hasChildren) props.onNodeClick(node, event); else props.onToggle(node.id) }}>
+    aria-haspopup={editing ? 'dialog' : undefined}
+    title={editing ? `Edit or inspect ${node.name}` : hasChildren ? `Expand or collapse ${node.name}` : `Turn on Edit, then click to open ${node.name}`}
+    onClick={(event) => { if (editing) props.onNodeClick(node, event); else if (hasChildren) props.onToggle(node.id) }}>
     <span className={`chevron ${hasChildren ? '' : 'placeholder'} ${editing ? 'locked' : ''}`} aria-hidden
       style={{ transform: hasChildren && isOpen ? 'rotate(90deg)' : undefined }}>{hasChildren ? '▸' : '·'}</span>
-    <span className="node-copy"><span className="node-name">{node.name}</span><span className="node-meta">{node.node_type}</span></span>
-    <span className="pill-stack"><MarkerPills markers={node.markers ?? []} />
-      {Object.keys(node.metadata ?? {}).filter((key) => key !== 'dis').length > 0 &&
-        <span className="pill none">+{Object.keys(node.metadata ?? {}).filter((key) => key !== 'dis').length} values</span>}</span>
+    <span className="node-copy">
+      <span className="node-name">{node.name}</span>
+      <span className="node-meta">{node.node_type}</span>
+      <NodeTags markers={node.markers ?? []} metadata={node.metadata} />
+    </span>
     {!editing && coverage && <span className={`coverage-chip ${coverage}`} role="img" aria-label={`${coverage} model checks${hasChildren ? ', includes descendants' : ''}`} />}
   </button>{hasChildren && isOpen && node.children.map((child) => <DeepTree key={child.iri} {...props} node={child} depth={depth + 1} />)}</div>
 }
-function MetadataInput(props: { tag: string; item: DraftValue; records: TreeNode[]; disabled: boolean; onChange: (value: string | boolean) => void }) {
+function MetadataInput(props: {
+  tag: string; item: DraftValue; records: TreeNode[]; disabled: boolean
+  units: string[]; timezones: string[]; onChange: (value: string | boolean) => void
+}) {
   const { tag, item, disabled, onChange } = props
   const common = { 'aria-label': `${tag} value`, disabled }
   if (item.kind === 'Bool') return <select {...common} value={String(item.value)} onChange={(event) => onChange(event.target.value === 'true')}>
@@ -116,10 +133,16 @@ function MetadataInput(props: { tag: string; item: DraftValue; records: TreeNode
       {!records.some((node) => node.id === String(item.value)) && item.value && <option value={String(item.value)}>{String(item.value)} (unresolved)</option>}
       {records.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.id}</option>)}</select>
   }
-  const choices = tag === 'kind' ? ['Number', 'Bool', 'Str'] : tag === 'hisMode' ? ['sampled', 'cov', 'consumption'] : null
+  const choices = tag === 'kind' ? ['Number', 'Bool', 'Str']
+    : tag === 'hisMode' ? ['sampled', 'cov', 'consumption']
+      : tag === 'unit' && props.units.length ? props.units
+        : tag === 'tz' && props.timezones.length ? props.timezones
+          : null
   if (choices) return <select {...common} value={String(item.value)} onChange={(event) => onChange(event.target.value)}>
-    <option value="">Choose…</option>{item.value && !choices.includes(String(item.value)) && <option value={String(item.value)}>{String(item.value)}</option>}
-    {choices.map((choice) => <option key={choice}>{choice}</option>)}</select>
+    <option value="">Choose…</option>
+    {item.value && !choices.includes(String(item.value)) && <option value={String(item.value)}>{String(item.value)}</option>}
+    {choices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+  </select>
   return <input {...common} type={item.kind === 'Number' ? 'number' : 'text'} step={item.kind === 'Number' ? 'any' : undefined}
     placeholder={fieldHelp[tag]} value={String(item.value)} onChange={(event) => onChange(event.target.value)} />
 }
@@ -143,6 +166,8 @@ function App() {
   const [savedName, setSavedName] = useState('')
   const [validationProfile, setValidationProfile] = useState('Application Haystack core profile')
   const [validationLimits, setValidationLimits] = useState<string[]>([])
+  const [units, setUnits] = useState<string[]>([])
+  const [timezones, setTimezones] = useState<string[]>([])
   const markerQueryRef = useRef(markerQuery)
   markerQueryRef.current = markerQuery
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -175,6 +200,11 @@ function App() {
   }
   const closeMenu = () => { if (!busyState.current) { setMenu(null); triggerRef.current?.focus() } }
   useEffect(() => { loadTree().catch((err: Error) => setError(err.message)) }, [])
+  useEffect(() => {
+    api<{ units: string[]; timezones: string[] }>('/api/model/haystack/enums')
+      .then((body) => { setUnits(body.units ?? []); setTimezones(body.timezones ?? []) })
+      .catch(() => { /* dropdowns fall back to free text via custom value option */ })
+  }, [])
   useEffect(() => { if (tab === 'rdf') void loadTtl() }, [tab, revision])
   useEffect(() => {
     if (!menu) return
@@ -299,7 +329,7 @@ function App() {
   const showValidation = !editing || !!savedName
   return <div className="app">
     <header className="topbar"><div className="brand"><div className="brand-mark">HS</div>
-      <div className="brand-copy"><h1>Haystack model editor</h1><p>Edit · click any record · review tags and values · save</p></div></div>
+      <div className="brand-copy"><h1>Haystack model editor</h1><p>Edit mode · click a record · review tags and values · save</p></div></div>
       <div className="top-actions"><span className="pill none">rev {revision}</span><span className={allowMutations ? 'pill received' : 'pill none'}>{allowMutations ? 'mutations on' : 'read-only'}</span></div>
     </header>
     <nav className="tabs" aria-label="Model views">{([['floor', 'Model'], ['sparql', 'SPARQL'], ['agent', 'Agent'], ['rdf', 'RDF']] as const).map(([id, label]) =>
@@ -323,7 +353,7 @@ function App() {
                 <strong>{issue.severity === 'error' ? 'Required' : 'Recommended'} · {issue.tag}</strong><span>{issue.message}</span></li>)}</ul></details>)}
             {!coverage.errors && !coverage.warnings && <p>No errors or recommendations from the current checks.</p>}
             {!!validationLimits.length && <details><summary>What these checks cover</summary><ul>{validationLimits.map((limit) => <li key={limit}>{limit}</li>)}</ul></details>}</div>}</>}
-        <div className="panel-head"><div><h2>Building tree</h2><span>{editing ? `Locked · click any record to ${allowMutations ? 'edit' : 'inspect'}` : `Scroll the tree · ${allowMutations ? 'Edit' : 'Inspect'} any record`}</span></div>
+        <div className="panel-head"><div><h2>Building tree</h2><span>{editing ? `Edit mode on · click any record to ${allowMutations ? 'edit' : 'inspect'}` : `Browse the tree · press ${allowMutations ? 'Edit' : 'Inspect'} before opening a record`}</span></div>
           <div className="edit-controls"><button type="button" className="ghost" disabled={busy || loading} onClick={() => void loadTree().catch((err: Error) => setError(err.message))}>{loading ? 'Loading…' : 'Refresh'}</button>
             <button type="button" className={editing ? 'ghost' : 'primary-sm'} disabled={busy || !tree.length}
               onClick={() => { setExpanded(branchIds(tree)); setEditing(!editing); setMenu(null); setSavedName(''); setValidationOpen(false) }}>{editing ? 'Done' : allowMutations ? 'Edit' : 'Inspect'}</button></div></div>
@@ -355,7 +385,8 @@ function App() {
             <div className="metadata-label"><label htmlFor={`metadata-${tag}`}>{tag}</label><select id={`metadata-${tag}`} aria-label={`${tag} value type`} value={item.kind}
               disabled={!canEdit || busy || !!metadataKinds[tag]} onChange={(event) => updateMetadata(tag, { kind: event.target.value as ValueKind, value: event.target.value === 'Bool' ? false : '' })}>
               {(['Str', 'Ref', 'Number', 'Bool'] as const).map((kind) => <option key={kind}>{kind}</option>)}</select></div>
-            <MetadataInput tag={tag} item={item} records={records} disabled={!canEdit || busy} onChange={(value) => updateMetadata(tag, { ...item, value })} />
+            <MetadataInput tag={tag} item={item} records={records} units={units} timezones={timezones}
+              disabled={!canEdit || busy} onChange={(value) => updateMetadata(tag, { ...item, value })} />
             {canEdit && <button type="button" className="remove-field" aria-label={`Remove metadata ${tag}`} disabled={busy} onClick={() => setMenu((current) => {
               if (!current) return current
               const next = { ...current.metadata }; delete next[tag]; return { ...current, metadata: next }

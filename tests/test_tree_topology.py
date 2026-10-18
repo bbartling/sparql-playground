@@ -22,7 +22,7 @@ def tree(model):
     return build_tree(service)
 
 
-def test_full_seed_exposes_every_point_floor_and_space_once(project_root):
+def test_full_seed_exposes_flat_site_ahu_points_once(project_root):
     model = Graph().parse(project_root / "model/building_50.ttl", format="turtle")
     nodes = flatten(tree(model))
     counts = Counter(n["iri"] for n in nodes)
@@ -30,14 +30,9 @@ def test_full_seed_exposes_every_point_floor_and_space_once(project_root):
     shown = {n["iri"] for n in nodes if n["node_type"] == "point"}
     assert shown == expected
     assert all(count == 1 for count in counts.values())
-    floors = {str(s) for s, _, o in model.triples((None, BTS.hasHaystackMarker, Literal("floor")))}
-    assert {n["iri"] for n in nodes if n["node_type"] == "floor"} == floors
-    spaces = {
-        str(s)
-        for s, _, o in model.triples((None, BTS.hasHaystackMarker, Literal("space")))
-        if (s, BTS.hasHaystackMarker, Literal("floor")) not in model
-    }
-    assert spaces <= {n["iri"] for n in nodes if n["node_type"] == "space"}
+    # Flat seed: no floors / spaces / parts — only site → AHUs → points.
+    assert not any(n["node_type"] in {"floor", "space", "part"} for n in nodes)
+    assert {n["id"] for n in nodes if n["node_type"] == "equipment"} == {"AHU_1", "AHU_2"}
     assert sum(n["points_total"] for n in tree(model)) == len(expected)
 
 
