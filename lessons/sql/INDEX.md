@@ -26,7 +26,7 @@ The weekly challenges provide requirements and acceptance criteria without a wor
 
 SELECT, filters, NULL, sorting and summaries.
 
-Offline pack (Kindle: prefer EPUB): [week-01.epub](pdf/week-01.epub) · [week-01.pdf](pdf/week-01.pdf) · [rebuild](pdf/README.md).
+Offline pack: [week-01.pdf](pdf/week-01.pdf) · [rebuild](pdf/README.md).
 
 - [ ] [Day 01 — Open the SQL workbench](day01.md)
 - [ ] [Day 02 — Read tables and name the row](day02.md)
@@ -40,6 +40,8 @@ Offline pack (Kindle: prefer EPUB): [week-01.epub](pdf/week-01.epub) · [week-01
 
 Types, keys, relationships, joins and replay-safe inserts.
 
+Offline pack: [week-02.pdf](pdf/week-02.pdf).
+
 - [ ] [Day 08 — Choose a grain and a dependable key](day08.md)
 - [ ] [Day 09 — Create a small table with useful constraints](day09.md)
 - [ ] [Day 10 — Separate facts and enforce relationships](day10.md)
@@ -51,6 +53,8 @@ Types, keys, relationships, joins and replay-safe inserts.
 ### Week 3 — Make time explicit
 
 UTC, half-open windows, CTEs, gaps, coverage and pivots.
+
+Offline pack: [week-03.pdf](pdf/week-03.pdf).
 
 - [ ] [Day 15 — Query UTC instants with half-open windows](day15.md)
 - [ ] [Day 16 — Use CTEs to make query stages readable](day16.md)
@@ -64,6 +68,8 @@ UTC, half-open windows, CTEs, gaps, coverage and pivots.
 
 Transactions, parameters, migrations, roles and plans.
 
+Offline pack: [week-04.pdf](pdf/week-04.pdf).
+
 - [ ] [Day 22 — Observe commits, rollbacks, and a competing writer](day22.md)
 - [ ] [Day 23 — Bind query values with SQL PREPARE](day23.md)
 - [ ] [Day 24 — Change a schema with a reviewable migration](day24.md)
@@ -75,6 +81,8 @@ Transactions, parameters, migrations, roles and plans.
 ### Week 5 — Calculate runtime and energy
 
 Cadence, duration, power integration, weekly reports.
+
+Offline pack: [week-05.pdf](pdf/week-05.pdf).
 
 - [ ] [Day 29 — Measure quality before calculating performance](day29.md)
 - [ ] [Day 30 — Turn irregular samples into bounded intervals](day30.md)
@@ -88,6 +96,8 @@ Cadence, duration, power integration, weekly reports.
 
 Comfort, mixed air, weather, bins and engineering assumptions.
 
+Offline pack: [week-06.pdf](pdf/week-06.pdf).
+
 - [ ] [Day 36 — Choose the denominator for comfort percentage](day36.md)
 - [ ] [Day 37 — Use mixing mathematics with physical eligibility checks](day37.md)
 - [ ] [Day 38 — Keep BAS and web weather as separate sources](day38.md)
@@ -99,6 +109,8 @@ Comfort, mixed air, weather, bins and engineering assumptions.
 ### Week 7 — Build defensible fault detection
 
 Masks, applicability, startup, streaks, tuning and evidence.
+
+Offline pack: [week-07.pdf](pdf/week-07.pdf).
 
 - [ ] [Day 43 — Express a fault predicate without turning unknown into healthy](day43.md)
 - [ ] [Day 44 — Confirm consecutive candidates with gap-aware islands](day44.md)
@@ -112,6 +124,8 @@ Masks, applicability, startup, streaks, tuning and evidence.
 
 Brick equipment discovery and external timeseries references.
 
+Offline pack: [week-08.pdf](pdf/week-08.pdf).
+
 - [ ] [Day 50 — Read the small amount of RDF your SQL workflow needs](day50.md)
 - [ ] [Day 51 — Discover typed equipment with a small SELECT](day51.md)
 - [ ] [Day 52 — Follow point ownership through an equipment part tree](day52.md)
@@ -123,6 +137,8 @@ Brick equipment discovery and external timeseries references.
 ### Week 9 — Keep APIs and queries fast
 
 Plans, indexes, pagination, plot envelopes and concurrency.
+
+Offline pack: [week-09.pdf](pdf/week-09.pdf).
 
 - [ ] [Day 57 — Read an execution plan before adding an index](day57.md)
 - [ ] [Day 58 — Page history with a stable cursor](day58.md)
@@ -136,6 +152,8 @@ Plans, indexes, pagination, plot envelopes and concurrency.
 
 Chunks, aggregation, retention, backups and resource budgets.
 
+Offline pack: [week-10.pdf](pdf/week-10.pdf).
+
 - [ ] [Day 64 — Create a time-partitioned scratch hypertable](day64.md)
 - [ ] [Day 65 — Measure chunk pruning and time buckets](day65.md)
 - [ ] [Day 66 — Track continuous aggregate freshness](day66.md)
@@ -148,6 +166,8 @@ Chunks, aggregation, retention, backups and resource budgets.
 
 Independent answers, mutations, scope, replay and stress.
 
+Offline pack: [week-11.pdf](pdf/week-11.pdf).
+
 - [ ] [Day 71 — Assert known answers and test the tests](day71.md)
 - [ ] [Day 72 — Test scope, constraints and row security negatively](day72.md)
 - [ ] [Day 73 — Observe transactions, locks and bounded deadlock recovery](day73.md)
@@ -159,6 +179,8 @@ Independent answers, mutations, scope, replay and stress.
 ### Week 12 — Read Open-FDD with confidence
 
 77-rule catalog, 18 analytics queries and a reviewed capstone.
+
+Offline pack: [week-12.pdf](pdf/week-12.pdf).
 
 - [ ] [Day 78 — Trace the production SQL input boundary](day78.md)
 - [ ] [Day 79 — Inventory all 77 rules and the separate analytics pack](day79.md)

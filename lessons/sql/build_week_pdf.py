@@ -2,15 +2,16 @@
 """Build a printable / Kindle pack for one course week.
 
 Concatenates that week's daily lessons (challenge day last), appends the matching
-SOURCES.md section, then writes Markdown, PDF, and EPUB under lessons/sql/pdf/.
+SOURCES.md section, then writes PDF (and optionally Markdown + EPUB) under
+``lessons/sql/pdf/``.
 
-Requires a ``pandoc`` binary on PATH (or set PANDOC). PDF uses WeasyPrint via
-``uv run --with weasyprint`` when pandoc's weasyprint engine is unavailable.
+Requires a ``pandoc`` binary on PATH (or set PANDOC). PDF uses WeasyPrint when
+available; otherwise headless Chrome/Edge on Windows.
 
 Examples::
 
-    uv run python lessons/sql/build_week_pdf.py --week 1
-    uv run python lessons/sql/build_week_pdf.py --week 2
+    uv run python lessons/sql/build_week_pdf.py --week 1 --pdf-only
+    uv run python lessons/sql/build_week_pdf.py --all --pdf-only
 """
 
 from __future__ import annotations
@@ -127,6 +128,106 @@ def _run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True)
 
 
+KINDLE_CSS = """
+    @page { size: 5.5in 8.5in; margin: 0.6in; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 11.5pt;
+      line-height: 1.45;
+      color: #111;
+    }
+    h1, h2, h3 { font-family: Helvetica, Arial, sans-serif; page-break-after: avoid; }
+    h1 { font-size: 18pt; margin-top: 1.2em; }
+    h2 { font-size: 14pt; }
+    h3 { font-size: 12pt; }
+    code, pre { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 9.5pt; }
+    pre {
+      background: #f4f4f4;
+      padding: 0.6em 0.8em;
+      white-space: pre-wrap;
+      page-break-inside: avoid;
+    }
+    a { color: #0645ad; text-decoration: none; }
+    table { border-collapse: collapse; width: 100%; font-size: 10pt; }
+    th, td { border: 1px solid #ccc; padding: 0.25em 0.4em; }
+    """
+
+
+def _find_headless_browser() -> str | None:
+    candidates = [
+        Path(os.environ.get("PROGRAMFILES", "")) / "Google/Chrome/Application/chrome.exe",
+        Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Google/Chrome/Application/chrome.exe",
+        Path(os.environ.get("PROGRAMFILES", "")) / "Microsoft/Edge/Application/msedge.exe",
+        Path(os.environ.get("PROGRAMFILES(X86)", ""))
+        / "Microsoft/Edge/Application/msedge.exe",
+    ]
+    for path in candidates:
+        if path.is_file():
+            return str(path)
+    return None
+
+
+def _markdown_to_html(md_path: Path, html_path: Path, pandoc_bin: str, css: str) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        css_path = tmp_path / "kindle.css"
+        header_path = tmp_path / "header.html"
+        css_path.write_text(css, encoding="utf-8")
+        header_path.write_text(f"<style>{css}</style>\n", encoding="utf-8")
+        _run(
+            [
+                pandoc_bin,
+                str(md_path),
+                "-f",
+                "markdown",
+                "-t",
+                "html5",
+                "--standalone",
+                f"--include-in-header={header_path}",
+                "-o",
+                str(html_path),
+            ]
+        )
+
+
+def write_pdf_via_headless_browser(
+    md_path: Path, pdf_path: Path, pandoc_bin: str, browser: str | None = None
+) -> None:
+    browser_bin = browser or _find_headless_browser()
+    if not browser_bin:
+        raise SystemExit(
+            "No PDF engine: install weasyprint (Linux) or Chrome/Edge for headless print."
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        html_path = tmp_path / "week.html"
+        user_data = tmp_path / "chrome-profile"
+        _markdown_to_html(md_path, html_path, pandoc_bin, KINDLE_CSS)
+        if pdf_path.exists():
+            pdf_path.unlink()
+        proc = subprocess.run(
+            [
+                browser_bin,
+                "--headless=new",
+                "--disable-gpu",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-extensions",
+                f"--user-data-dir={user_data}",
+                "--no-pdf-header-footer",
+                f"--print-to-pdf={pdf_path.resolve()}",
+                html_path.as_uri(),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0 or not pdf_path.is_file() or pdf_path.stat().st_size < 1000:
+            raise SystemExit(
+                f"headless PDF failed (rc={proc.returncode}): {proc.stderr[-1500:]}"
+            )
+
+
 def write_pdf_via_weasyprint(md_path: Path, pdf_path: Path, pandoc_bin: str) -> None:
     css = """
     @page { size: 5.5in 8.5in; margin: 0.6in; }
@@ -176,16 +277,36 @@ def write_pdf_via_weasyprint(md_path: Path, pdf_path: Path, pandoc_bin: str) -> 
         HTML(filename=str(html_path), base_url=str(tmp_path)).write_pdf(str(pdf_path))
 
 
-def build_week(week: int) -> dict[str, Path]:
+def write_pdf(md_path: Path, pdf_path: Path, pandoc_bin: str) -> None:
+    try:
+        write_pdf_via_weasyprint(md_path, pdf_path, pandoc_bin)
+    except (ImportError, OSError):
+        write_pdf_via_headless_browser(md_path, pdf_path, pandoc_bin)
+
+
+def build_week(week: int, *, pdf_only: bool = False) -> dict[str, Path]:
     PDF_DIR.mkdir(parents=True, exist_ok=True)
     stem = f"week-{week:02d}"
-    md_path = PDF_DIR / f"{stem}.md"
     pdf_path = PDF_DIR / f"{stem}.pdf"
-    epub_path = PDF_DIR / f"{stem}.epub"
-
-    md_path.write_text(build_combined_markdown(week), encoding="utf-8")
     pandoc_bin = _pandoc()
+    combined = build_combined_markdown(week)
+    outs: dict[str, Path] = {"pdf": pdf_path}
 
+    if pdf_only:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", suffix=".md", delete=False
+        ) as tmp_md:
+            tmp_md.write(combined)
+            md_path = Path(tmp_md.name)
+        try:
+            write_pdf(md_path, pdf_path, pandoc_bin)
+        finally:
+            md_path.unlink(missing_ok=True)
+        return outs
+
+    md_path = PDF_DIR / f"{stem}.md"
+    epub_path = PDF_DIR / f"{stem}.epub"
+    md_path.write_text(combined, encoding="utf-8")
     _run(
         [
             pandoc_bin,
@@ -197,25 +318,41 @@ def build_week(week: int) -> dict[str, Path]:
             f"--metadata=title:Brickts SQL — {week_title(week)}",
         ]
     )
-    write_pdf_via_weasyprint(md_path, pdf_path, pandoc_bin)
-
-    return {"md": md_path, "pdf": pdf_path, "epub": epub_path}
+    write_pdf(md_path, pdf_path, pandoc_bin)
+    outs["md"] = md_path
+    outs["epub"] = epub_path
+    return outs
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
         "--week",
         type=int,
-        required=True,
         help=f"Course week number (1–{MAX_WEEK})",
     )
+    group.add_argument(
+        "--all",
+        action="store_true",
+        help=f"Build every week (1–{MAX_WEEK})",
+    )
+    parser.add_argument(
+        "--pdf-only",
+        action="store_true",
+        help="Write only week-NN.pdf (no Markdown or EPUB in lessons/sql/pdf/)",
+    )
     args = parser.parse_args(argv)
-    outs = build_week(args.week)
-    for kind, path in outs.items():
-        size = path.stat().st_size
-        print(f"wrote {kind}: {path.relative_to(HERE.parent.parent)} ({size} bytes)")
-    print("Kindle tip: prefer the .epub (reflowable). PDF is fixed 5.5×8.5in pages.")
+    weeks = range(1, MAX_WEEK + 1) if args.all else [args.week]
+    for week in weeks:
+        outs = build_week(week, pdf_only=args.pdf_only)
+        for kind, path in outs.items():
+            size = path.stat().st_size
+            print(
+                f"wrote {kind}: {path.relative_to(HERE.parent.parent)} ({size} bytes)"
+            )
+    if not args.pdf_only:
+        print("Kindle tip: prefer the .epub (reflowable). PDF is fixed 5.5×8.5in pages.")
     return 0
 
 
