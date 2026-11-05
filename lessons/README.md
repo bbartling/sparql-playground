@@ -152,7 +152,7 @@ to be a network programmer.
 Background for Unit 5:
 - [JoelBender/BACpypes3#181](https://github.com/JoelBender/BACpypes3/pull/181) and [#183](https://github.com/JoelBender/BACpypes3/pull/183)
 - The [scanner gist](https://gist.github.com/bbartling/5514cbb102cb40ce397d794fd4e094ab)
-- This repo's issues #2–#7
+- This repo's to-do issues: [#2 bacpypes3 RDF](https://github.com/bbartling/sparql-playground/issues/2) and [#3 scanner + modeling](https://github.com/bbartling/sparql-playground/issues/3)
 
 ## How each lesson is laid out
 
