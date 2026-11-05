@@ -150,24 +150,23 @@ the existing production store via the opaque id — same pattern as Brick timese
 
 ## Blog series checkpoints
 
-[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — **no repo-root `src/`/`web/`**. Each part freezes an app base under `checkpoint/`. Live package = Part 3 Haystack CRUD (`pyproject.toml` `module-root`). Part 2 = NF edge sensor client. Parts 4–6 are empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). SQL course stays **independent**.
+[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — **no repo-root `src/`/`web/`**. Each part freezes an app base under `checkpoint/`. Live package = Part 3 Haystack CRUD (`pyproject.toml` `module-root`). Part 2 = NF edge sensor client. Parts 4–6 are empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). The daily lessons stay **independent**.
 
-## Daily SQL course (operator requested, 2026-10-15)
+## Daily lessons (rewritten 2026-11-05, operator requested)
 
-`lessons/sql/INDEX.md` contains 84 daily lessons and 12 independent weekly challenges.
-Read its `CONTRACT.md`, `LAB_GUIDE.md` and `REMOTE_SETUP.md` before modifying fixtures or helpers.
-This independent PostgreSQL/Timescale learning lab is not an application-store replacement.
-Use only the dedicated `brickts_course` database; preserve existing lab/application services.
-Keep student work, passwords, dumps and observations under ignored `student-work/` or `var/`.
+`lessons/README.md` is a 16-week course of daily mini lessons for CS graduates: Unit 1 SQLite on Building 50
+(written, `lessons/unit1-sqlite/day01-15.md`), then Python data structures for graphs, RDF with rdflib, SPARQL + this
+API, and BACnet / bacpypes3 RDF scanning (outlined in the README, written as the course goes). The old
+PostgreSQL/Timescale course (`lessons/sql/`) was removed; it's in git history.
+
+- Unit 1 queries the API's own database, `var/timeseries.sqlite` (built by `bldgts bootstrap`), in DB Browser for
+  SQLite. The course only adds `lab_*` tables/views; the app ignores them. `lessons/course.py reset` drops them.
+- Every ```sql block is executed by `uv run python lessons/course.py check` (on a temporary copy), and
+  `-- expect: a | b` / `-- expect rows: N` lines are asserted. The `lessons` CI job runs it after bootstrapping.
+- Numbers quoted in lesson prose must come from a real run; pin them with an `expect` line.
+- Keep student work under ignored `student-work/` or `var/`.
 
 ```bash
-uv run python lessons/sql/validate_course.py
-uv run python lessons/sql/graph_lab.py --check
-uv run python lessons/sql/lab.py up
-uv run python lessons/sql/lab.py load
-uv run python lessons/sql/lab.py check
+uv run python lessons/course.py doctor
+uv run python lessons/course.py check
 ```
-
-`validate_course.py` checks course structure and local links. It does not execute SQL.
-The separate Timescale CI job performs real SQL known-answer and integrity checks.
-Do not label those as proof of every learner solution, production security or all 77 rules.

@@ -21,7 +21,7 @@ Edge OT / BACnet / portal notes (no secrets):
 
 ## Independent SQL course
 
-[`lessons/sql/INDEX.md`](../../lessons/sql/INDEX.md) — parallel track; not owned by this series.
+[`lessons/README.md`](../../lessons/README.md) — parallel track; not owned by this series.
 
 ## Checkpoints
 

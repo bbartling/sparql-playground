@@ -17,7 +17,7 @@ Bare placeholder only:
 - `GIT_SHA.txt` — fill when frozen
 - `checkpoint/` — empty until this part ships an app base
 
-Hands-on SQL learning remains the independent course at [`lessons/sql/`](../../../lessons/sql/) (not owned by this part).
+Hands-on SQL learning remains the independent course at [`lessons/`](../../../lessons/README.md) (not owned by this part).
 
 ## Next
 
