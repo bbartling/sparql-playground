@@ -164,6 +164,8 @@ PostgreSQL/Timescale course (`lessons/sql/`) was removed; it's in git history.
 - Every ```sql block is executed by `uv run python lessons/course.py check` (on a temporary copy), and
   `-- expect: a | b` / `-- expect rows: N` lines are asserted. The `lessons` CI job runs it after bootstrapping.
 - Numbers quoted in lesson prose must come from a real run; pin them with an `expect` line.
+- Weekly PDF packs live in `lessons/pdf/`; rebuild with `uv run python lessons/build_week_pdf.py --all`
+  (needs pandoc) after editing a lesson.
 - Keep student work under ignored `student-work/` or `var/`.
 
 ```bash

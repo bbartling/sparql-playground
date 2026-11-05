@@ -37,6 +37,8 @@ The course only ever **adds** tables and views whose names start with `lab_`. Th
 
 ## Syllabus
 
+Printable packs of the written weeks (PDF): [`pdf/`](pdf/README.md).
+
 Written lessons are linked. The rest of the outline is the plan; those lessons get written as the course goes.
 
 ### Unit 1 — SQL on real building data (SQLite, weeks 1–3)
