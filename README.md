@@ -35,11 +35,12 @@ Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHI
 Checkpoint folders for the LinkedIn / blog arc (Part 1 bare API → Part 2 NF edge sensors → Part 3 CRUD UI → later parts):
 [`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/).
 
-## Daily SQL / PostgreSQL / Timescale course *(independent)*
+## Daily lessons *(independent)*
 
-[**84 daily lessons and 12 weekly challenges**](lessons/sql/INDEX.md) are a **standalone** track — not nested under the blog series. Blog Parts 4–5 may link here; the course keeps its own lab DB and docs.
-
-Use the [isolated local lab](lessons/sql/LAB_GUIDE.md) or [set up Timescale on a remote lab machine](lessons/sql/REMOTE_SETUP.md). This independent course database leaves the existing SQLite API tutorial intact.
+[**A 16-week course of daily mini lessons**](lessons/README.md) for CS grads. It starts with SQLite queries on the API's
+own Building 50 database (DB Browser for SQLite, summary stats, joins, time buckets, a fault rule checked against
+Open-FDD), then Python data structures for graphs, RDF, SPARQL and this API, and ends with BACnet and bacpypes3 RDF
+scans of live buildings.
 
 ## Run locally
 
