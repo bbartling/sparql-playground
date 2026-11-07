@@ -18,7 +18,8 @@ comfortable with the numbers. Units 2–4 teach the graph that tells you which U
 
 ## Setup (once)
 
-1. Install [uv](https://docs.astral.sh/uv/) and [DB Browser for SQLite](https://sqlitebrowser.org/dl/) (free).
+1. Install [uv](https://docs.astral.sh/uv/). [DB Browser for SQLite](https://sqlitebrowser.org/dl/) (free) is
+   optional: handy for looking at tables, but every lesson runs from Python.
 2. In this repo:
 
    ```bash
@@ -31,9 +32,31 @@ comfortable with the numbers. Units 2–4 teach the graph that tells you which U
    `bootstrap` loads the Building 50 CSVs into `var/timeseries.sqlite` (about 240 MB, a minute or two). `doctor`
    should print `4,193,248 samples, 118 series`.
 
-The course only ever **adds** tables and views whose names start with `lab_`. The API ignores them. To start over:
-`uv run python lessons/course.py reset`. To prove every query in the lessons still works:
-`uv run python lessons/course.py check` (runs on a temporary copy; CI runs it too).
+## How the lessons run: SQL and pandas, side by side
+
+Every lesson is driven from Python. Each computation is done **twice**:
+
+- as **SQL**, a SQLite string run through the standard library's `sqlite3` (the database does the work), and
+- as **pandas**, the same answer computed on a DataFrame (Python does the work),
+
+and then `lab.assert_parity(pandas_result, sql_result)` checks the two agree row for row. That's how
+[Open-FDD](https://github.com/bbartling/open-fdd) keeps its fault rules honest: every SQL rule has a pandas twin,
+and its parity tests fail if they disagree on a single row. Along the way the lessons compare the two (and plain
+Python loops) the way a CS course would: big-O, what an index buys, memory, and timings on growing data.
+
+```bash
+uv run python lessons/course.py run 14      # run Day 14's code (on a temporary copy of the database)
+uv run python lessons/course.py extract 14  # print Day 14's code as one script, to paste into a notebook
+uv run python lessons/course.py check       # run every lesson; all parity checks must pass (CI runs this)
+```
+
+A lesson's code is its ```` ```python ```` blocks, top to bottom. Paste them into a Python REPL or a Jupyter
+notebook, or let `course.py run` do it. `run` and `check` work on a throwaway copy of the database, so lessons never
+change `var/timeseries.sqlite`. Shared helpers (connecting, the parity check, the SI `history` table, synthetic data,
+timing) live in [`lab.py`](lab.py).
+
+Fault math is **SI**, like Open-FDD: °C, Pa, and fractions 0–1 for commands. Weeks 1–2 explore the raw database in
+the units the historian logged (°F, inH2O, percent); from Day 11 on, rules read an SI `history` table.
 
 ## Syllabus
 
@@ -41,10 +64,10 @@ Printable packs of the written weeks (PDF): [`pdf/`](pdf/README.md).
 
 Written lessons are linked. The rest of the outline is the plan; those lessons get written as the course goes.
 
-### Unit 1 — SQL on real building data (SQLite, weeks 1–3)
+### Unit 1 — SQL and pandas on real building data (SQLite, weeks 1–3)
 
-Just enough SQL to explore a historian, summarize it and write a fault rule. No server, no Postgres, no Timescale:
-one file and DB Browser for SQLite.
+Just enough SQL to explore a historian, summarize it and write a fault rule, with the same computation in pandas next
+to every query. No server, no Postgres, no Timescale: one SQLite file and Python.
 
 **Week 1: find your way around (read-only)**
 
@@ -66,7 +89,7 @@ one file and DB Browser for SQLite.
 | 9 | [CASE and conditional aggregation: run hours, percent occupied](unit1-sqlite/day09.md) |
 | 10 | [Time buckets and views: hourly averages (what Timescale's `time_bucket` does) (+ week 2 challenge)](unit1-sqlite/day10.md) |
 
-**Week 3: fault detection in SQL**
+**Week 3: fault detection in SQL and pandas**
 
 | Day | Lesson |
 |---|---|
@@ -81,10 +104,19 @@ one file and DB Browser for SQLite.
 A triple store is "just" hash maps, sets and joins. You build a tiny one yourself before using a library, so rdflib
 and SPARQL engines stop being magic.
 
-- **Week 4: Python for data work.**
-  - Reading the samples with `sqlite3`, generators vs lists, `itertools`, `dataclasses` / `NamedTuple`.
-  - Dicts and sets: hashing, cost of membership, `defaultdict`, `Counter`.
-  - Profiling with `timeit` and `tracemalloc`.
+**Week 4: pandas vs SQL vs plain Python: FDD at scale**
+
+The same fault calculations three ways (a Python loop, vectorized pandas, SQLite), on synthetic data that grows 10×
+per step: timings, memory, big-O, and when each one wins. Every result is checked three ways for parity.
+
+| Day | Lesson |
+|---|---|
+| 16 | [One answer three ways: loop, pandas, SQL; timings and the hidden cost of moving data](unit2-python/day16.md) |
+| 17 | [Memory: `fetchall()` vs streaming vs DataFrames, `tracemalloc`, dtypes, chunked reads](unit2-python/day17.md) |
+| 18 | [Gaps and coverage: sample-and-hold with `MAX_GAP_HOURS`, elapsed-time confirmation](unit2-python/day18.md) |
+| 19 | [Weather join: as-of joins (`merge_asof` vs an indexed subquery) and a sensor-vs-weather rule](unit2-python/day19.md) |
+| 20 | [Scaling showdown: the FC1 streak as a loop, pandas and window SQL (+ week 4 challenge)](unit2-python/day20.md) |
+
 - **Week 5: build a triple store.**
   - Triples as tuples, and interning strings to integers.
   - Three indexes (SPO, POS, OSP) and why you need all three.
@@ -157,8 +189,8 @@ Background for Unit 5:
 ## How each lesson is laid out
 
 - **Goal:** one sentence.
-- **Read:** a short explanation.
-- **Run:** queries to paste into DB Browser's *Execute SQL* tab. Lines like `-- expect: 288` show the answer you
-  should see; `course.py check` verifies them.
-- **Try it:** one or two exercises, with the answer folded underneath.
+- **Read:** a short explanation, including how pandas and SQL each do the calculation.
+- **Run:** Python blocks: the SQL string, the pandas version, and `lab.assert_parity`. `assert` lines state the
+  answers you should see; `course.py check` runs them all.
+- **Try it:** one or two exercises, with runnable answers folded underneath.
 - **Why it matters:** where this shows up later in the course.

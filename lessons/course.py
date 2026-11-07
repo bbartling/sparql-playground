@@ -1,114 +1,52 @@
 """Course helper for the lessons in this folder.
 
     uv run python lessons/course.py doctor        # is the Building 50 database there?
-    uv run python lessons/course.py load-points   # lab_point: one row per point
-    uv run python lessons/course.py load-events   # lab_fdd_event: Open-FDD fault episodes
-    uv run python lessons/course.py reset         # drop every lab_* table and view you made
-    uv run python lessons/course.py check         # run every ```sql block in the lessons
+    uv run python lessons/course.py run 14        # run lesson 14's Python, on a temp copy of the db
+    uv run python lessons/course.py extract 14    # print lesson 14's Python as one script
+    uv run python lessons/course.py check         # run every lesson; all parity checks must pass
+    uv run python lessons/course.py check 11-15   # ... or a range of days
+    uv run python lessons/course.py load-points   # lab_point in the real db (for DB Browser)
+    uv run python lessons/course.py load-events   # lab_fdd_event in the real db
+    uv run python lessons/course.py reset         # drop every lab_* table and view in the real db
 
-The database is the API's own SQLite file, var/timeseries.sqlite (`uv run bldgts bootstrap`).
-The app only uses the `samples` and `ingest_log` tables; everything the course adds is `lab_*`.
-Close the database in DB Browser for SQLite (or Write Changes) before load-* or reset.
-`check` runs on a temporary copy, so it never touches your work.
+Each lesson is a Markdown file whose ```python blocks, run top to bottom, are the lesson's code.
+The SQL lives in those blocks as SQLite strings (stdlib ``sqlite3``), next to the same computation
+in pandas, with ``lab.assert_parity`` checking they agree. ``run`` and ``check`` work on a
+temporary copy of var/timeseries.sqlite, so a lesson never changes your database.
 """
 
 from __future__ import annotations
 
-import csv
+import os
 import re
 import sqlite3
 import sys
 import tempfile
-from datetime import datetime
+import time
+import traceback
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-DB = ROOT / "var" / "timeseries.sqlite"
 LESSONS = Path(__file__).resolve().parent
-POINT_CSVS = sorted((ROOT / "model" / "points").glob("*.csv"))
-EVENT_CSVS = sorted((ROOT / "data").glob("*/*/fdd_events.csv"))
+sys.path.insert(0, str(LESSONS))
+
+import lab  # noqa: E402
+
+DB = lab.DB
+PY_BLOCK = re.compile(r"^```python\n(.*?)^```", re.S | re.M)
+# A block whose first line is this comment is shown but not run (e.g. a deliberately slow loop).
+NO_RUN = "# no-run"
 
 
 def connect(path: Path = DB) -> sqlite3.Connection:
-    if not path.exists():
-        sys.exit(f"{path} not found. Build it first:  uv run bldgts bootstrap")
-    return sqlite3.connect(path)
+    return lab.connect(path)
 
 
 def load_points(conn: sqlite3.Connection) -> int:
-    """lab_point: the point list the RDF model is built from, flattened into one table.
-    equipment_id is the AHU the mapping file belongs to (BUILDING_50__AHU_1.csv -> AHU_1)."""
-    conn.execute("DROP TABLE IF EXISTS lab_point")
-    conn.execute(
-        """CREATE TABLE lab_point (
-            timeseries_id TEXT PRIMARY KEY,
-            point_id      TEXT NOT NULL,
-            equipment_id  TEXT NOT NULL,
-            owner_id      TEXT,
-            label         TEXT,
-            brick_class   TEXT,
-            unit          TEXT,
-            openfdd_role  TEXT,
-            source_column TEXT
-        )"""
-    )
-    n = 0
-    for path in POINT_CSVS:
-        equipment_id = path.stem.split("__", 1)[1]
-        with open(path, encoding="utf-8", newline="") as f:
-            for r in csv.DictReader(f):
-                conn.execute(
-                    "INSERT INTO lab_point VALUES (?,?,?,?,?,?,?,?,?)",
-                    (
-                        r["timeseries_id"],
-                        r["point_id"],
-                        equipment_id,
-                        r["owner_id"] or None,
-                        r["label"] or None,
-                        r["brick_class"] or None,
-                        r["unit"] or None,
-                        r["openfdd_role"] or None,
-                        r["source_column"],
-                    ),
-                )
-                n += 1
-    conn.commit()
-    return n
+    return lab.load_points(conn)
 
 
 def load_events(conn: sqlite3.Connection) -> int:
-    """lab_fdd_event: fault episodes Open-FDD found in this data (for comparing your SQL rules).
-    Times become epoch seconds, like samples.ts."""
-    conn.execute("DROP TABLE IF EXISTS lab_fdd_event")
-    conn.execute(
-        """CREATE TABLE lab_fdd_event (
-            equipment_id TEXT NOT NULL,
-            rule_name    TEXT NOT NULL,
-            start_ts     INTEGER NOT NULL,
-            end_ts       INTEGER NOT NULL,
-            duration_min REAL,
-            sample_count INTEGER
-        )"""
-    )
-    n = 0
-    for path in EVENT_CSVS:
-        equipment_id = path.parent.name
-        with open(path, encoding="utf-8", newline="") as f:
-            for r in csv.DictReader(f):
-                conn.execute(
-                    "INSERT INTO lab_fdd_event VALUES (?,?,?,?,?,?)",
-                    (
-                        equipment_id,
-                        r["rule_name"],
-                        int(datetime.fromisoformat(r["start_time_utc"]).timestamp()),
-                        int(datetime.fromisoformat(r["end_time_utc"]).timestamp()),
-                        float(r["duration_min"]),
-                        int(r["sample_count"]),
-                    ),
-                )
-                n += 1
-    conn.commit()
-    return n
+    return lab.load_events(conn)
 
 
 def reset(conn: sqlite3.Connection) -> list[str]:
@@ -141,86 +79,114 @@ def doctor() -> None:
     print("  lab objects:", ", ".join(labs) or "none yet")
 
 
-# ---------------------------------------------------------------- check
-SQL_BLOCK = re.compile(r"```sql\n(.*?)```", re.S)
-EXPECT = re.compile(r"--\s*expect:\s*(.+)$", re.M)
+# ---------------------------------------------------------------- lessons as code
+def lesson_files() -> list[Path]:
+    return sorted(LESSONS.glob("unit*/day*.md"), key=lambda p: int(p.stem[3:]))
 
 
-def statements(sql: str) -> list[str]:
-    out, buf = [], ""
-    for line in sql.splitlines(keepends=True):
-        buf += line
-        if sqlite3.complete_statement(buf):
-            out.append(buf.strip())
-            buf = ""
-    if buf.strip() and not all(
-        ln.strip().startswith("--") or not ln.strip() for ln in buf.splitlines()
-    ):
-        out.append(buf.strip())
-    return out
+def lesson_file(day: int) -> Path:
+    for path in lesson_files():
+        if int(path.stem[3:]) == day:
+            return path
+    raise SystemExit(f"no lesson for day {day}")
 
 
-def same(got: object, want: str) -> bool:
-    """Compare a result cell with a lesson's text; numbers at the precision the lesson shows."""
-    if isinstance(got, (int, float)) and not isinstance(got, bool):
-        try:
-            w = float(want)
-        except ValueError:
-            return False
-        places = len(want.split(".")[1]) if "." in want else 0
-        return round(float(got), places) == round(w, places)
-    return str(got) == want
+def blocks(path: Path) -> list[str]:
+    """The lesson's runnable ```python blocks, in order."""
+    found = PY_BLOCK.findall(path.read_text(encoding="utf-8"))
+    return [b for b in found if not b.lstrip().startswith(NO_RUN)]
 
 
-def check() -> int:
-    """Run every ```sql block of every lesson, in order, on a copy of the database.
-    A block containing `-- expect: X` must return X in the first column of the first row
-    (`-- expect: X | Y` checks the first two columns; `-- expect rows: N` checks the row count)."""
-    src = connect()
-    failures = 0
-    with tempfile.TemporaryDirectory() as tmp:
-        copy = Path(tmp) / "course.sqlite"
+def script(path: Path) -> str:
+    rel = path.relative_to(LESSONS).as_posix()
+    parts = [f"# {rel}, extracted by lessons/course.py\n"]
+    for i, block in enumerate(blocks(path), 1):
+        parts.append(f"\n# --- block {i}\n{block}")
+    return "".join(parts)
+
+
+def exec_lesson(path: Path) -> None:
+    """Run every python block of one lesson in a fresh namespace, like one script."""
+    ns: dict = {"__name__": "__lesson__"}
+    rel = path.relative_to(LESSONS).as_posix()
+    for i, block in enumerate(blocks(path), 1):
+        code = compile(block, f"{rel} [block {i}]", "exec")
+        exec(code, ns)  # noqa: S102 - running our own lesson code is the point
+    conn = ns.get("conn")
+    if isinstance(conn, sqlite3.Connection):
+        conn.close()
+
+
+class TempCopy:
+    """A throwaway copy of the course database; lessons find it through $COURSE_DB."""
+
+    def __enter__(self) -> Path:
+        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        copy = Path(self._tmp.name) / "course.sqlite"
+        src = connect()
         dst = sqlite3.connect(copy)
         src.backup(dst)
         src.close()
         reset(dst)
-        load_points(dst)
-        load_events(dst)
-        files = sorted(LESSONS.glob("unit*/day*.md"))
-        blocks = 0
-        for path in files:
-            for block in SQL_BLOCK.findall(path.read_text(encoding="utf-8")):
-                blocks += 1
-                rows = None
-                try:
-                    for stmt in statements(block):
-                        cur = dst.execute(stmt)
-                        rows = cur.fetchall() if cur.description else rows
-                    dst.commit()
-                except sqlite3.Error as e:
-                    failures += 1
-                    print(f"FAIL {path.relative_to(LESSONS)}: {e}\n{block}")
-                    continue
-                rel = path.relative_to(LESSONS)
-                m = re.search(r"--\s*expect rows:\s*(\d+)", block)
-                if m and (rows is None or len(rows) != int(m.group(1))):
-                    failures += 1
-                    print(f"FAIL {rel}: expected {m.group(1)} rows, got {rows and len(rows)}")
-                for exp in EXPECT.findall(block):
-                    want = [w.strip() for w in exp.split("|")]
-                    got = list(rows[0][: len(want)]) if rows else []
-                    if len(got) != len(want) or not all(map(same, got, want)):
-                        failures += 1
-                        print(f"FAIL {rel}: expected {want}, got {got}\n{block}")
         dst.close()
-    print(f"{len(files)} lessons, {blocks} SQL blocks, {failures} failures")
+        self._old = os.environ.get("COURSE_DB")
+        os.environ["COURSE_DB"] = str(copy)
+        return copy
+
+    def __exit__(self, *exc) -> None:
+        if self._old is None:
+            os.environ.pop("COURSE_DB", None)
+        else:
+            os.environ["COURSE_DB"] = self._old
+        self._tmp.cleanup()
+
+
+def days_arg(arg: str | None) -> list[Path]:
+    files = lesson_files()
+    if not arg:
+        return files
+    lo, _, hi = arg.partition("-")
+    lo_i, hi_i = int(lo), int(hi or lo)
+    return [p for p in files if lo_i <= int(p.stem[3:]) <= hi_i]
+
+
+def run(day: int) -> int:
+    with TempCopy():
+        exec_lesson(lesson_file(day))
+    return 0
+
+
+def check(arg: str | None = None) -> int:
+    """Run the chosen lessons in order on one temp copy; any exception or failed parity fails."""
+    os.environ["COURSE_QUICK"] = "1"
+    lab.QUICK = True
+    failures = 0
+    files = days_arg(arg)
+    with TempCopy():
+        for path in files:
+            rel = path.relative_to(LESSONS).as_posix()
+            t = time.perf_counter()
+            print(f"=== {rel}", flush=True)
+            try:
+                exec_lesson(path)
+            except Exception:  # noqa: BLE001 - report every lesson, then fail
+                failures += 1
+                print(f"FAIL {rel}\n{traceback.format_exc()}")
+            else:
+                print(f"ok   {rel} ({time.perf_counter() - t:.1f} s)")
+    print(f"{len(files)} lessons, {failures} failures")
     return 1 if failures else 0
 
 
 def main() -> int:
     cmd = sys.argv[1] if len(sys.argv) > 1 else "doctor"
+    arg = sys.argv[2] if len(sys.argv) > 2 else None
     if cmd == "doctor":
         doctor()
+    elif cmd == "run" and arg:
+        return run(int(arg))
+    elif cmd == "extract" and arg:
+        sys.stdout.write(script(lesson_file(int(arg))))
     elif cmd == "load-points":
         with connect() as conn:
             print(f"lab_point: {load_points(conn)} points")
@@ -231,7 +197,7 @@ def main() -> int:
         with connect() as conn:
             print("dropped:", ", ".join(reset(conn)) or "nothing")
     elif cmd == "check":
-        return check()
+        return check(arg)
     else:
         print(__doc__)
         return 2

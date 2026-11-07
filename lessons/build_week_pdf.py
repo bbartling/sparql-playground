@@ -27,10 +27,15 @@ README = HERE / "README.md"
 DAYS_PER_WEEK = 5
 
 # Weeks that have written lessons, and where they live.
-UNIT_DIRS = {1: "unit1-sqlite", 2: "unit1-sqlite", 3: "unit1-sqlite"}
+UNIT_DIRS = {1: "unit1-sqlite", 2: "unit1-sqlite", 3: "unit1-sqlite", 4: "unit2-python"}
 
 REFERENCES = {
     1: [
+        ("Python sqlite3 module", "https://docs.python.org/3/library/sqlite3.html"),
+        (
+            "pandas: comparison with SQL",
+            "https://pandas.pydata.org/docs/getting_started/comparison/comparison_with_sql.html",
+        ),
         ("DB Browser for SQLite", "https://sqlitebrowser.org/"),
         ("SQLite SELECT", "https://sqlite.org/lang_select.html"),
         ("SQLite date and time functions", "https://sqlite.org/lang_datefunc.html"),
@@ -52,6 +57,7 @@ REFERENCES = {
     ],
     3: [
         ("SQLite window functions", "https://sqlite.org/windowfunctions.html"),
+        ("pandas: windowing operations", "https://pandas.pydata.org/docs/user_guide/window.html"),
         ("SQLite query planner", "https://sqlite.org/queryplanner.html"),
         ("SQLite EXPLAIN QUERY PLAN", "https://sqlite.org/eqp.html"),
         (
@@ -62,6 +68,23 @@ REFERENCES = {
         (
             "TimescaleDB continuous aggregates",
             "https://docs.timescale.com/use-timescale/latest/continuous-aggregates/",
+        ),
+    ],
+    4: [
+        ("Python timeit", "https://docs.python.org/3/library/timeit.html"),
+        ("Python tracemalloc", "https://docs.python.org/3/library/tracemalloc.html"),
+        (
+            "pandas: scaling to large datasets",
+            "https://pandas.pydata.org/docs/user_guide/scale.html",
+        ),
+        (
+            "pandas.merge_asof",
+            "https://pandas.pydata.org/docs/reference/api/pandas.merge_asof.html",
+        ),
+        ("SQLite query optimizer overview", "https://sqlite.org/optoverview.html"),
+        (
+            "Open-FDD SQL cookbook",
+            "https://bbartling.github.io/open-fdd/rules/cookbook/sql-cookbook.html",
         ),
     ],
 }
@@ -134,10 +157,12 @@ def build_markdown(week: int) -> str:
         "% sparql-playground / lessons\n"
         "% Generated for print and offline reading\n\n"
         f"# {title}\n\n"
-        "Five daily lessons. Run the SQL in DB Browser for SQLite against the API's own "
-        "database, `var/timeseries.sqlite` (build it with `uv run bldgts bootstrap`). Lines "
-        "like `-- expect: 288` are the answer you should see. Keep notes under the ignored "
-        "`student-work/` folder.\n\n"
+        "Five daily lessons, all run from Python. Each computation is done twice, as a "
+        "SQLite query string (stdlib `sqlite3`) and in pandas, and `lab.assert_parity` "
+        "checks they agree. Run a day with `uv run python lessons/course.py run N` (it "
+        "uses a temporary copy of `var/timeseries.sqlite`; build that with "
+        "`uv run bldgts bootstrap`). `assert` lines state the answers you should see. "
+        "Keep notes under the ignored `student-work/` folder.\n\n"
         "## Contents\n\n"
     ]
     for path in days:
