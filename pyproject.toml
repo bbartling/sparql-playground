@@ -51,4 +51,6 @@ ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["lessons: runs the course's pandas/SQL lesson scripts (CI lessons job: pytest -m lessons)"]
+addopts = "-m 'not lessons'"
 filterwarnings = ["ignore::DeprecationWarning"]

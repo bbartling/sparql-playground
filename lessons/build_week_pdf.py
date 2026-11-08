@@ -27,7 +27,13 @@ README = HERE / "README.md"
 DAYS_PER_WEEK = 5
 
 # Weeks that have written lessons, and where they live.
-UNIT_DIRS = {1: "unit1-sqlite", 2: "unit1-sqlite", 3: "unit1-sqlite", 4: "unit2-python"}
+UNIT_DIRS = {
+    1: "unit1-sqlite",
+    2: "unit1-sqlite",
+    3: "unit1-sqlite",
+    4: "unit2-python",
+    5: "unit3-modeling",
+}
 
 REFERENCES = {
     1: [
@@ -69,6 +75,17 @@ REFERENCES = {
             "TimescaleDB continuous aggregates",
             "https://docs.timescale.com/use-timescale/latest/continuous-aggregates/",
         ),
+    ],
+    5: [
+        (
+            "Brick: timeseries storage (ref schema)",
+            "https://docs.brickschema.org/metadata/timeseries-storage.html",
+        ),
+        ("Project Haystack: defs", "https://project-haystack.org/doc/docHaystack/Defs"),
+        ("Project Haystack: RDF", "https://project-haystack.org/doc/docHaystack/Rdf"),
+        ("RFC 9562: UUIDs (version 5 = name-based)", "https://www.rfc-editor.org/rfc/rfc9562"),
+        ("rdflib documentation", "https://rdflib.readthedocs.io/"),
+        ("FastAPI testing (TestClient)", "https://fastapi.tiangolo.com/tutorial/testing/"),
     ],
     4: [
         ("Python timeit", "https://docs.python.org/3/library/timeit.html"),
@@ -149,6 +166,13 @@ def printable(body: str) -> str:
     return body.strip() + "\n"
 
 
+def day_scripts(lesson: Path) -> list[Path]:
+    """The day's scripts, pandas first then SQL, printed after the lesson in the pack."""
+    found = sorted(lesson.parent.glob(f"{lesson.stem}_*.py"))
+    order = {"pandas": 0, "sql": 1}
+    return sorted(found, key=lambda p: (order.get(p.stem.split("_", 1)[1], 2), p.name))
+
+
 def build_markdown(week: int) -> str:
     title = week_title(week)
     days = week_days(week)
@@ -157,12 +181,12 @@ def build_markdown(week: int) -> str:
         "% sparql-playground / lessons\n"
         "% Generated for print and offline reading\n\n"
         f"# {title}\n\n"
-        "Five daily lessons, all run from Python. Each computation is done twice, as a "
-        "SQLite query string (stdlib `sqlite3`) and in pandas, and `lab.assert_parity` "
-        "checks they agree. Run a day with `uv run python lessons/course.py run N` (it "
-        "uses a temporary copy of `var/timeseries.sqlite`; build that with "
-        "`uv run bldgts bootstrap`). `assert` lines state the answers you should see. "
-        "Keep notes under the ignored `student-work/` folder.\n\n"
+        "Five daily lessons. Each day has two scripts that compute the same thing: "
+        "`dayNN_pandas.py` reads the CSV export into pandas, `dayNN_sql.py` runs SQLite "
+        "queries on the same rows (`uv run python lessons/course.py setup` loads them "
+        "once). Run both with `uv run python lessons/course.py run N` and compare the "
+        "printouts. Each lesson's two scripts are printed after it. Keep notes under the "
+        "ignored `student-work/` folder.\n\n"
         "## Contents\n\n"
     ]
     for path in days:
@@ -171,6 +195,9 @@ def build_markdown(week: int) -> str:
     parts.append("\n---\n\n")
     for path in days:
         parts.append(printable(path.read_text(encoding="utf-8")))
+        for script in day_scripts(path):
+            code = script.read_text(encoding="utf-8").rstrip()
+            parts.append(f"\n\n### `{script.name}`\n\n```python\n{code}\n```\n")
         parts.append('\n\n<div style="page-break-before: always;"></div>\n\n')
     parts.append(
         f"# Reading — Week {week}\n\nThe lessons first, then these for exact behavior.\n\n"

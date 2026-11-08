@@ -37,10 +37,12 @@ Checkpoint folders for the LinkedIn / blog arc (Part 1 bare API → Part 2 NF ed
 
 ## Daily lessons *(independent)*
 
-[**A 16-week course of daily mini lessons**](lessons/README.md) for CS grads. It starts with SQLite queries on the API's
-own Building 50 database (DB Browser for SQLite, summary stats, joins, time buckets, a fault rule checked against
-Open-FDD), then Python data structures for graphs, RDF, SPARQL and this API, and ends with BACnet and bacpypes3 RDF
-scans of live buildings.
+[**A 17-week course of daily mini lessons**](lessons/README.md) for CS grads. It starts from Building 50's CSV
+exports, with every day done twice, a pandas script and a SQL script that print the same answers (summary stats,
+joins, time buckets, window functions, a fault rule checked against Open-FDD), then compares loops, pandas and SQL at
+scale, and introduces data modeling: Haystack tags in RDF, UUIDs and external timeseries references, so rules stop
+hard-coding column names. Later units cover graphs, RDF, SPARQL, this API, and BACnet and bacpypes3 RDF scans of live
+buildings.
 
 ## Run locally
 

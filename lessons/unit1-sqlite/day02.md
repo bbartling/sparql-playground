@@ -1,225 +1,138 @@
-# Day 2 — SELECT, WHERE, ORDER BY, LIMIT on one sensor; what the UUIDs are
+# Day 2 — SELECT, WHERE, ORDER BY, LIMIT on a few columns
 
-**Goal:** pull the readings of one sensor, sorted and trimmed, in SQL and in pandas, and know where its id comes from.
+**Goal:** pull a few columns of AHU_1, filtered, sorted and trimmed, in pandas and in SQL, and pass values to SQL
+safely.
 
 ## Read
-
-A `timeseries_id` looks like `bf422925-1e2d-598d-9069-3b0f17d49c48`. That's a **UUID**, a 128-bit id written as 32
-hex digits. These are version-5 UUIDs: a hash of a name, so the same building/point always gets the same UUID. They
-don't change between rebuilds, and the API can hand them out without exposing the BAS's internal point names.
-
-The database doesn't know what a UUID means. That lives in the point list the model is built from,
-`model/points/BUILDING_50__AHU_1.csv`. Open it in a text editor or spreadsheet and find this row:
-
-| source_column | point_id | brick_class | unit | openfdd_role | timeseries_id |
-|---|---|---|---|---|---|
-| outside_air_temp_f | AHU_1_OA_T | Outside_Air_Temperature_Sensor | DEG_F | outside-air-temp | bf422925-1e2d-598d-9069-3b0f17d49c48 |
-
-So `bf422925…` is AHU_1's outside air temperature in °F. Here are a few you'll use this week:
-
-| Point | timeseries_id |
-|---|---|
-| AHU_1 outside air temp (°F) | `bf422925-1e2d-598d-9069-3b0f17d49c48` |
-| AHU_1 supply fan status (1 = running) | `9ebf80dd-7821-510b-b2c0-cd0151e093c9` |
-| AHU_1 duct static pressure (inH2O) | `52422584-9894-50bd-9696-2fbb8b062518` |
-| AHU_1 duct static pressure setpoint (inH2O) | `761c2b61-4982-5157-bc66-2010cf6e2a47` |
 
 The parts of a query, in the order you write them, and the pandas that does each job:
 
 ```
-SELECT  columns            -- what to show            df[["ts", "value"]]
+SELECT  columns            -- what to show            df[["timestamp_utc", "outside_air_temp_f"]]
 FROM    table              -- where from              (the DataFrame you loaded)
-WHERE   condition          -- which rows              df[df.value > 1.5]
-ORDER BY column [DESC]     -- sorted how              .sort_values("value", ascending=False)
+WHERE   condition          -- which rows              df[df.da_p_inwc > 1.5]
+ORDER BY column [DESC]     -- sorted how              .sort_values("outside_air_temp_f", ascending=False)
 LIMIT   n                  -- how many                .head(n)
 ```
 
-Text values go in single quotes in SQL. Double quotes are for column and table names.
+Today's columns, all from AHU_1's table `ahu_1`:
+
+| Column | What it is | Unit |
+|---|---|---|
+| `outside_air_temp_f` | outside air temperature | °F |
+| `da_p_inwc` | duct static pressure (the pressure the supply fan builds in the supply duct) | inches of water |
+| `da_p_setpoint_inwc` | the pressure the controller is trying to hold | inches of water |
+| `supply_fan_status` | 1 when the supply fan is running, 0 when off | 0/1 |
+
+Text values go in single quotes in SQL. Double quotes are for column and table names. To combine conditions use
+`AND` / `OR` in SQL and `&` / `|` in pandas. Each condition needs its own parentheses in pandas, because `&` binds
+tighter than `>`.
 
 **Parameters, not f-strings.** In Python you'll be tempted to build SQL with an f-string:
-`f"... WHERE timeseries_id = '{uid}'"`. Don't. If `uid` ever comes from a user, a file or an API request, a
-value like `x' OR '1'='1` rewrites your query (**SQL injection**), and even with trusted values you get quoting bugs.
-Instead leave a placeholder, `?` or a name like `:uid`, and pass the value separately. The database receives the
-SQL text and the value as two different things, so a value can never be mistaken for SQL. It also lets SQLite
-reuse the compiled query. Every query in this course passes values as parameters.
+`f"... WHERE timestamp_utc = '{ts}'"`. Don't. If `ts` ever comes from a user, a file or an API request, a value like
+`x' OR '1'='1` rewrites your query (**SQL injection**), and even with trusted values you get quoting bugs. Instead
+leave a placeholder, `?` or a name like `:limit`, and pass the value separately. The database receives the SQL text
+and the value as two different things, so a value can never be mistaken for SQL. It also lets SQLite reuse the
+compiled query. Every query in this course passes values as parameters; only column and table names (which cannot be
+parameters) are written into the SQL text, and those are typed by you, never taken from input.
 
-**Where the work happens.** `WHERE timeseries_id = ?` is the best case for this table. The primary key is
-`(timeseries_id, ts)` and the rows are stored in that order in a B-tree, so SQLite **seeks** straight to the first
-row of that series and reads the next 35,536 rows in a row: O(log n + k) for n rows in the table and k rows
-returned. pandas has no such luxury. Once a table is loaded, `df[df.timeseries_id == uid]` compares every one of
-the n rows: O(n). (A pandas `set_index` on the id sorts the frame and lets it do the same kind of lookup, but you
-pay for that sort, and you had to load everything first.) So the usual pattern is: let SQL pick the rows, then use
-pandas on what comes back.
+**Where the work happens.** `timestamp_utc` is the table's `PRIMARY KEY`, and SQLite keeps an index on it: a sorted
+B-tree. So `WHERE timestamp_utc >= :start AND timestamp_utc < :end` is a **seek**: walk the tree from the root to the
+first matching key, O(log n), then read the k matching rows in order. pandas has no such luxury on a plain column.
+`df["timestamp_utc"] >= start` compares every one of the n rows and builds a True/False array of length n: O(n).
+(A DataFrame whose index is sorted can do binary search too, but you pay for the sort, and the rows are already in
+memory.) A filter on `da_p_inwc` has no index in either tool, so both scan all n rows. `EXPLAIN QUERY PLAN` shows
+which one SQLite chose; the SQL script prints it.
+
+A sort is different again: `ORDER BY ... LIMIT 1` only needs the biggest row, and `sort_values(...).head(1)` sorts all
+n rows to get it, O(n log n), where a single pass for the maximum would do. (`nlargest(1)` is the pandas way to ask
+for just that.) At 35,000 rows nobody notices. At a hundred million rows it is the whole job.
 
 ## Run
 
-```python
-import numpy as np
-import pandas as pd
-
-import lab
-
-conn = lab.connect()
-
-OAT = "bf422925-1e2d-598d-9069-3b0f17d49c48"  # AHU_1 outside air temp, F
-FAN = "9ebf80dd-7821-510b-b2c0-cd0151e093c9"  # AHU_1 supply fan status, 0/1
-STATIC = "52422584-9894-50bd-9696-2fbb8b062518"  # AHU_1 duct static pressure, inH2O
-STATIC_SP = "761c2b61-4982-5157-bc66-2010cf6e2a47"  # AHU_1 duct static pressure setpoint, inH2O
-
-# Load ONE series for the pandas side. The id is a bound parameter.
-SERIES_SQL = "SELECT ts, value FROM samples WHERE timeseries_id = :uid"
-
-
-def series(uid):
-    return lab.query(conn, SERIES_SQL, {"uid": uid})
-
-
-oat = series(OAT)
-print(len(oat), "rows")
-assert len(oat) == 35_536
+```bash
+uv run python lessons/course.py run 2
 ```
 
-**The first three outside air readings.**
+That runs [`day02_pandas.py`](day02_pandas.py), then [`day02_sql.py`](day02_sql.py). Each step maps like this:
 
-```python
-FIRST3_SQL = """
-SELECT ts, value
-FROM samples
-WHERE timeseries_id = :uid
-ORDER BY ts
-LIMIT 3
-"""
-first3_sql = lab.query(conn, FIRST3_SQL, {"uid": OAT})
-first3_pd = oat.sort_values("ts").head(3).reset_index(drop=True)
-lab.assert_parity(first3_pd, first3_sql, keys=["ts"], label="first 3 readings")
-print(first3_sql)
-assert first3_sql.iloc[0].tolist() == [1773621600, 69.0327]
+| Step | `day02_sql.py` | `day02_pandas.py` |
+|---|---|---|
+| pick columns | `SELECT timestamp_utc, outside_air_temp_f` | `df[["timestamp_utc", "outside_air_temp_f"]]` |
+| first three | `ORDER BY timestamp_utc LIMIT 3` | `.sort_values("timestamp_utc").head(3)` |
+| hottest | `ORDER BY outside_air_temp_f DESC, timestamp_utc LIMIT 1` | `sort_values([...], ascending=[False, True]).head(1)` |
+| filter + count | `WHERE da_p_inwc > :limit` + `count(*)` | `(df["da_p_inwc"] > 1.5).sum()` |
+| two conditions | `WHERE a = 1 AND b > :min_oat` | `df[(df.a == 1) & (df.b > 95.0)]` |
+| time range | `WHERE timestamp_utc >= :start AND timestamp_utc < :end` | two comparisons joined by `&` |
+| distinct values | `SELECT DISTINCT supply_fan_status` | `df["supply_fan_status"].unique()` |
+
+In pandas, `df["da_p_inwc"] > 1.5` makes a column of True/False, one per row, and `.sum()` counts the Trues. SQL's
+`WHERE` drops the rows and `count(*)` counts what is left. Same answer; SQL never builds the 35,536-element mask.
+
+Adding `timestamp_utc` as a second sort key makes "hottest" deterministic: several readings can tie, because the
+sensor value only changes now and then, and without a tiebreaker SQL and pandas are free to return different ones.
+
+Both scripts print:
+
+```
+hottest / coldest reading:
+            timestamp_utc  outside_air_temp_f
+2026-07-14 21:40:00+00:00               98.86
+2026-03-17 09:40:00+00:00               17.83
+
+readings with duct static above 1.5 inH2O: 8336
+
+readings on 2026-07-01 (UTC): 288
+rows matching a hostile string: 0
+fan status takes the values: [0.0, 1.0]
 ```
 
-**The hottest reading.** Sort by value, biggest first, keep one row. Adding `ts` as a second sort key makes the
-answer deterministic if two readings tie.
+The SQL script also prints SQLite's plan for the date range: `SEARCH ahu_1 USING COVERING INDEX
+sqlite_autoindex_ahu_1_1 (timestamp_utc>? AND timestamp_utc<?)`. That `SEARCH ... (timestamp_utc>? AND
+timestamp_utc<?)` is the B-tree seek. The index has an odd name because `PRIMARY KEY` on a text column makes SQLite
+build an automatic index. 288 is 24 hours × 12 readings an hour: a full day of 5-minute data.
 
-```python
-HOTTEST_SQL = """
-SELECT ts, value
-FROM samples
-WHERE timeseries_id = :uid
-ORDER BY value DESC, ts
-LIMIT 1
-"""
-hottest_sql = lab.query(conn, HOTTEST_SQL, {"uid": OAT})
-hottest_pd = (
-    oat.sort_values(["value", "ts"], ascending=[False, True]).head(1).reset_index(drop=True)
-)
-lab.assert_parity(hottest_pd, hottest_sql, label="hottest reading")
-assert hottest_sql.iloc[0].tolist() == [1784065200, 98.8608]
-```
+**The range query works on text, by luck.** `timestamp_utc` is text, and every value has the same format
+(`2026-07-01 00:00:00+00:00`), so comparing the strings alphabetically is the same as comparing the times. That is
+the whole reason the bounds in the scripts are written out in full. Day 3 looks at what goes wrong with a shorter
+bound like `'2026-07-01'`, and at the proper date functions.
 
-**Readings above 1.5 inH2O on AHU_1's duct static pressure.**
-
-```python
-HIGH_SQL = """
-SELECT count(*) AS n
-FROM samples
-WHERE timeseries_id = :uid
-  AND value > :limit
-"""
-high_sql = lab.query(conn, HIGH_SQL, {"uid": STATIC, "limit": 1.5})
-static = series(STATIC)
-high_pd = pd.DataFrame(
-    {"n": [int((static["value"] > 1.5).sum())]}
-)  # boolean mask, then count the Trues
-lab.assert_parity(high_pd, high_sql, label="static > 1.5")
-assert high_sql.n[0] == 8336
-```
-
-In pandas, `static["value"] > 1.5` makes a column of True/False, one per row, and `.sum()` counts the Trues. SQL's
-`WHERE` drops the rows and `count(*)` counts what's left. Same answer, same O(k) work over the series; the
-difference is that SQL never builds the 35,536-element mask or sends the rows to Python at all.
-
-A look at the injection problem from above. The user-supplied string is treated as a plain id that matches nothing:
-
-```python
-evil = "x' OR '1'='1"
-evil_sql = lab.query(
-    conn, "SELECT count(*) AS n FROM samples WHERE timeseries_id = :uid", {"uid": evil}
-)
-print(evil_sql.n[0], "rows for a hostile id")
-assert evil_sql.n[0] == 0  # with an f-string this would have counted the whole table
-```
-
-**The same slice through the API.** A real application doesn't open the SQLite file. It asks a service over HTTP and
-gets JSON back. This repo has one (`bldgts serve`, a FastAPI app), and `lab.Api` drives it in-process with
-FastAPI's test client, so it runs offline against the same database copy. The API speaks in **point ids** such as
-`AHU_1_OA_T`, names the building model knows; the model maps each point id to the `timeseries_id` UUID that the
-`samples` table is keyed on (Unit 4 asks the model that question in SPARQL). The service looks up the UUID, runs a
-SQL query much like the ones above, and returns the rows as JSON. Here is 1 July 2026 (288 readings) three ways. The
-API's `end` is inclusive, so we pass the last second of the day.
-
-```python
-DAY_SQL = """
-SELECT ts, value FROM samples
-WHERE timeseries_id = :uid AND ts >= :start AND ts < :end
-"""
-t0 = 1782864000  # 2026-07-01 00:00 UTC
-day_sql = lab.query(conn, DAY_SQL, {"uid": OAT, "start": t0, "end": t0 + 86_400})
-day_pd = oat[(oat.ts >= t0) & (oat.ts < t0 + 86_400)].reset_index(drop=True)
-
-with lab.Api() as api:
-    day_api = api.timeseries(
-        "AHU_1_OA_T", start=t0, end=t0 + 86_399
-    )  # HTTP GET -> JSON -> DataFrame
-print(day_api.attrs)  # the model's point id -> UUID mapping, returned with the data
-
-assert day_api.attrs["timeseries_id"] == OAT
-lab.assert_parity(day_pd, day_sql, keys=["ts"], label="pandas == SQL")
-lab.assert_parity(day_api, day_sql, keys=["ts"], label="API == SQL")
-assert len(day_api) == 288
-```
-
-Three paths, one answer. The API adds a layer (HTTP, JSON, id lookup), which is how other programs, and people
-without database access, get the same data. It also caps the rows it returns, which is why we asked for a day, not
-all 35,536 readings.
-
-`ts` is a big number. Tomorrow turns it into a date.
+The hostile string `x' OR '1'='1` is passed as the `:ts` parameter. It is treated as a plain timestamp that matches no
+row, so the count is 0. Pasted into the SQL with an f-string, it would have turned the `WHERE` into "always true" and
+counted all 35,536 rows.
 
 ## Try it
 
-1. What was the coldest outside air reading?
-2. Is AHU_1's supply fan status ever anything other than 0 or 1?
+1. What was the coldest outside air reading, and when?
+2. How many readings have the fan running (`supply_fan_status = 1`) but duct static below 0.5 inH2O? (Both scripts
+   pass the limit as a variable or parameter.)
+3. Print the five most recent timestamps, newest first.
 
 <details><summary>Answers</summary>
 
-```python
-COLDEST_SQL = """
-SELECT ts, value FROM samples
-WHERE timeseries_id = :uid
-ORDER BY value ASC, ts LIMIT 1
-"""
-coldest_sql = lab.query(conn, COLDEST_SQL, {"uid": OAT})
-coldest_pd = oat.sort_values(["value", "ts"]).head(1).reset_index(drop=True)
-lab.assert_parity(coldest_pd, coldest_sql, label="coldest reading")
-assert coldest_sql.iloc[0].tolist() == [1773740400, 17.8308]
+1. 17.83 °F at `2026-03-17 09:40:00+00:00`. It is already in the printout (`ORDER BY outside_air_temp_f,
+   timestamp_utc LIMIT 1`).
+2. 782 readings, about 65 fan-running hours at pressure well below any normal setpoint (a hint of Day 14's FC1 rule).
 
-DISTINCT_SQL = """
-SELECT DISTINCT value FROM samples
-WHERE timeseries_id = :uid
-ORDER BY value
-"""
-distinct_sql = lab.query(conn, DISTINCT_SQL, {"uid": FAN})
-distinct_pd = pd.DataFrame({"value": np.sort(series(FAN)["value"].unique())})
-lab.assert_parity(distinct_pd, distinct_sql, label="fan status values")
-assert distinct_sql.value.tolist() == [0.0, 1.0]
-```
+   ```python
+   n = int(((df["supply_fan_status"] == 1) & (df["da_p_inwc"] < 0.5)).sum())
+   ```
 
-1. The coldest reading is 17.83 °F (it is stored as a decimal, `17.8308`) at `ts = 1773740400`.
-2. Only 0 and 1. Status points are numbers in a historian, not booleans.
+   ```python
+   conn.execute(
+       "SELECT count(*) FROM ahu_1 WHERE supply_fan_status = 1 AND da_p_inwc < :limit", {"limit": 0.5}
+   ).fetchone()
+   ```
+
+3. Flip the sort: `ORDER BY timestamp_utc DESC LIMIT 5` in SQL,
+   `df["timestamp_utc"].sort_values(ascending=False).head(5)` in pandas (or just `df["timestamp_utc"].tail(5)`) in pandas. The newest row is `2026-07-17 09:55:00+00:00`. SQL's
+   `DESC` on the primary key reads the B-tree backwards: no sort at all.
 
 </details>
 
 ## Why it matters
 
-Pasting UUIDs by hand doesn't scale. AHU_1 alone has 83 points, and a campus has tens of thousands. Day 6 puts
-the point list in a table, and Unit 4 replaces it with a SPARQL query: "give me the duct static pressure sensor of
-every AHU" → UUIDs. And because those UUIDs will come from a query, not from your own keyboard, passing them as
-parameters is not just tidy. It is how you keep a bad id from becoming a bad query.
+Almost every analysis step is "some columns, some rows, in some order, not too many". Getting comfortable with that
+shape in both tools means you can read other people's queries and DataFrame code as the same thing. Passing values as
+parameters is a habit worth forming now: in Week 5 the column and series you ask for will come from a model lookup, not
+from your own keyboard, and a value that came from somewhere else must never be able to become part of the query.

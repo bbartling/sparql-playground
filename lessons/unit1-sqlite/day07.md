@@ -1,275 +1,94 @@
-# Day 7 — JOIN: readings by role and equipment instead of UUID
+# Day 7 — Two AHUs: stack them, then join them on time
 
-**Goal:** combine `samples` and `lab_point` so you can ask for readings by meaning, in SQL and with a pandas merge.
+**Goal:** put both AHUs in one table, then JOIN them on `timestamp_utc` to ask "how far apart are two sensors that
+measure the same weather?", in SQL and in pandas, and learn how a join actually runs and how it goes wrong.
 
 ## Read
 
-A **JOIN** pairs rows from two tables that match a condition:
+Building 50 has two air handlers, AHU_1 and AHU_2, each logged in its own CSV (and its own SQLite table) with the
+same column names. Two different questions need two different tools.
 
-```
-FROM samples AS s
-JOIN lab_point AS p ON p.timeseries_id = s.timeseries_id
-```
+**Stack: "give me all the rows."** One table with an `equipment_id` column, so one query covers every AHU. This is
+`UNION ALL` in SQL and `pd.concat` in pandas (add the id column to each piece first). Use `UNION ALL`, not `UNION`:
+plain `UNION` also removes duplicate rows, which costs a sort and would silently drop legitimate repeats.
 
-For every reading `s`, find the point row `p` with the same `timeseries_id`, and glue them into one wider row.
-`s` and `p` are **aliases** (short names), so you can write `s.value` and `p.unit`.
+**Join: "put the two rows for the same time side by side."** One row per timestamp, one column per AHU. Both AHUs
+sit in the same building and see the same weather, so their outside-air temperatures should nearly agree. A big gap
+means one sensor is wrong, a better data-quality check than any threshold on a single sensor. The difference of two
+converted temperatures is already a *difference* (Day 6): `oa_ahu_1_c - oa_ahu_2_c` is in K, no 32.
 
-- `JOIN` (inner join) keeps only rows that matched.
-- `LEFT JOIN` keeps every row from the left table and fills the right side with NULLs when nothing matched. It's the
-  tool for "which readings have no point?" style checks.
+Building 50's answer: on average the sensors differ by 1.6 K, 9,005 of 35,536 rows by more than 2 K, and 7 rows by
+more than 20 K. Those 7 are AHU_2 reading exactly 0 °F, a sensor dropout: the history's minimum for AHU_2 is
+−17.8 °C, about 10 K colder than AHU_1's.
 
-Once joined, you filter and group by point attributes: `WHERE p.openfdd_role = 'fan-status'`,
-`GROUP BY p.equipment_id`. No UUIDs typed.
+**How a join runs.** Three ways to match the rows:
 
-In pandas the same thing is `samples.merge(pts, on="timeseries_id", how="inner")`, and `how="left"` is the `LEFT JOIN`.
+| Algorithm | How | Cost (n rows probing m rows) | Where you meet it |
+|---|---|---|---|
+| nested loop | for each left row, scan the whole right table | O(n · m) | a naive double loop |
+| nested loop + index seek | for each left row, look the key up in a B-tree | O(n log m) | SQLite, using the primary key |
+| hash join | build a hash table of the right side once, probe it per left row | O(n + m) | pandas `merge` |
 
-| | SQL | pandas |
+`timestamp_utc` is the table's primary key, so SQLite already has a B-tree on it, and the plan says
+`SEARCH b USING COVERING INDEX sqlite_autoindex_ahu_2_1 (timestamp_utc=?)`. Without an index SQLite doesn't fall back
+to the O(n·m) loop: it builds a temporary **automatic index** just for the query. pandas builds a hash table. The
+scripts print a timing at the end to show the difference.
+
+**Join explosion.** The one-to-one join above works because `timestamp_utc` is unique in each table. If the join key
+repeats, every left row pairs with *every* matching right row. Try joining the first day of the two AHUs on the
+**hour** (about 12 rows per hour) instead of the timestamp: 280 rows per side become 3,328 rows. Add up a `SUM` or
+`COUNT` over a join like that and every number is silently inflated. pandas has a guard: `merge(...,
+validate="1:1")` raises `MergeError` if either side's key repeats (`"1:m"` and `"m:1"` check one side). SQL has no
+such keyword; the equivalent is to check `count(*) > count(DISTINCT key)` before you trust a join.
+
+| Step | `day07_sql.py` | `day07_pandas.py` |
 |---|---|---|
-| inner join | `JOIN lab_point p ON p.timeseries_id = s.timeseries_id` | `s.merge(p, on="timeseries_id")` |
-| left join | `LEFT JOIN ...` | `s.merge(p, on="timeseries_id", how="left", indicator=True)` |
-| filter after join | `WHERE p.openfdd_role = 'fan-status'` | `m[m.openfdd_role == "fan-status"]` |
-| aggregate | `GROUP BY p.equipment_id` + `sum(...)` | `m.groupby("equipment_id")["value"].sum()` |
-| "this must be one-to-one" | a `PRIMARY KEY` / `UNIQUE` constraint | `merge(..., validate="m:1")` |
-
-**How the join is computed.** The two tools use different algorithms.
-
-- SQLite does a **nested loop with an index lookup**. It picks an outer table, and for each of its rows it seeks the
-  matching row in the inner table through an index. That costs O(n log m) for n outer rows and m inner rows, and
-  needs almost no extra memory. This is why `samples` has `PRIMARY KEY (timeseries_id, ts)` and `lab_point` has
-  `PRIMARY KEY (timeseries_id)`: those are the indexes the seeks use. It also lets SQLite pick the *cheaper* outer
-  table. With `WHERE openfdd_role = 'fan-status'` it starts from the two fan-status points and seeks only their
-  readings, never touching the other 4 million rows.
-- pandas does a **hash join**. It builds a hash table of one side's keys and probes it with the other side's rows:
-  O(n + m) time, but the data has to be in memory (a DataFrame for each side plus the result), and the merge happens
-  on whatever you loaded. You do the "pick only the fan-status readings" step yourself, before the merge.
-
-**Join explosion.** If the key isn't unique on the side you're looking up, every match makes its own output row, and
-the result has *more* rows than the readings you started with. Sums and averages quietly turn wrong. Always check
-that a join keeps the row count you expect (SQL: look at `count(*)`; pandas: `validate="m:1"`).
-
-Units: weeks 1 and 2 use the raw values (°F, inH2O, percent 0–100).
+| stack | `SELECT 'AHU_1' AS equipment_id, ... UNION ALL SELECT 'AHU_2', ...` | `pd.concat(frames)` after `df.insert(0, "equipment_id", ...)` |
+| join on time | `FROM ahu_1 a JOIN ahu_2 b ON b.timestamp_utc = a.timestamp_utc` | `a.merge(b, on="timestamp_utc", validate="1:1")` |
+| gap stats | `avg(abs(diff_k))`, `sum(abs(diff_k) > 2)` | `diff.abs().mean()`, `(diff.abs() > 2).sum()` |
+| key repeats? | `count(*) > count(DISTINCT hour)` | `merge(..., validate="1:1")` raises |
 
 ## Run
 
-```python
-import pandas as pd
-
-import lab
-
-conn = lab.connect()
-lab.ensure_points(conn)
-pts = lab.query(conn, "SELECT * FROM lab_point")  # 118 rows: the lookup side of every join
-
-
-def role_samples(roles):
-    """Readings of just the points that carry one of these roles (not all 4.2 million rows), as a DataFrame."""
-    ids = pts.loc[pts.openfdd_role.isin(roles), "timeseries_id"].tolist()
-    marks = ",".join("?" * len(ids))
-    return lab.query(
-        conn, f"SELECT timeseries_id, ts, value FROM samples WHERE timeseries_id IN ({marks})", ids
-    )
+```bash
+uv run python lessons/course.py run 7
 ```
 
-`role_samples` keeps pandas memory sensible: it asks SQLite for only the readings it needs, rather than loading
-the whole table and filtering afterwards.
+That runs [`day07_pandas.py`](day07_pandas.py), then [`day07_sql.py`](day07_sql.py). Both print:
 
-**Supply fan run hours for every AHU, no UUIDs typed.** Fan status is 1 when running, 0 when off, one reading per
-5 minutes, so `sum(value) * 5 / 60` is hours.
+```
+Outside-air temperature, AHU_1 minus AHU_2 (K):
+ paired_rows  mean_abs_diff_k  max_abs_diff_k  rows_over_2k  rows_over_20k
+       35536             1.64           39.83          9005              7
 
-```python
-RUN_HOURS_SQL = """
-SELECT p.equipment_id, sum(s.value) * 5 / 60.0 AS run_hours
-FROM samples AS s
-JOIN lab_point AS p ON p.timeseries_id = s.timeseries_id
-WHERE p.openfdd_role = 'fan-status'
-GROUP BY p.equipment_id
-ORDER BY p.equipment_id
-"""
-run_sql = lab.query(conn, RUN_HOURS_SQL)
-
-fan = role_samples(["fan-status"]).merge(
-    pts[["timeseries_id", "equipment_id"]], on="timeseries_id", how="inner", validate="m:1"
-)
-run_pd = (fan.groupby("equipment_id")["value"].sum() * 5 / 60).rename("run_hours").reset_index()
-lab.assert_parity(run_pd, run_sql, label="fan run hours")
-print(run_sql.round(1).to_string(index=False))
-assert round(run_sql.set_index("equipment_id").run_hours["AHU_1"], 1) == 1574.4
+Join explosion on one day of data:
+ rows_per_side  joined_on_timestamp  joined_on_hour  validate_blocked
+           280                  280            3328              True
 ```
 
-`validate="m:1"` says "many readings to one point". If two point rows ever shared a `timeseries_id` the merge would
-raise instead of silently doubling the answer.
-
-```python
-AVG_SQL = """
-SELECT p.equipment_id, p.openfdd_role, avg(s.value) AS avg_f
-FROM samples AS s
-JOIN lab_point AS p ON p.timeseries_id = s.timeseries_id
-WHERE p.openfdd_role IN ('discharge-air-temp', 'return-air-temp')
-GROUP BY p.equipment_id, p.openfdd_role
-ORDER BY p.equipment_id, p.openfdd_role
-"""
-avg_sql = lab.query(conn, AVG_SQL)
-
-temps = role_samples(["discharge-air-temp", "return-air-temp"]).merge(
-    pts[["timeseries_id", "equipment_id", "openfdd_role"]], on="timeseries_id", validate="m:1"
-)
-avg_pd = (
-    temps.groupby(["equipment_id", "openfdd_role"])["value"].mean().rename("avg_f").reset_index()
-)
-lab.assert_parity(avg_pd, avg_sql, label="average discharge vs return")
-print(avg_sql.round(2).to_string(index=False))
-row = avg_sql[(avg_sql.equipment_id == "AHU_1") & (avg_sql.openfdd_role == "discharge-air-temp")]
-assert round(row.avg_f.iloc[0], 2) == 61.17
-```
-
-**Integrity check: any readings whose UUID is not in the point list?** In SQL, a `LEFT JOIN` and look for the NULLs.
-In pandas, a left merge with `indicator=True` adds a column saying which side each row came from. Counting
-readings means reading all 4.2 million, so first collapse them to one row per series (`GROUP BY` in SQL, before the
-merge). Aggregating before joining is the cheap order, in both tools.
-
-```python
-ORPHANS_SQL = """
-SELECT count(*) AS orphan_readings
-FROM samples AS s
-LEFT JOIN lab_point AS p ON p.timeseries_id = s.timeseries_id
-WHERE p.timeseries_id IS NULL
-"""
-orphans_sql = lab.query(conn, ORPHANS_SQL)
-
-per_series = lab.query(
-    conn, "SELECT timeseries_id, count(*) AS n FROM samples GROUP BY timeseries_id"
-)
-checked = per_series.merge(pts[["timeseries_id"]], on="timeseries_id", how="left", indicator=True)
-orphans_pd = pd.DataFrame(
-    {"orphan_readings": [checked.loc[checked["_merge"] == "left_only", "n"].sum()]}
-)
-lab.assert_parity(orphans_pd, orphans_sql, label="orphan readings")
-assert orphans_sql.iloc[0, 0] == 0
-print(len(per_series), "series in samples,", len(pts), "points in lab_point")
-```
-
-Zero orphans. The repo's tests enforce the same invariant on the RDF model: every series in the store has a point,
-and every point's series is in the store.
-
-**Join explosion, on purpose.** Duplicate the two fan-status point rows, as a sloppy export might, and join again.
-Row counts double, and so does every sum.
-
-```python
-fan_ids = pts.loc[pts.openfdd_role == "fan-status", ["timeseries_id", "equipment_id"]]
-dup_pts = pd.concat(
-    [pts[["timeseries_id", "equipment_id"]], fan_ids]
-)  # 120 rows, 2 UUIDs appear twice
-
-conn.execute("DROP TABLE IF EXISTS temp.dup_point")
-conn.execute(
-    "CREATE TEMP TABLE dup_point (timeseries_id TEXT, equipment_id TEXT)"
-)  # no primary key
-conn.executemany("INSERT INTO dup_point VALUES (?, ?)", dup_pts.values.tolist())
-
-n_fan = len(fan)
-n_sql = conn.execute(
-    """SELECT count(*) FROM samples s JOIN dup_point p ON p.timeseries_id = s.timeseries_id
-       WHERE s.timeseries_id IN (SELECT timeseries_id FROM lab_point WHERE openfdd_role = 'fan-status')"""
-).fetchone()[0]
-n_pd = len(role_samples(["fan-status"]).merge(dup_pts, on="timeseries_id"))
-print(f"fan readings {n_fan} -> SQL join {n_sql} rows, pandas merge {n_pd} rows")
-assert n_sql == n_pd == 2 * n_fan
-
-try:
-    role_samples(["fan-status"]).merge(dup_pts, on="timeseries_id", validate="m:1")
-except pd.errors.MergeError as err:
-    print("validate caught it:", str(err)[:70])
-else:
-    raise AssertionError("expected a MergeError")
-```
-
-**What the planner does.** `EXPLAIN QUERY PLAN` shows the nested loop SQLite chose for the run-hours query.
-
-```python
-plan = conn.execute("EXPLAIN QUERY PLAN " + RUN_HOURS_SQL).fetchall()
-for step in plan:
-    print(step[-1])
-```
-
-It scans `lab_point` (118 rows) first, because of the `WHERE` on role, then seeks `samples` through its primary key
-for each matching point. Now time it against the pandas version. The pandas side is fast too once it has loaded
-only fan readings, but the work of *choosing* what to load was done by hand.
-
-```python
-def pandas_run_hours():
-    f = role_samples(["fan-status"]).merge(
-        pts[["timeseries_id", "equipment_id"]], on="timeseries_id"
-    )
-    return f.groupby("equipment_id")["value"].sum()
-
-
-t_sql = lab.best_time(lambda: conn.execute(RUN_HOURS_SQL).fetchall())
-t_pd = lab.best_time(pandas_run_hours)
-print(f"SQL join {t_sql * 1000:6.1f} ms | pandas load + merge {t_pd * 1000:6.1f} ms")
-```
-
-Neither wins by principle: both read the same 71,072 readings. The SQL cost model is O(n log m) with no big
-intermediate result; the pandas one is O(n + m) but holds the readings and the merged copy in memory at once.
-Join the *whole* `samples` table to `lab_point` in pandas and that's 4.2 million rows × several columns, many
-hundreds of MB. Filter or aggregate first.
+(SQLite prints `1` instead of `True`; the test treats them as equal.) After that, the pandas script times a nested
+loop against `merge` (1,500 rows per side: tens of milliseconds against about 1 ms) and the SQL script prints the two
+query plans and times them. Your times will differ; the shape won't.
 
 ## Try it
 
-1. Average duct static pressure **setpoint** per AHU. Are the two AHUs controlled to the same setpoint?
-2. Count readings per `unit`. Which unit has the most data?
+1. Change the 2 K threshold to 1 K in both scripts. How many rows are more than 1 K apart?
+2. Make it a left join (`LEFT JOIN` / `how="left"`) after deleting one AHU_2 row (in pandas:
+   `b = b.drop(b.index[100])`).
+   What is `oa_ahu_2_c` on the missing timestamp, and how does that differ from the inner join's result?
 
 <details><summary>Answers</summary>
 
-```python
-SP_SQL = """
-SELECT p.equipment_id, avg(s.value) AS avg_sp FROM samples s
-JOIN lab_point p ON p.timeseries_id = s.timeseries_id
-WHERE p.openfdd_role = 'duct-static-pressure-sp'
-GROUP BY p.equipment_id ORDER BY p.equipment_id
-"""
-sp_sql = lab.query(conn, SP_SQL)
-sp = role_samples(["duct-static-pressure-sp"]).merge(
-    pts[["timeseries_id", "equipment_id"]], on="timeseries_id", validate="m:1"
-)
-sp_pd = sp.groupby("equipment_id")["value"].mean().rename("avg_sp").reset_index()
-lab.assert_parity(sp_pd, sp_sql, label="average setpoint")
-print(sp_sql.round(3).to_string(index=False))
-assert round(sp_sql.set_index("equipment_id").avg_sp["AHU_1"], 3) == 1.366
-```
-
-AHU_1 averages 1.37 inH2O, AHU_2 0.78. Different setpoints, which is normal: each fan system is sized for its own
-ductwork.
-
-```python
-UNIT_SQL = """
-SELECT coalesce(p.unit, '(none)') AS unit, count(*) AS readings
-FROM samples s JOIN lab_point p ON p.timeseries_id = s.timeseries_id
-GROUP BY unit ORDER BY readings DESC
-"""
-unit_sql = lab.query(conn, UNIT_SQL)
-
-# pandas: aggregate to one row per series first (35,536 readings each), then merge the 118-row table
-unit_pd = (
-    per_series.merge(pts[["timeseries_id", "unit"]], on="timeseries_id", validate="1:1")
-    .assign(unit=lambda d: d["unit"].fillna("(none)"))
-    .groupby("unit")["n"]
-    .sum()
-    .rename("readings")
-    .reset_index()
-)
-lab.assert_parity(unit_pd, unit_sql, label="readings per unit")
-print(unit_sql.to_string(index=False))
-assert unit_sql.iloc[0].tolist() == ["DEG_F", 2380912]
-```
-
-`coalesce(x, y)` returns the first non-NULL argument; in pandas that's `fillna`. Here it labels the points that have
-no unit (statuses, commands, alarms). The pandas version never merges 4.2 million readings: it merges 118 per-series
-counts, which is the aggregate-before-join order.
+1. Compare `abs(diff_k) > 1`: 17,215 rows, just under half. The two sensors disagree by more than 1 K for much of
+   the record, so a rule that mixes them shouldn't assume they match.
+2. The left join keeps the AHU_1 row and fills the AHU_2 value with `NaN` (SQL: `NULL`); the inner join silently
+   drops the row, so you would never know a timestamp was missing. Left joins are how you *find* gaps.
 
 </details>
 
 ## Why it matters
 
-"Join readings to metadata, filter by metadata" is exactly what the API does. The difference is that its metadata
-comes from a SPARQL query over the graph rather than a table. Week 12's client runs a SPARQL query, gets UUIDs back,
-and reads samples. Same join, across two systems.
+Stacking and joining are the two shapes of nearly every analysis: "same question for every AHU" and "relate two
+measurements at the same time". Both are exact and cheap *when the key is unique and you know it is*. The join
+explosion is the classic way an energy or fault number comes out 12× too big and nobody notices. Day 8 adds `CASE`,
+so one pass over the rows can answer several conditional questions at once.

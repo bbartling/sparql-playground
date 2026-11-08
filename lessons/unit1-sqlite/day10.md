@@ -1,378 +1,132 @@
-# Day 10 — Time buckets and views: hourly averages (what Timescale's `time_bucket` does)
+# Day 10 — Joining Open-FDD's results: episodes per rule, then tag every row with its fault episode
 
-**Goal:** downsample 5-minute data to hourly in SQL and pandas, and save queries as views and summary tables.
+**Goal:** count Open-FDD's fault episodes and hours per rule, then attach each 5-minute history row to the episode(s)
+it falls inside: an *interval join*, in SQL (`BETWEEN` join) and pandas (`searchsorted`, `merge_asof`). Then finish
+Week 2 with a challenge that uses everything.
 
 ## Read
 
-**Time bucketing.** Integer division rounds a timestamp down to a bucket:
+Open-FDD writes its findings as **episodes**: one row per stretch of time a rule was in fault, with a start, an end
+and the rule's name. They ship next to the CSVs in `data/BUILDING_50/*/fdd_events.csv`, and the SQL side has them as
+the `fdd_events` table (columns `start_time_utc`, `end_time_utc`, `hvac_system`, `rule_name`, `duration_min`,
+`sample_count`). `hvac_system` is `bld_50_AHU_1`; the scripts strip the prefix to get the same `equipment_id`
+the history
+uses. Counting is a plain `GROUP BY`:
 
 ```
-ts / 3600 * 3600     -- start of the hour (3600 s)
-ts / 900  * 900      -- start of the 15-minute bucket
-ts / 86400 * 86400   -- start of the UTC day
+equipment_id           rule_name  episodes  hours
+       AHU_1                 fc1        80  484.1
+       AHU_1                fc13        90  510.0
+       AHU_2                fc13        77  209.9
 ```
 
-`ts` is an integer, so `/` drops the remainder. Group by the bucket and aggregate, and you have hourly data.
-TimescaleDB, the Postgres extension many historians use, calls this `time_bucket('1 hour', time)`. SQLite does it
-with arithmetic.
+That answers "how many, how long", but not "what was the AHU doing during them?" For that, the two tables need to
+meet: the history has one row per instant, the episodes one row per *interval*. An **interval join** matches a row
+to an episode when `start <= timestamp <= end`.
 
-pandas has two spellings of the same idea:
-
-| Idea | SQL | pandas |
+| Step | `day10_sql.py` | `day10_pandas.py` |
 |---|---|---|
-| bucket start, by arithmetic | `ts / 3600 * 3600` | `ts // 3600 * 3600` |
-| bucket start, on datetimes | (`datetime(ts / 3600 * 3600, 'unixepoch')`) | `dt.floor("h")` |
-| bucket and aggregate | `GROUP BY ts / 3600` | `groupby(bucket)`, or `resample("1h", on="time")` |
-| several aggregates | `avg(v), min(v), max(v), count(*)` | `.agg(mean="mean", lo="min", hi="max", n="size")` |
+| episodes per rule | `GROUP BY equipment_id, rule_name` | `groupby(["equipment_id", "rule_name"]).agg(...)` |
+| row inside episode | `ON r.timestamp_utc BETWEEN e.start_time_utc AND e.end_time_utc` | `start <= t <= end` on epoch seconds |
+| how many episodes at once | `LEFT JOIN` + `GROUP BY row` + `count(e.start_time_utc)` | `searchsorted(starts, t, "right") - searchsorted(ends, t, "left")` |
+| latest episode that started | `SELECT max(start) ... WHERE start <= row_ts` (index seek) | `pd.merge_asof(rows, episodes, by="equipment_id")` |
 
-Beware the integer division. In SQL, `/` on two integers truncates toward zero, which equals "round down" only for
-non-negative timestamps (every timestamp here). Python's `//` always floors, so the two would differ for dates before
-1970. Neither bothers you today.
+**Why `searchsorted` works.** Sort the starts and sort the ends, once. For a time `t`, the episodes that have started
+are `#(start <= t)`, the ones that already finished are `#(end < t)`, and the difference is how many contain `t`.
+Each count is a binary search, so tagging n rows against E episodes costs O((n + E) log E), where the obvious
+every-row-against-every-episode comparison is O(n · E). On the 35,536 × 90 rows here it's 1.7 ms against 10 ms with
+numpy broadcasting; against a pure-Python double loop the gap is orders of magnitude.
 
-Each of these is a **hash aggregation**: one pass over the n rows, O(n), with a hash table holding one entry per
-bucket. SQL's `GROUP BY` on an expression can't use an index (the bucket is computed, not stored), so SQLite
-collects the groups in a temporary B-tree: O(n log b) for b buckets. `resample` instead needs sorted time, which a
-DataFrame sorted by `ts` already has.
+**Why SQL needs an index here.** The `BETWEEN` join is a "range join": `ev` has an index on
+`(equipment_id, start_time_utc)`, so for each row SQLite seeks to the episodes with `start_time_utc <= row time`
+(the plan says `SEARCH e USING INDEX ev_eq_start (equipment_id=? AND start_time_utc<?)`) and then filters on the end.
+A B-tree can only narrow one end of an interval, which is why interval joins are slower than equality joins (about a
+second here for 71,072 rows, against tens of milliseconds for Day 7's join).
 
-Always keep a `count(*)` per bucket. A bucket with 4 readings instead of 12 is a partial hour, and its average is less
-trustworthy.
+**As-of vs interval.** `merge_asof` is built for "the most recent thing before this row" (a price, a setpoint, a
+status change), and it's fast because both sides are sorted. It returns **one** match, the latest start at or before
+the row; the script keeps it only if that episode hasn't ended yet. That is correct *if episodes don't overlap*.
+Open-FDD's episodes **do** overlap heavily: AHU_1's `fc13` has 90 episodes and, at the busiest moment, 15 open at
+once (`max_open`). That also explains why the summed `hours` above (510 h) is so much larger than the time the rows
+are actually covered (1,206 rows × 5 min = 100.5 h): the episodes overlap and the sum counts the overlap many
+times. Count rows or merge the intervals, don't add up `duration_min` when intervals overlap. (`pd.IntervalIndex`
+is the other pandas option, but its `get_indexer` raises `InvalidIndexError: cannot handle overlapping indices`
+for this data; `get_indexer_non_unique` is the overlapping-friendly version.)
 
-**Views.** `CREATE VIEW name AS SELECT ...` saves a query under a name. It stores no data; it reruns every time you
-use it. Good for not repeating yourself. The pandas analogue is a **function**: `reading(roles)` that loads and merges
-whenever you call it.
-
-**Summary tables.** `CREATE TABLE name AS SELECT ...` runs the query once and stores the result. It's fast to read,
-but stale when new data arrives. In pandas it's a DataFrame you keep in a variable (or write to a file). Timescale's
-**continuous aggregates** are this idea maintained for you: a summary table it refreshes as new data lands. In SQLite
-you rebuild it yourself. The trade is **compute once, read many** (table) against **always fresh, pay every time**
-(view). We measure it below.
-
-Units: raw (°F, inH2O, percent 0–100).
+Here the as-of lookup misses no rows (`rows_missed_by_asof` is 0), because the overlapping episodes share the same
+end.
+That's luck of this data, not a property you can rely on: a short episode starting inside a long one would hide
+the long one from `merge_asof`. The `episodes_open` count is the one to trust.
 
 ## Run
 
-```python
-import numpy as np
-import pandas as pd
-
-import lab
-
-conn = lab.connect()
-lab.ensure_points(conn)
-pts = lab.query(conn, "SELECT * FROM lab_point")
-ROLE_COLS = pts[["timeseries_id", "equipment_id", "openfdd_role"]]
-KEYS = ["equipment_id", "ts"]
-ALL_ROLES = sorted(pts["openfdd_role"].dropna().unique())  # the 13 roles: 26 points, 924k readings
-
-
-def role_samples(roles):
-    """Readings of just the points that carry one of these roles, labelled with equipment and role."""
-    ids = pts.loc[pts.openfdd_role.isin(roles), "timeseries_id"].tolist()
-    marks = ",".join("?" * len(ids))
-    raw = lab.query(
-        conn, f"SELECT timeseries_id, ts, value FROM samples WHERE timeseries_id IN ({marks})", ids
-    )
-    return raw.merge(ROLE_COLS, on="timeseries_id", validate="m:1").drop(columns="timeseries_id")
+```bash
+uv run python lessons/course.py run 10
 ```
 
-**Hourly outside air temperature, AHU_1.** First in SQL (the lookup in the `WHERE` finds the point by role, so no
-UUID is typed), then with arithmetic bucketing in pandas, then with `resample`.
+That runs [`day10_pandas.py`](day10_pandas.py), then [`day10_sql.py`](day10_sql.py). Both print:
 
-```python
-HOURLY_SQL = """
-SELECT ts / 3600 * 3600 AS hour_ts,
-       avg(value) AS avg_f,
-       count(*) AS n
-FROM samples
-WHERE timeseries_id = (SELECT timeseries_id FROM lab_point
-                       WHERE equipment_id = 'AHU_1' AND openfdd_role = 'outside-air-temp')
-GROUP BY ts / 3600
-ORDER BY ts / 3600
-"""
-hourly_sql = lab.query(conn, HOURLY_SQL)
-
-oat = role_samples(["outside-air-temp"]).query("equipment_id == 'AHU_1'").sort_values("ts")
-oat = oat.assign(hour_ts=oat["ts"] // 3600 * 3600)  # bucket start, by arithmetic
-hourly_pd = oat.groupby("hour_ts")["value"].agg(avg_f="mean", n="size").reset_index()
-lab.assert_parity(hourly_pd, hourly_sql, label="hourly OAT (arithmetic bucket)")
-
-# resample works on a datetime index; convert back to epoch seconds to compare
-by_time = oat.assign(time=pd.to_datetime(oat["ts"], unit="s")).set_index("time")["value"]
-res = by_time.resample("1h").agg(["mean", "size"])
-res_pd = pd.DataFrame(
-    {
-        "hour_ts": (res.index - pd.Timestamp("1970-01-01")) // pd.Timedelta("1s"),
-        "avg_f": res["mean"].to_numpy(),
-        "n": res["size"].to_numpy(),
-    }
-)
-assert (res_pd.n > 0).all()  # resample would also emit empty hours; this historian has no gaps
-lab.assert_parity(res_pd, hourly_sql, label="hourly OAT (resample)")
-
-first = hourly_sql.iloc[0]
-print(pd.to_datetime(first.hour_ts, unit="s"), round(first.avg_f, 2), int(first.n))
-assert (pd.to_datetime(first.hour_ts, unit="s").isoformat(), round(first.avg_f, 2), first.n) == (
-    "2026-03-16T00:00:00",
-    69.03,
-    4,
-)
+```
+Every 5-minute row tagged with its fc13 episodes:
+equipment_id  rows  rows_in_episode  max_open  rows_missed_by_asof  covered_h  episode_hours_summed
+       AHU_1 35536             1206        15                    0      100.5                 510.0
+       AHU_2 35536              954        10                    0       79.5                 209.9
+equipment_id             timestamp_utc  episodes_open              latest_start
+       AHU_1 2026-04-09 15:25:00+00:00              1 2026-04-09 15:23:30+00:00
 ```
 
-The first hour has only 4 readings (00:40–00:55), which is why `n` is kept. (`resample` fills in missing hours with
-`NaN` and a count of 0; SQL's `GROUP BY` only makes groups for hours that have data. Both agree here because the
-historian has no gaps.)
-
-**A view, and its pandas twin, a function.** Every reading with its point attributes.
-
-```python
-conn.execute("DROP VIEW IF EXISTS lab_reading")
-conn.execute(
-    """CREATE VIEW lab_reading AS
-       SELECT p.equipment_id, p.openfdd_role, p.point_id, p.unit, s.ts, s.value
-       FROM samples s
-       JOIN lab_point p ON p.timeseries_id = s.timeseries_id"""
-)
-
-fan_sql = lab.query(
-    conn,
-    "SELECT equipment_id, count(*) AS n FROM lab_reading WHERE openfdd_role = 'fan-status' GROUP BY 1",
-)
-n_view = conn.execute(
-    "SELECT count(*) FROM lab_reading WHERE openfdd_role = 'fan-status'"
-).fetchone()[0]
-fan_pd = role_samples(["fan-status"]).groupby("equipment_id").size().rename("n").reset_index()
-lab.assert_parity(fan_pd, fan_sql, label="view vs function")
-print("fan-status readings:", n_view)
-assert n_view == 71072
-```
-
-`WHERE openfdd_role = 'fan-status'` on the view is pushed down into the view's own join, so SQLite still only touches
-the fan readings. The view stores nothing, and the next query joins again.
-
-**A summary table, and its pandas twin, a stored DataFrame.** Hourly mean, min and max for every role point.
-
-```python
-HOURLY_ALL_SQL = """
-SELECT equipment_id, openfdd_role,
-       ts / 3600 * 3600 AS hour_ts,
-       avg(value) AS mean, min(value) AS lo, max(value) AS hi, count(*) AS n
-FROM lab_reading
-WHERE openfdd_role IS NOT NULL
-GROUP BY equipment_id, openfdd_role, ts / 3600
-"""
-conn.execute("DROP TABLE IF EXISTS lab_hourly")
-conn.execute("CREATE TABLE lab_hourly AS " + HOURLY_ALL_SQL)
-conn.execute("CREATE INDEX lab_hourly_idx ON lab_hourly (equipment_id, openfdd_role, hour_ts)")
-conn.commit()
-
-allr = role_samples(ALL_ROLES)
-allr["hour_ts"] = allr["ts"] // 3600 * 3600
-hourly_all_pd = (
-    allr.groupby(["equipment_id", "openfdd_role", "hour_ts"])["value"]
-    .agg(mean="mean", lo="min", hi="max", n="size")
-    .reset_index()
-)
-lab_hourly = lab.query(conn, "SELECT * FROM lab_hourly")
-lab.assert_parity(
-    hourly_all_pd, lab_hourly, keys=["equipment_id", "openfdd_role", "hour_ts"], label="lab_hourly"
-)
-print(len(lab_hourly), "rows in lab_hourly,", len(allr), "readings in the DataFrame")
-assert len(lab_hourly) == 77012
-```
-
-26 role points × 2,962 hours = 77,012 rows, instead of 924k readings. Charts and dashboards read tables like this.
-
-**View vs table, measured.** Ask the same question both ways: AHU_2's hourly duct static, as a daily maximum of the
-hourly mean. The view version recomputes the join and the bucketing every time. The table version reads rows that are
-already bucketed (and finds them through the index we just made).
-
-```python
-ASK_VIEW = """
-SELECT date(hour_ts, 'unixepoch') AS day, max(mean) AS peak
-FROM (SELECT ts / 3600 * 3600 AS hour_ts, avg(value) AS mean
-      FROM lab_reading
-      WHERE equipment_id = 'AHU_2' AND openfdd_role = 'duct-static-pressure'
-      GROUP BY ts / 3600)
-GROUP BY day ORDER BY day
-"""
-ASK_TABLE = """
-SELECT date(hour_ts, 'unixepoch') AS day, max(mean) AS peak
-FROM lab_hourly
-WHERE equipment_id = 'AHU_2' AND openfdd_role = 'duct-static-pressure'
-GROUP BY day ORDER BY day
-"""
-via_view, via_table = lab.query(conn, ASK_VIEW), lab.query(conn, ASK_TABLE)
-lab.assert_parity(via_view, via_table, label="same answer from the view and the table")
-
-t_view = lab.best_time(lambda: conn.execute(ASK_VIEW).fetchall())
-t_table = lab.best_time(lambda: conn.execute(ASK_TABLE).fetchall())
-print(
-    f"view {t_view * 1000:7.1f} ms | table {t_table * 1000:6.1f} ms | table is {t_view / t_table:.0f}x faster"
-)
-assert t_table < t_view
-```
-
-The view must scan all 35,536 AHU_2 static readings each time (O(n)). The table scans about 2,962 hourly rows via
-the index, about n/12 rows with no join. The cost the table hides is staleness:
-
-```python
-conn.execute("CREATE TEMP TABLE t (x INTEGER)")
-conn.execute("INSERT INTO t VALUES (1), (2)")
-conn.execute("CREATE TEMP VIEW t_view AS SELECT sum(x) AS total FROM t")
-conn.execute("CREATE TEMP TABLE t_table AS SELECT sum(x) AS total FROM t")
-conn.execute("INSERT INTO t VALUES (3)")  # new data arrives
-print(
-    "view:",
-    conn.execute("SELECT total FROM t_view").fetchone()[0],
-    "| table:",
-    conn.execute("SELECT total FROM t_table").fetchone()[0],
-)
-assert conn.execute("SELECT total FROM t_view").fetchone()[0] == 6
-assert conn.execute("SELECT total FROM t_table").fetchone()[0] == 3  # stale until rebuilt
-```
-
-The view sees the new row at once; the table still says 3 until you rebuild it. Dashboards often accept that:
-rebuild hourly, read instantly. Timescale's continuous aggregates automate the rebuild.
+A tagged row carries the start of its episode (`latest_start`). Timestamps are ISO text in one format, so SQL compares
+the strings directly and pandas converts them to seconds since 1970; the results are identical.
+At the end each script prints a timing: pandas, brute force vs binary search; SQL, the `BETWEEN` join vs the as-of
+lookup.
 
 ## Try it
 
-1. From `lab_hourly`, the hour with AHU_2's highest average duct static pressure.
-2. Write a 15-minute bucket version of the first query. How many readings does a full 15-minute bucket have?
+1. Change `RULE` / `rule` to `"fc1"` in both scripts. What do you get for AHU_2, and why is that a trap for a naive
+   `INNER JOIN` version of the query?
+2. **Week 2 challenge.** Use the tagged rows. Add `supply_fan_status` and `outside_air_temp_f` to the history load.
+For
+   each AHU, split the rows into *inside an fc13 episode* and *outside*, and report the row count, the percent of rows
+   with the fan running, and the mean outside-air temperature in °C. What does it say about when fc13 fires?
 
 <details><summary>Answers</summary>
 
-```python
-TOP_SQL = """
-SELECT hour_ts, mean
-FROM lab_hourly
-WHERE equipment_id = 'AHU_2' AND openfdd_role = 'duct-static-pressure'
-ORDER BY mean DESC
-LIMIT 1
-"""
-top_sql = lab.query(conn, TOP_SQL)
-ahu2 = hourly_all_pd[
-    (hourly_all_pd.equipment_id == "AHU_2") & (hourly_all_pd.openfdd_role == "duct-static-pressure")
-]
-top_pd = ahu2.nlargest(1, "mean")[["hour_ts", "mean"]]
-lab.assert_parity(top_pd, top_sql, label="AHU_2 highest hourly static")
-print(pd.to_datetime(top_sql.hour_ts.iloc[0], unit="s"), round(top_sql["mean"].iloc[0], 3))
-assert len(top_sql) == 1
-```
+1. AHU_2 has no `fc1` episodes at all. With a `LEFT JOIN` every row still appears with `episodes_open = 0`; with an
+   `INNER JOIN` AHU_2 would vanish from the result, and a report built on it would look as though AHU_2 wasn't
+   analyzed rather than healthy. Missing groups are a join's most common silent failure.
+2. Result (both languages agree):
 
-```python
-QUARTER_SQL = """
-SELECT ts / 900 * 900 AS bucket, count(*) AS n
-FROM samples
-WHERE timeseries_id = (SELECT timeseries_id FROM lab_point
-                       WHERE equipment_id = 'AHU_1' AND openfdd_role = 'outside-air-temp')
-GROUP BY ts / 900 ORDER BY ts / 900
-"""
-quarter_sql = lab.query(conn, QUARTER_SQL)
-quarter_pd = (
-    oat.assign(bucket=oat["ts"] // 900 * 900).groupby("bucket").size().rename("n").reset_index()
-)
-lab.assert_parity(quarter_pd, quarter_sql, label="15-minute buckets")
-print(
-    quarter_sql.head(3)
-    .assign(bucket=lambda d: pd.to_datetime(d.bucket, unit="s"))
-    .to_string(index=False)
-)
-assert quarter_sql.n.iloc[:3].tolist() == [1, 3, 3]
-```
+   ```
+   equipment_id  in_episode   rows  pct_fan_running  mean_oa_c
+          AHU_1       False  34330             51.5       15.9
+          AHU_1        True   1206            100.0       26.3
+          AHU_2       False  34582             49.3       17.2
+          AHU_2        True    954            100.0       27.3
+   ```
 
-A full 15-minute bucket has 3 readings. The first has only one, at 00:40 (the 00:30 bucket).
+   Every row inside an `fc13` episode has the fan running (100%), and it's warm outside: 26–27 °C against 16–17 °C
+   otherwise. The rule fires when the AHU is working in warm weather, which is when you'd expect a cooling-related
+   rule to find trouble. SQL, with the `EXISTS` standing in for the join:
+
+   ```sql
+   SELECT h.equipment_id,
+          EXISTS (SELECT 1 FROM ev WHERE ev.equipment_id = h.equipment_id
+                    AND h.timestamp_utc BETWEEN ev.start_time_utc AND ev.end_time_utc) AS in_episode,
+          count(*) AS rows, 100.0 * avg(supply_fan_status) AS pct_fan_running,
+          avg((outside_air_temp_f - 32) * 5 / 9.0) AS mean_oa_c
+   FROM h GROUP BY 1, 2
+   ```
+
+   pandas: merge the history columns onto `tagged`, add `in_episode = tagged.episodes_open > 0` and
+   `oa_c = (outside_air_temp_f - 32) * 5 / 9`, then `groupby(["equipment_id", "in_episode"]).agg(...)`. This uses
+   Day 6 (units), Day 7 (join), Day 8 (conditional aggregation) and today's interval join.
 
 </details>
 
-## Week 2 challenge
+## Why it matters
 
-Build `lab_daily`: one row per AHU per day, with fan run hours, hours run while unoccupied, average outside air
-temperature, and average static pressure *while running*. Then find the five days with the most unoccupied runtime on
-AHU_1, and check the day of week (`strftime('%w', ...)`): weekends?
-
-<details><summary>Answer</summary>
-
-SQL first. It pivots the roles into columns with the conditional aggregation of Day 9, then buckets by day.
-pandas does the same with a `pivot` and a `groupby` on the day.
-
-```python
-DAILY_SQL = """
-WITH wide AS (
-  SELECT p.equipment_id, s.ts,
-         max(CASE WHEN p.openfdd_role = 'fan-status' THEN s.value END)           AS fan,
-         max(CASE WHEN p.openfdd_role = 'occupied' THEN s.value END)             AS occupied,
-         max(CASE WHEN p.openfdd_role = 'outside-air-temp' THEN s.value END)     AS oat,
-         max(CASE WHEN p.openfdd_role = 'duct-static-pressure' THEN s.value END) AS static
-  FROM samples s
-  JOIN lab_point p ON p.timeseries_id = s.timeseries_id
-  WHERE p.openfdd_role IN ('fan-status', 'occupied', 'outside-air-temp', 'duct-static-pressure')
-  GROUP BY p.equipment_id, s.ts
-)
-SELECT equipment_id,
-       date(ts, 'unixepoch')                                                   AS day,
-       sum(fan) * 5 / 60.0                                                     AS run_h,
-       sum(CASE WHEN fan = 1 AND occupied = 0 THEN 1 ELSE 0 END) * 5 / 60.0    AS run_unocc_h,
-       avg(oat)                                                                AS avg_oat,
-       avg(CASE WHEN fan = 1 THEN static END)                                  AS avg_static_running
-FROM wide
-GROUP BY equipment_id, day
-"""
-conn.execute("DROP TABLE IF EXISTS lab_daily")
-conn.execute("CREATE TABLE lab_daily AS " + DAILY_SQL)
-conn.commit()
-daily_sql = lab.query(conn, "SELECT * FROM lab_daily")
-
-d = role_samples(["fan-status", "occupied", "outside-air-temp", "duct-static-pressure"])
-d = d.pivot(index=KEYS, columns="openfdd_role", values="value").reset_index()
-d["day"] = pd.to_datetime(d["ts"], unit="s").dt.strftime("%Y-%m-%d")
-d["run_unocc"] = (d["fan-status"] == 1) & (d["occupied"] == 0)
-d["static_running"] = d["duct-static-pressure"].where(
-    d["fan-status"] == 1
-)  # NaN when off, skipped by mean
-gd = d.groupby(["equipment_id", "day"])
-daily_pd = pd.DataFrame(
-    {
-        "run_h": gd["fan-status"].sum() * 5 / 60,
-        "run_unocc_h": gd["run_unocc"].sum() * 5 / 60,
-        "avg_oat": gd["outside-air-temp"].mean(),
-        "avg_static_running": gd["static_running"].mean(),
-    }
-).reset_index()
-lab.assert_parity(daily_pd, daily_sql, keys=["equipment_id", "day"], label="lab_daily")
-print(len(daily_sql), "rows:", daily_sql.groupby("equipment_id").size().to_dict())
-assert len(daily_sql) == 2 * 124  # 124 days (Mar 16 to Jul 17) for each AHU
-```
-
-Now the five days with the most unoccupied runtime on AHU_1, and their weekday. SQLite's `%w` counts Sunday as 0;
-pandas' `dayofweek` counts Monday as 0, so convert before comparing.
-
-```python
-TOP5_SQL = """
-SELECT day, run_unocc_h, strftime('%w', day) AS dow
-FROM lab_daily
-WHERE equipment_id = 'AHU_1'
-ORDER BY run_unocc_h DESC, day
-LIMIT 5
-"""
-top5_sql = lab.query(conn, TOP5_SQL)
-
-a1 = (
-    daily_pd[daily_pd.equipment_id == "AHU_1"]
-    .sort_values(["run_unocc_h", "day"], ascending=[False, True])
-    .head(5)
-)
-sunday_first = (pd.to_datetime(a1["day"]).dt.dayofweek + 1) % 7
-top5_pd = a1.assign(dow=sunday_first.astype(str))[["day", "run_unocc_h", "dow"]]
-lab.assert_parity(top5_pd, top5_sql, keys=["day"], label="top 5 unoccupied days")
-
-NAMES = {"0": "Sun", "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat"}
-print(top5_sql.assign(weekday=top5_sql.dow.map(NAMES)).to_string(index=False))
-```
-
-Not weekends. The heaviest days are Wednesday 2026-05-20 (10.1 h running while unoccupied), Tuesday 2026-04-14
-and Monday 2026-05-18, with only one Sunday (2026-05-17) in the top five. The extra unoccupied runtime sits on
-weekdays: more likely a schedule that starts the fan early or stops it late than a weekend left running. (The
-`ORDER BY run_unocc_h DESC, day` tie-break matters: 2026-05-17 and 2026-06-29 both have 9.17 h.) That's a lead
-for a day-by-day look at the occupancy command and fan status.
-
-</details>
+Open-FDD tells you *that* a rule fired; the interval join is how you ask *what the equipment was doing* when it did:
+the fan state, the weather, the setpoint, the schedule. Day 14 already compared your own rule with Open-FDD's
+episodes this way, and later weeks do it again. Watch for the two traps from this week that bite here too:
+a join on a repeated key multiplies rows (Day 7), and summing episode durations double counts where episodes
+overlap.
