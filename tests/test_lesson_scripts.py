@@ -258,10 +258,40 @@ RDF_EXPECTED = {
             ("MenuItem", "hasCalories", "exactly 1"),
         ],
         "undefined_classes": [],
+        "cook_methods": [
+            ("CookMethod.fried", "fried", 0),
+            ("CookMethod.grilled", "grilled", 1),
+            ("CookMethod.none", "none", 2),
+        ],
+        "text_not_iri": ["Shake"],
+        "coded_labels": ["15-Fried pickles"],
+        "code_7_alone": ["Moo melt", "Spicy stack"],
+        "receipts": {"Receipt_1": "Moo melt", "Receipt_2": "Spicy stack"},
     },
     39: {
         "unanswered": [],
         "conforms": True,
+        "shape_results": {
+            "separate file": [
+                (
+                    "FriedPickles",
+                    "Warning",
+                    "Keep labels clean: start with a letter, no codes like '15-' in front.",
+                ),
+                (
+                    "Shake",
+                    "Violation",
+                    "A menu item needs exactly one cook method, one of the CookMethod values.",
+                ),
+            ],
+            "class is shape": [
+                (
+                    "CrispyChicken",
+                    "Violation",
+                    "A fried menu item has exactly one cook method: CookMethod.fried.",
+                ),
+            ],
+        },
     },
     40: {
         "answers": {
@@ -545,6 +575,55 @@ def test_mini_challenge_day37_add_ice_machine():
     classes = set(g.subjects(RDF.type, OWL.Class))
     assert len(classes) == 14
     assert all(g.value(c, RDFS.label) and g.value(c, SKOS.definition) for c in classes)
+
+
+COOK_FILES = ["burger.ttl", "burger_cook_methods.ttl", "burger_cook_data.ttl"]
+COOK_METHOD_RULE = """
+@prefix burger: <https://example.org/burger#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+burger:MenuItemCookShape a sh:NodeShape ; sh:targetClass burger:MenuItem ;
+    sh:property [ sh:path burger:cookMethod ;
+        sh:in ( burger:CookMethod.fried burger:CookMethod.grilled burger:CookMethod.none ) ;
+        sh:minCount 1 ; sh:maxCount 1 ] .
+"""
+
+
+def test_mini_challenge_day38_cook_method_as_text_fails():
+    from pyshacl import validate
+
+    rule = Graph().parse(data=COOK_METHOD_RULE, format="turtle")
+    clean = _load(COOK_FILES)
+    assert validate(clean, shacl_graph=rule)[0] is True
+
+    with_mistakes = _load([*COOK_FILES, "burger_cook_mistakes.ttl"])
+    conforms, report, _text = validate(with_mistakes, shacl_graph=rule)
+    rows = report.query("SELECT ?n WHERE { ?r <http://www.w3.org/ns/shacl#focusNode> ?n }")
+    assert conforms is False
+    assert [_short(row.n) for row in rows] == ["Shake"]
+
+
+def test_day38_named_cook_method_fixes_the_shake():
+    from pyshacl import validate
+    from rdflib import Literal, URIRef
+
+    g = _load([*COOK_FILES, "burger_cook_mistakes.ttl"])
+    shake = URIRef("https://example.org/burger-site#Shake")
+    g.remove((shake, BURGER.cookMethod, Literal("fried")))
+    g.add((shake, BURGER.cookMethod, URIRef(str(BURGER) + "CookMethod.fried")))
+    rule = Graph().parse(data=COOK_METHOD_RULE, format="turtle")
+    assert validate(g, shacl_graph=rule)[0] is True
+
+
+def test_day39_a_shape_that_is_not_a_class_has_no_target():
+    from pyshacl import validate
+    from rdflib import OWL, RDF, RDFS
+
+    data = _load([*COOK_FILES, "burger_cook_mistakes.ttl"])
+    shapes = _load(["burger_cook_methods.ttl"])
+    assert validate(data, shacl_graph=shapes)[0] is False  # CrispyChicken is "grilled"
+    shapes.remove((BURGER.FriedMenuItem, RDF.type, OWL.Class))
+    shapes.remove((BURGER.FriedMenuItem, RDF.type, RDFS.Class))
+    assert validate(data, shacl_graph=shapes)[0] is True
 
 
 def test_mini_challenge_day39_cooler_shape():

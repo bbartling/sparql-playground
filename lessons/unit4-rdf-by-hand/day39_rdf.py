@@ -1,5 +1,6 @@
 # Day 39: Ontology Development 101, step 8. Test it: answer every competency question with
-# SPARQL, and validate the instances with SHACL.
+# SPARQL, and validate the instances with SHACL. Then compare two ways to attach a shape:
+# a separate shapes file with sh:targetClass, and a class that is its own shape.
 # Run from the repo root:
 #     uv run python lessons/unit4-rdf-by-hand/day39_rdf.py
 
@@ -48,11 +49,44 @@ unanswered = [question for question, rows in answers.items() if not rows]
 # 4. SHACL: is the data complete enough to be used?
 conforms, report, text = validate(g, shacl_graph=shapes)
 
+# 5. Two ways to attach a shape, on the cook-method data (Day 38) plus its three mistakes.
+cook_data = Graph()
+cook_data.parse("lessons/unit4-rdf-by-hand/burger.ttl")  # so FriedMenuItem counts as a MenuItem
+cook_data.parse("lessons/unit4-rdf-by-hand/burger_cook_methods.ttl")
+cook_data.parse("lessons/unit4-rdf-by-hand/burger_cook_data.ttl")
+cook_data.parse("lessons/unit4-rdf-by-hand/burger_cook_mistakes.ttl")
+
+# 5a. A separate shapes file: MenuItemCookShape has sh:targetClass burger:MenuItem
+separate_shapes = Graph().parse("lessons/unit4-rdf-by-hand/burger_cook_shapes.ttl")
+# 5b. The class is the shape: burger:FriedMenuItem is a class AND an sh:NodeShape
+class_as_shape = Graph().parse("lessons/unit4-rdf-by-hand/burger_cook_methods.ttl")
+
+shape_results = {}
+for name, shapes_graph in [("separate file", separate_shapes), ("class is shape", class_as_shape)]:
+    _conforms, report_graph, _text = validate(cook_data, shacl_graph=shapes_graph)
+    rows = []
+    for row in report_graph.query("""
+        PREFIX sh: <http://www.w3.org/ns/shacl#>
+        SELECT ?item ?severity ?message WHERE {
+          ?result sh:focusNode ?item ; sh:resultSeverity ?severity ; sh:resultMessage ?message .
+        } ORDER BY ?item"""):
+        rows.append((row.item.fragment, row.severity.fragment, str(row.message)))
+    shape_results[name] = rows
+
 for question, rows in answers.items():
     print(question)
     print("  ", rows)
 print("\nUnanswered questions:", unanswered)
 print("Data follows the shapes:", conforms)
+for name, rows in shape_results.items():
+    print(f"\nCook-method check, {name}:")
+    for row in rows:
+        print("  ", *row)
 
 # For the course's automatic checker (tests/test_lesson_scripts.py)
-RESULTS = {"answers": answers, "unanswered": unanswered, "conforms": conforms}
+RESULTS = {
+    "answers": answers,
+    "unanswered": unanswered,
+    "conforms": conforms,
+    "shape_results": shape_results,
+}

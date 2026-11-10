@@ -1,0 +1,19 @@
+# Franchise specials (Day 38): the same code means different things in different franchises.
+# Each franchise owner numbers their own specials from 1, so "special 7" alone is ambiguous.
+# It only resolves together with the franchise ID, like a BACnet proprietary value that
+# needs the vendor-identifier to mean anything.
+# The fix in the ontology: one named thing per (franchise, code) pair.
+@prefix burger: <https://example.org/burger#> .
+@prefix site:   <https://example.org/burger-site#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+site:Special_101_7 a burger:FranchiseSpecial ; rdfs:label "Moo melt" ;
+    burger:franchiseId 101 ; burger:specialCode 7 .
+site:Special_202_7 a burger:FranchiseSpecial ; rdfs:label "Spicy stack" ;
+    burger:franchiseId 202 ; burger:specialCode 7 .
+site:Special_202_8 a burger:FranchiseSpecial ; rdfs:label "Barn breakfast" ;
+    burger:franchiseId 202 ; burger:specialCode 8 .
+
+# Two till receipts that both say "special 7"
+site:Receipt_1 burger:franchiseId 101 ; burger:specialCode 7 .
+site:Receipt_2 burger:franchiseId 202 ; burger:specialCode 7 .
