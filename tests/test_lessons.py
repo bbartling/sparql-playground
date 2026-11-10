@@ -25,14 +25,14 @@ def load(name: str):
 def test_syllabus_links_exist():
     readme = (LESSONS / "README.md").read_text(encoding="utf-8")
     links = re.findall(r"\]\((unit[^)]+\.md)\)", readme)
-    assert len(links) == 25
+    assert len(links) == 45
     for link in links:
         assert (LESSONS / link).is_file(), link
 
 
-def test_every_lesson_has_its_sections_and_two_scripts():
+def test_every_lesson_has_its_sections_and_scripts():
     files = sorted(LESSONS.glob("unit*/day*.md"), key=lambda p: int(p.stem[3:]))
-    assert [int(p.stem[3:]) for p in files] == list(range(1, 26))
+    assert [int(p.stem[3:]) for p in files] == list(range(1, 46))
     for path in files:
         text = path.read_text(encoding="utf-8")
         day = int(path.stem[3:])
@@ -42,7 +42,12 @@ def test_every_lesson_has_its_sections_and_two_scripts():
         # each lesson ends with an exercise and either "why it matters" or a challenge
         assert "## Try it" in text or "challenge" in text, path.name
         assert "## Why it matters" in text or "challenge" in text, path.name
-        for kind in ("pandas", "sql"):
+        # Weeks 6-9 (days 26-45): one RDF script, a buildings box and a burger mini challenge
+        kinds = ("rdf",) if day >= 26 else ("pandas", "sql")
+        if day >= 26:
+            assert "## How this maps to buildings" in text, path.name
+            assert "**Mini challenge (Burger Barn):**" in text, path.name
+        for kind in kinds:
             script = path.with_name(f"day{day:02d}_{kind}.py")
             assert script.is_file(), script.name
             code = script.read_text(encoding="utf-8")

@@ -1,0 +1,67 @@
+# A tiny hand-written building (Days 35, 36 and 40): one AHU feeding two VAV boxes, with Brick classes.
+#
+# Compare with Burger Barn:
+#     bb:BurgerBarn   bb:contains     bb:MainKitchen ...    brick:hasLocation (the other way round)
+#     bb:Fryer_1      bb:hasPoint     bb:Fryer_1_OilTemp    brick:hasPoint
+#     bb:Fryer        subClassOf      bb:Equipment          brick:VAV ... subClassOf brick:Equipment
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix ex:    <https://example.org/tiny-building#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+# ---- a few of Brick's class facts, written by hand ------------------------------
+# The real Brick ontology ships thousands of these (simplified here). We only need these.
+brick:HVAC_Equipment rdfs:subClassOf brick:Equipment .
+brick:AHU rdfs:subClassOf brick:HVAC_Equipment .
+brick:Terminal_Unit rdfs:subClassOf brick:HVAC_Equipment .
+brick:VAV rdfs:subClassOf brick:Terminal_Unit .
+brick:Sensor rdfs:subClassOf brick:Point .
+brick:Temperature_Sensor rdfs:subClassOf brick:Sensor .
+brick:Air_Temperature_Sensor rdfs:subClassOf brick:Temperature_Sensor .
+brick:Supply_Air_Temperature_Sensor rdfs:subClassOf brick:Air_Temperature_Sensor .
+brick:Zone_Air_Temperature_Sensor rdfs:subClassOf brick:Air_Temperature_Sensor .
+brick:Status rdfs:subClassOf brick:Point .
+brick:Fan_Status rdfs:subClassOf brick:Status .
+brick:Command rdfs:subClassOf brick:Point .
+brick:Damper_Position_Command rdfs:subClassOf brick:Command .
+brick:HVAC_Zone rdfs:subClassOf brick:Zone .
+brick:Zone rdfs:subClassOf brick:Location .
+brick:Room rdfs:subClassOf brick:Space .
+brick:Space rdfs:subClassOf brick:Location .
+
+# ---- a few of Brick's property facts (Brick declares these pairs too) -------------
+brick:hasPoint a owl:ObjectProperty ; owl:inverseOf brick:isPointOf .
+brick:feeds a owl:ObjectProperty ; owl:inverseOf brick:isFedBy .
+brick:hasLocation a owl:ObjectProperty ; owl:inverseOf brick:isLocationOf .
+
+# ---- the building ---------------------------------------------------------------
+ex:Building_1 a brick:Building ; rdfs:label "Tiny office" .
+
+ex:AHU_1 a brick:AHU ; rdfs:label "AHU 1" ;
+    brick:hasLocation ex:Building_1 ;
+    brick:feeds ex:VAV_1, ex:VAV_2 ;
+    brick:hasPoint ex:AHU_1_SAT, ex:AHU_1_FanStatus .
+
+ex:VAV_1 a brick:VAV ; rdfs:label "VAV 1" ;
+    brick:hasLocation ex:Building_1 ;
+    brick:feeds ex:Zone_1 ;                       # the VAV feeds air to a zone: AHU -> VAV -> zone
+    brick:hasPoint ex:VAV_1_ZoneTemp .
+
+ex:VAV_2 a brick:VAV ; rdfs:label "VAV 2" ;      # no zone temperature point: the rule catches it
+    brick:hasLocation ex:Building_1 ;
+    brick:feeds ex:Zone_2 ;
+    brick:hasPoint ex:VAV_2_Damper .
+
+ex:Zone_1 a brick:HVAC_Zone ; rdfs:label "Zone 1 (open office)" .
+ex:Zone_2 a brick:HVAC_Zone ; rdfs:label "Zone 2 (meeting room)" .
+
+ex:AHU_1_SAT a brick:Supply_Air_Temperature_Sensor ; rdfs:label "AHU 1 supply air temp" .
+ex:AHU_1_FanStatus a brick:Fan_Status ; rdfs:label "AHU 1 fan status" .
+ex:VAV_1_ZoneTemp a brick:Zone_Air_Temperature_Sensor ; rdfs:label "VAV 1 zone temp" .
+ex:VAV_2_Damper a brick:Damper_Position_Command ; rdfs:label "VAV 2 damper command" .
+
+# ---- the same AHU, the Haystack way (for comparison; not loaded as triples) ----------
+# Haystack describes it with tags:   id:@AHU_1  equip  ahu  siteRef:@Building_1
+# and its supply air temp point as:  id:@AHU_1_SAT  point sensor supply air temp  equipRef:@AHU_1
+# Haystack 4 can export the same entities as RDF/Turtle; Week 5's model/building_50.ttl
+# stores tags like these in RDF.

@@ -1,0 +1,15 @@
+# The building version of Burger Barn's fryer rule (Day 35): every VAV needs a temperature point.
+# Same shape, different words: bb:Fryer -> brick:VAV, bb:TemperatureSensor -> brick:Temperature_Sensor.
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix ex:    <https://example.org/tiny-building#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+
+ex:VavShape a sh:NodeShape ;
+    sh:targetClass brick:VAV ;
+    sh:property [
+        sh:path brick:hasPoint ;
+        # sh:class also accepts subclasses, so a Zone_Air_Temperature_Sensor counts
+        sh:qualifiedValueShape [ sh:class brick:Temperature_Sensor ] ;
+        sh:qualifiedMinCount 1 ;
+        sh:message "A VAV needs a temperature point." ;
+    ] .

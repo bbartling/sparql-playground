@@ -1,0 +1,46 @@
+# Rules for data that uses the Burger ontology (Days 39 and 44). SHACL, as on Day 35:
+# https://www.w3.org/TR/shacl/
+#
+# Kept in its OWN file, next to burger.ttl in the repo: the ontology says what terms MEAN
+# (open world), the shapes say what a complete, usable data file MUST contain (closed
+# world). Users can load one without the other.
+@prefix burger: <https://example.org/burger#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+burger:FryerShape a sh:NodeShape ;
+    sh:targetClass burger:Fryer ;
+    sh:property [
+        sh:path burger:hasPoint ;
+        sh:qualifiedValueShape [ sh:class burger:TemperatureSensor ] ;
+        sh:qualifiedMinCount 1 ;
+        sh:message "A fryer needs a temperature point." ;
+    ] ;
+    sh:property [
+        sh:path burger:oilSetpoint ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ;
+        sh:message "A fryer needs exactly one decimal oil setpoint." ;
+    ] .
+
+burger:EquipmentShape a sh:NodeShape ;
+    sh:targetClass burger:Equipment ;
+    sh:property [
+        sh:path burger:hasLocation ;
+        sh:minCount 1 ;
+        sh:message "Equipment needs a location." ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Equipment should have a label." ;
+    ] .
+
+burger:MenuItemShape a sh:NodeShape ;
+    sh:targetClass burger:MenuItem ;
+    sh:property [
+        sh:path burger:hasCalories ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:message "A menu item needs exactly one whole-number calorie count." ;
+    ] .

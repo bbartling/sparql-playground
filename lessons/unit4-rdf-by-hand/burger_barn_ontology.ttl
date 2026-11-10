@@ -1,0 +1,146 @@
+# Burger Barn's own ontology (Week 7, Days 31-35): the CLASSES and PROPERTIES that burger_barn.ttl uses.
+#
+# burger_barn.ttl says facts:  "bb:Fryer_1 is a bb:Fryer".
+# This file says what the words mean: "every bb:Fryer is a bb:CookingEquipment, which is
+# a bb:Equipment". Brick is a big ontology of exactly this kind for buildings, written with
+# the same few words used here: owl:Class, rdfs:subClassOf, rdfs:domain, rdfs:range,
+# owl:inverseOf ("brick:AHU rdfs:subClassOf brick:HVAC_Equipment", "brick:hasPoint").
+@prefix bb:   <https://example.org/burger-barn#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+# ---- classes: the kinds of things -------------------------------------------
+# owl:Class says "this name is a kind of thing". rdfs:subClassOf means "every X is also a Y".
+# owl:Thing is OWL's top class: EVERYTHING is an owl:Thing. Most ontologies leave
+# "subClassOf owl:Thing" unsaid; we write it on our five top classes so you can see the top.
+bb:Place a owl:Class ; rdfs:label "Place" ; rdfs:subClassOf owl:Thing .
+bb:Restaurant a owl:Class ; rdfs:subClassOf bb:Place .
+bb:Kitchen    a owl:Class ; rdfs:subClassOf bb:Place .
+bb:DiningRoom a owl:Class ; rdfs:subClassOf bb:Place .
+bb:FranchiseRegion a owl:Class ; rdfs:subClassOf bb:Place ;
+    skos:definition "A group of restaurants run by one franchise office." .
+
+bb:Equipment a owl:Class ; rdfs:label "Equipment" ; rdfs:subClassOf owl:Thing .
+bb:CookingEquipment a owl:Class ; rdfs:subClassOf bb:Equipment .
+bb:Fryer a owl:Class ; rdfs:subClassOf bb:CookingEquipment ;
+    skos:definition "A vat of hot oil that cooks fries, rings and chicken." .
+
+# A RESTRICTION (Day 33): "every fryer has SOME temperature point". The [ ... ] is an
+# unnamed class: the things whose bb:hasPoint includes at least one bb:TemperatureSensor.
+# Open world: if the data shows no such point, OWL assumes one exists that nobody wrote
+# down. It does NOT report a problem. Checking that it is really there is SHACL's job.
+bb:Fryer rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty bb:hasPoint ;
+    owl:someValuesFrom bb:TemperatureSensor
+] .
+bb:Grill a owl:Class ; rdfs:subClassOf bb:CookingEquipment .
+bb:Refrigeration a owl:Class ; rdfs:subClassOf bb:Equipment .
+bb:WalkInCooler a owl:Class ; rdfs:subClassOf bb:Refrigeration .
+bb:IceMachine a owl:Class ; rdfs:subClassOf bb:Refrigeration .
+bb:SodaFountain a owl:Class ; rdfs:subClassOf bb:Equipment .
+
+bb:Point a owl:Class ; rdfs:label "Point" ; rdfs:subClassOf owl:Thing .
+bb:TemperatureSensor a owl:Class ; rdfs:subClassOf bb:Point .
+bb:DoorAlarm a owl:Class ; rdfs:subClassOf bb:Point .
+
+bb:MenuItem a owl:Class ; rdfs:label "Menu item" ; rdfs:subClassOf owl:Thing .  # Day 34
+bb:Ingredient a owl:Class ; rdfs:label "Ingredient" ; rdfs:subClassOf owl:Thing .
+bb:Burger a owl:Class ; rdfs:subClassOf bb:MenuItem .
+bb:Drink  a owl:Class ; rdfs:subClassOf bb:MenuItem .
+
+# ---- disjoint classes: "nothing can be both" ---------------------------------------
+# owl:disjointWith says no thing may be a member of both classes. A fryer is never a cooler;
+# a burger is never a drink. If the data ever says one thing is both, it has a mistake,
+# and a reasoner (or Day 33's query) catches it. In a building model the same idea
+# (a Point is never Equipment) catches "I typed a sensor as an AHU" mistakes.
+bb:CookingEquipment owl:disjointWith bb:Refrigeration .
+bb:Burger owl:disjointWith bb:Drink .
+bb:Equipment owl:disjointWith bb:Point .
+
+# ---- properties --------------------------------------------------------------
+# Plain RDF has one word for a property: rdf:Property. OWL splits it in two:
+#   owl:ObjectProperty   links a thing to another THING    (bb:hasPoint, brick:hasPoint)
+#   owl:DatatypeProperty links a thing to a VALUE (literal)  (bb:oilSetpointC 175)
+# rdfs:domain = what kind of thing the SUBJECT is; rdfs:range = what kind the OBJECT is.
+
+# ---- object properties: thing -> thing ------------------------------------------
+bb:contains a owl:ObjectProperty, owl:TransitiveProperty ;   # transitive: see below
+    rdfs:domain bb:Place ;
+    rdfs:comment "A place contains a room or a piece of equipment." .
+# TRANSITIVE: restaurant contains kitchen, kitchen contains fryer => restaurant contains fryer.
+# (Brick: brick:hasPart / brick:isPartOf link spaces and parts the same way.)
+
+bb:locatedIn a owl:ObjectProperty ;
+    owl:inverseOf bb:contains .          # "Kitchen contains Fryer_1" also means "Fryer_1 locatedIn Kitchen"
+
+bb:adjacentTo a owl:ObjectProperty, owl:SymmetricProperty ;
+    rdfs:domain bb:Place ; rdfs:range bb:Place .
+# SYMMETRIC: kitchen adjacentTo dining room => dining room adjacentTo kitchen.
+
+bb:hasPoint a owl:ObjectProperty ;
+    rdfs:domain bb:Equipment ;           # whatever has a point is equipment
+    rdfs:range bb:Point .                # whatever it points at is a point
+
+bb:isPointOf a owl:ObjectProperty ;
+    owl:inverseOf bb:hasPoint .          # Brick has the same pair: brick:hasPoint / brick:isPointOf
+
+bb:hasAlarm a owl:ObjectProperty ;
+    rdfs:subPropertyOf bb:hasPoint .     # an alarm is one kind of point: hasAlarm implies hasPoint
+
+bb:servesItem a owl:ObjectProperty ; rdfs:domain bb:Restaurant ; rdfs:range bb:MenuItem .
+bb:includes a owl:ObjectProperty ; rdfs:domain bb:MenuItem ; rdfs:range bb:MenuItem .   # a combo
+bb:hasIngredient a owl:ObjectProperty ; rdfs:domain bb:MenuItem ; rdfs:range bb:Ingredient .
+
+# usesEquipment: food -> the equipment it needs. cookedOn and storedIn are two kinds of it.
+bb:usesEquipment a owl:ObjectProperty ; rdfs:range bb:Equipment ;
+    owl:inverseOf bb:isUsedBy .          # "Fries usesEquipment Fryer_1" = "Fryer_1 isUsedBy Fries"
+bb:isUsedBy a owl:ObjectProperty .
+bb:cookedOn a owl:ObjectProperty ; rdfs:range bb:CookingEquipment ;          # fries -> fryer
+    rdfs:subPropertyOf bb:usesEquipment .
+bb:storedIn a owl:ObjectProperty ; rdfs:domain bb:Ingredient ; rdfs:range bb:Refrigeration ;
+    rdfs:subPropertyOf bb:usesEquipment .
+
+# SYMMETRIC: Fries sharesFryerWith CrispyChicken => CrispyChicken sharesFryerWith Fries.
+bb:sharesFryerWith a owl:ObjectProperty, owl:SymmetricProperty .
+
+# TRANSITIVE: kitchen partOf restaurant, restaurant partOf region => kitchen partOf region.
+# (Brick: brick:isPartOf / brick:hasPart.)
+bb:partOf a owl:ObjectProperty, owl:TransitiveProperty ; rdfs:range bb:Place .
+
+# PROPERTY CHAIN: hasIngredient followed by usesEquipment gives needsEquipment.
+# "ClassicBurger hasIngredient BeefPatty" + "BeefPatty usesEquipment Grill_1"
+#   => "ClassicBurger needsEquipment Grill_1". (The path bb:hasIngredient/bb:usesEquipment.)
+bb:needsEquipment a owl:ObjectProperty ;
+    owl:propertyChainAxiom ( bb:hasIngredient bb:usesEquipment ) .
+
+# ---- datatype properties: thing -> value ------------------------------------------
+# rdfs:range names a datatype here: "the value of bb:oilSetpointC is an xsd:decimal".
+# (An xsd:integer like 175 counts: every integer is a decimal. The text "175" does not.)
+bb:oilSetpointC a owl:DatatypeProperty ; rdfs:domain bb:Fryer ; rdfs:range xsd:decimal .
+bb:airSetpointC a owl:DatatypeProperty ; rdfs:domain bb:Refrigeration ; rdfs:range xsd:decimal .
+bb:seats a owl:DatatypeProperty ; rdfs:range xsd:integer .
+bb:isOpen a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+bb:lastInspected a owl:DatatypeProperty ; rdfs:range xsd:dateTime .   # a date AND a time
+bb:openedOn a owl:DatatypeProperty ; rdfs:range xsd:date .              # just a date
+bb:opensAt a owl:DatatypeProperty ; rdfs:range xsd:time .               # a time of day
+bb:fryTime a owl:DatatypeProperty ; rdfs:domain bb:Fryer ; rdfs:range xsd:duration .  # how long
+bb:unit a owl:DatatypeProperty ; rdfs:range xsd:string .
+bb:specialty a owl:DatatypeProperty .
+
+bb:hasCalories a owl:DatatypeProperty, owl:FunctionalProperty ;   # one number per item
+    rdfs:domain bb:MenuItem ; rdfs:range xsd:integer .
+bb:serialNumber a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:range xsd:string .
+# FUNCTIONAL: at most ONE value per thing. A fryer has one serial number; a reasoner that
+# saw two different ones would conclude something is wrong.
+
+# ---- annotation properties: notes for PEOPLE, no logic ------------------------------
+# rdfs:label, rdfs:comment and skos:definition explain a term to a reader. A reasoner
+# ignores them: a label is never inherited, compared or used to infer anything.
+rdfs:label a owl:AnnotationProperty .
+rdfs:comment a owl:AnnotationProperty .
+skos:definition a owl:AnnotationProperty .

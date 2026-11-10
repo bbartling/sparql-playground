@@ -1,0 +1,121 @@
+# The Burger ontology, version 1.1.0 (Weeks 8-9).
+#
+# Weeks 6-7 wrote facts and meanings together in a hurry (bb:). This file is built the
+# careful way, step by step with Ontology Development 101 (Day 36 onwards), and is meant
+# to be PUBLISHED: one stable namespace, a label and a definition for every term,
+# a version number, and old terms deprecated instead of deleted.
+#
+# This is the TBox (the terms). The facts about one restaurant (the ABox) are in
+# burger_site.ttl, and the rules for checking them in burger_shapes.ttl.
+#
+# Namespace: https://example.org/burger#  (example.org is reserved for examples. A real
+# ontology would use a persistent IRI such as https://w3id.org/<name>/, see Day 42.)
+@prefix burger:  <https://example.org/burger#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# ---- about the ontology itself (Day 43) ----------------------------------------------
+<https://example.org/burger> a owl:Ontology ;
+    rdfs:label "Burger ontology" ;
+    dcterms:description "Terms for burger restaurants: equipment, points and menus. A teaching example." ;
+    owl:versionInfo "1.1.0" ;
+    owl:versionIRI <https://example.org/burger/1.1.0> ;     # this exact release
+    owl:priorVersion <https://example.org/burger/1.0.0> ;   # the one before it
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> .
+
+# ---- classes and the hierarchy (Day 37, step 4) --------------------------------------
+burger:Space a owl:Class ; rdfs:label "Space" ;
+    skos:definition "A place in or around a restaurant." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:Restaurant a owl:Class ; rdfs:subClassOf burger:Space ; rdfs:label "Restaurant" ;
+    skos:definition "A place that cooks and serves food to guests." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:Kitchen a owl:Class ; rdfs:subClassOf burger:Space ; rdfs:label "Kitchen" ;
+    skos:definition "The room where food is stored and cooked." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+
+burger:Equipment a owl:Class ; rdfs:label "Equipment" ;
+    skos:definition "A machine that does a job in the restaurant." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:CookingEquipment a owl:Class ; rdfs:subClassOf burger:Equipment ; rdfs:label "Cooking equipment" ;
+    skos:definition "Equipment that heats food." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:Fryer a owl:Class ; rdfs:subClassOf burger:CookingEquipment ; rdfs:label "Fryer" ;
+    skos:definition "A vat of hot oil that cooks food." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:Grill a owl:Class ; rdfs:subClassOf burger:CookingEquipment ; rdfs:label "Grill" ;
+    skos:definition "A hot flat plate that cooks patties." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:WalkInCooler a owl:Class ; rdfs:subClassOf burger:Equipment ; rdfs:label "Walk-in cooler" ;
+    skos:definition "A refrigerated room big enough to walk into." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:CookingEquipment owl:disjointWith burger:WalkInCooler .   # nothing is both
+
+burger:Point a owl:Class ; rdfs:label "Point" ;
+    skos:definition "A value a controller reads or writes, such as a sensor reading." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:TemperatureSensor a owl:Class ; rdfs:subClassOf burger:Point ; rdfs:label "Temperature sensor" ;
+    skos:definition "A point that measures a temperature." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+
+burger:MenuItem a owl:Class ; rdfs:label "Menu item" ;
+    skos:definition "Something a guest can order." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:Ingredient a owl:Class ; rdfs:label "Ingredient" ;
+    skos:definition "Something a menu item is made from." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+
+# ---- a deprecated term (Day 43) ------------------------------------------------------
+# Version 1.0.0 called the walk-in cooler burger:Cooler. Never delete a published term:
+# data out there still uses it. Mark it deprecated and say what replaces it.
+burger:Cooler a owl:Class ; rdfs:label "Cooler (deprecated)" ;
+    owl:deprecated true ;
+    dcterms:isReplacedBy burger:WalkInCooler ;
+    skos:definition "Old name for a walk-in cooler. Use burger:WalkInCooler (since 1.1.0)." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+
+# ---- properties (Day 37, step 5) -----------------------------------------------------
+burger:hasPoint a owl:ObjectProperty ; rdfs:label "has point" ;
+    rdfs:domain burger:Equipment ; rdfs:range burger:Point ;
+    owl:inverseOf burger:isPointOf ;
+    skos:definition "Links equipment to one of its points." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:isPointOf a owl:ObjectProperty ; rdfs:label "is point of" ;
+    skos:definition "Links a point to the equipment it belongs to." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:hasLocation a owl:ObjectProperty ; rdfs:label "has location" ;
+    rdfs:domain burger:Equipment ; rdfs:range burger:Space ;
+    skos:definition "Links equipment to the space it is in." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:servesItem a owl:ObjectProperty ; rdfs:label "serves item" ;
+    rdfs:domain burger:Restaurant ; rdfs:range burger:MenuItem ;
+    skos:definition "Links a restaurant to something on its menu." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:hasIngredient a owl:ObjectProperty ; rdfs:label "has ingredient" ;
+    rdfs:domain burger:MenuItem ; rdfs:range burger:Ingredient ;
+    skos:definition "Links a menu item to something it is made from." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:cookedOn a owl:ObjectProperty ; rdfs:label "cooked on" ;
+    rdfs:range burger:CookingEquipment ;
+    skos:definition "Links food to the equipment that cooks it." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+
+burger:oilSetpoint a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:label "oil setpoint" ;
+    rdfs:domain burger:Fryer ; rdfs:range xsd:decimal ;
+    skos:definition "The oil temperature a fryer aims for, in degrees Celsius." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+burger:hasCalories a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:label "has calories" ;
+    rdfs:domain burger:MenuItem ; rdfs:range xsd:integer ;
+    skos:definition "Food energy of one serving, in kilocalories." ;
+    rdfs:isDefinedBy <https://example.org/burger> .
+
+# ---- restrictions (Day 38, step 6) ---------------------------------------------------
+# Every fryer has SOME temperature point (it may not be written down yet: open world).
+burger:Fryer rdfs:subClassOf [ a owl:Restriction ;
+    owl:onProperty burger:hasPoint ; owl:someValuesFrom burger:TemperatureSensor ] .
+# Every menu item has EXACTLY ONE calorie number.
+burger:MenuItem rdfs:subClassOf [ a owl:Restriction ;
+    owl:onProperty burger:hasCalories ; owl:cardinality "1"^^xsd:nonNegativeInteger ] .

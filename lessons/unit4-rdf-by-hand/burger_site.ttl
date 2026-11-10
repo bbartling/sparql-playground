@@ -1,0 +1,42 @@
+# One Burger Barn restaurant, described with the Burger ontology (burger.ttl).
+# This is the ABox: facts about real (well, made-up) things. Step 7 of Ontology
+# Development 101: create instances (Day 38).
+#
+# The things here get their own namespace, site:, separate from the ontology's burger:.
+# The ontology is shared by every restaurant; this file is about one of them.
+@prefix burger: <https://example.org/burger#> .
+@prefix site:   <https://example.org/burger-site#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+site:Restaurant_1 a burger:Restaurant ; rdfs:label "Burger Barn, Main Street" ;
+    burger:servesItem site:Fries, site:OnionRings, site:ClassicBurger, site:Cola .
+site:Kitchen_1 a burger:Kitchen ; rdfs:label "Kitchen" .
+
+site:Fryer_1 a burger:Fryer ; rdfs:label "Fryer 1" ;
+    burger:hasLocation site:Kitchen_1 ;
+    burger:oilSetpoint 175.0 ;
+    burger:hasPoint site:Fryer_1_OilTemp .
+site:Fryer_2 a burger:Fryer ; rdfs:label "Fryer 2" ;
+    burger:hasLocation site:Kitchen_1 ;
+    burger:oilSetpoint 180.0 ;
+    burger:hasPoint site:Fryer_2_OilTemp .
+site:Grill_1 a burger:Grill ; rdfs:label "Grill" ;
+    burger:hasLocation site:Kitchen_1 ;
+    burger:hasPoint site:Grill_1_SurfaceTemp .
+site:Cooler_1 a burger:WalkInCooler ; rdfs:label "Walk-in cooler" ;
+    burger:hasLocation site:Kitchen_1 .           # no temperature point yet (Day 39 asks)
+
+site:Fryer_1_OilTemp a burger:TemperatureSensor ; rdfs:label "Fryer 1 oil temperature" .
+site:Fryer_2_OilTemp a burger:TemperatureSensor ; rdfs:label "Fryer 2 oil temperature" .
+site:Grill_1_SurfaceTemp a burger:TemperatureSensor ; rdfs:label "Grill surface temperature" .
+
+site:Fries a burger:MenuItem ; rdfs:label "Fries" ; burger:hasCalories 320 ;
+    burger:cookedOn site:Fryer_1 .
+site:OnionRings a burger:MenuItem ; rdfs:label "Onion rings" ; burger:hasCalories 410 ;
+    burger:cookedOn site:Fryer_2 .
+site:ClassicBurger a burger:MenuItem ; rdfs:label "Classic burger" ; burger:hasCalories 540 ;
+    burger:hasIngredient site:BeefPatty, site:Bun .
+site:Cola a burger:MenuItem ; rdfs:label "Cola" ; burger:hasCalories 150 .
+
+site:BeefPatty a burger:Ingredient ; rdfs:label "Beef patty" ; burger:cookedOn site:Grill_1 .
+site:Bun a burger:Ingredient ; rdfs:label "Bun" .

@@ -1,0 +1,83 @@
+# Burger Barn: a made-up burger restaurant, written as RDF by hand (Days 27-35).
+#
+# The same shape as a building model:
+#     restaurant > kitchen > fryer > oil temperature point
+#     building   > AHU     > fan   > supply air temperature point
+#
+# Prefixes make names short. After the line below, bb:Fryer_1 means
+#     <https://example.org/burger-barn#Fryer_1>
+@prefix bb:   <https://example.org/burger-barn#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# "a" is Turtle's short way to write rdf:type: "BurgerBarn is a Restaurant".
+# A ";" means "same subject, next predicate". A "," means "same subject and predicate, next object".
+bb:BurgerBarn a bb:Restaurant ;
+    rdfs:label "Burger Barn" ;          # a literal: plain text in quotes is an xsd:string
+    bb:seats 40 ;                       # a bare number: Turtle makes it an xsd:integer
+    bb:isOpen true ;                    # a bare true/false: an xsd:boolean
+    bb:openedOn "2019-05-04"^^xsd:date ;     # xsd:date: year-month-day, no time
+    bb:opensAt "10:30:00"^^xsd:time ;        # xsd:time: a time of day, no date
+    bb:specialty "fries"@en, "frites"@fr ;   # language tags: the same word in two languages
+    bb:contains bb:MainKitchen, bb:DiningRoom ;
+    bb:partOf bb:NorthRegion .          # the restaurant is part of a franchise region (Day 32)
+
+bb:NorthRegion a bb:FranchiseRegion ;
+    rdfs:label "North region" .
+
+# ---- the rooms --------------------------------------------------------------
+bb:MainKitchen a bb:Kitchen ;
+    rdfs:label "Main kitchen" ;
+    bb:partOf bb:BurgerBarn ;
+    bb:adjacentTo bb:DiningRoom ;       # the kitchen is next to the dining room
+    bb:contains bb:Fryer_1, bb:Fryer_2, bb:Grill_1, bb:WalkInCooler_1, bb:IceMachine_1 .
+
+bb:DiningRoom a bb:DiningRoom ;
+    rdfs:label "Dining room" ;
+    bb:partOf bb:BurgerBarn ;
+    bb:contains bb:SodaFountain_1 .
+
+# ---- the equipment ----------------------------------------------------------
+bb:Fryer_1 a bb:Fryer ;
+    rdfs:label "Fryer 1" ;
+    bb:oilSetpointC 175.0 ;             # degrees C, a number (with a point: an xsd:decimal)
+    bb:serialNumber "BB-FRY-0001" ;
+    bb:lastInspected "2026-10-01T09:30:00"^^xsd:dateTime ;   # ^^ names the datatype
+    bb:fryTime "PT3M"^^xsd:duration ;   # xsd:duration: P(eriod) T(ime) 3 M(inutes), the basket timer
+    bb:hasPoint bb:Fryer_1_OilTemp .
+
+bb:Fryer_2 a bb:Fryer ;                 # note: no temperature point (Days 30 and 35 catch this)
+    rdfs:label "Fryer 2" ;
+    bb:oilSetpointC "175" .             # a MISTAKE on purpose: in quotes, so it is text, not a number
+
+bb:Grill_1 a bb:Grill ;
+    rdfs:label "Flat-top grill" ;
+    bb:serialNumber "grill #1" ;        # a MISTAKE on purpose: not like BB-ABC-1234 (Day 35)
+    bb:hasPoint bb:Grill_1_SurfaceTemp .
+
+bb:WalkInCooler_1 a bb:WalkInCooler ;
+    rdfs:label "" ;                     # a BLANK label: the label is there, but it is empty
+    bb:airSetpointC "3.0"^^xsd:decimal ;   # a literal with its datatype written out
+    bb:hasPoint bb:Cooler_AirTemp ;
+    bb:hasAlarm bb:Cooler_DoorAlarm .   # an alarm is a kind of point (Day 32 says so)
+
+bb:IceMachine_1 a bb:IceMachine .       # a MISSING label: no rdfs:label triple at all
+
+bb:SodaFountain_1 a bb:SodaFountain ;
+    rdfs:label "Soda fountain" .
+
+# ---- the points (the sensors) -----------------------------------------------
+bb:Fryer_1_OilTemp a bb:TemperatureSensor ;
+    rdfs:label "Fryer 1 oil temperature" ;
+    bb:unit "degC" .
+
+bb:Grill_1_SurfaceTemp a bb:TemperatureSensor ;
+    rdfs:label "Grill surface temperature" ;
+    bb:unit "degC" .
+
+bb:Cooler_AirTemp a bb:TemperatureSensor ;
+    rdfs:label "Walk-in cooler air temperature" ;
+    bb:unit "degC" .
+
+bb:Cooler_DoorAlarm a bb:DoorAlarm ;
+    rdfs:label "Walk-in cooler door left open" .

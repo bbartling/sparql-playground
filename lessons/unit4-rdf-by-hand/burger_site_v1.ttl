@@ -1,0 +1,13 @@
+# An OLD data file, written against Burger ontology version 1.0.0 (Day 43).
+# Back then the walk-in cooler class was called burger:Cooler. Version 1.1.0 deprecated
+# it in favour of burger:WalkInCooler. Day 43 migrates this file to the new name.
+@prefix burger: <https://example.org/burger#> .
+@prefix site:   <https://example.org/burger-site-2#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+site:Kitchen a burger:Kitchen ; rdfs:label "Kitchen" .
+site:Cooler_A a burger:Cooler ; rdfs:label "Cooler A" ; burger:hasLocation site:Kitchen .
+site:Cooler_B a burger:Cooler ; rdfs:label "Cooler B" ; burger:hasLocation site:Kitchen .
+site:Fryer_A a burger:Fryer ; rdfs:label "Fryer A" ; burger:hasLocation site:Kitchen ;
+    burger:oilSetpoint 175.0 ; burger:hasPoint site:Fryer_A_OilTemp .
+site:Fryer_A_OilTemp a burger:TemperatureSensor ; rdfs:label "Fryer A oil temperature" .

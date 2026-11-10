@@ -1,0 +1,34 @@
+# Aligning the Burger ontology to Brick (Day 40).
+#
+# Kept in its own file: burger.ttl stays usable without Brick, and anyone who wants both
+# loads this file too. This follows Brick's guide to extensions
+# (https://docs.brickschema.org/extra/extending.html): your own namespace, your own terms,
+# and links that say how each relates to an existing Brick term.
+#
+# Pick the WEAKEST link that is true:
+#   rdfs:subClassOf     every burger X is also a brick Y (but not the other way round)
+#   owl:equivalentClass X and Y mean exactly the same; a reasoner merges their members
+#   skos:exactMatch     same meaning, said for people and search tools (no OWL logic)
+#   skos:closeMatch     similar, NOT the same; no logic at all, a pointer for readers
+@prefix brick:  <https://brickschema.org/schema/Brick#> .
+@prefix burger: <https://example.org/burger#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+
+# Every piece of burger equipment is building equipment. Not every Brick equipment is ours.
+burger:Equipment rdfs:subClassOf brick:Equipment .
+burger:Point rdfs:subClassOf brick:Point .
+burger:Kitchen rdfs:subClassOf brick:Room .
+
+# A temperature sensor is a temperature sensor: truly the same meaning.
+burger:TemperatureSensor owl:equivalentClass brick:Temperature_Sensor ;
+    skos:exactMatch brick:Temperature_Sensor .
+
+# Our relationships are special cases of Brick's.
+burger:hasPoint rdfs:subPropertyOf brick:hasPoint .
+burger:hasLocation rdfs:subPropertyOf brick:hasLocation .
+
+# A restaurant is a business, a building is a structure. A food-court burger stand is a
+# restaurant but not a building. Similar, not the same: closeMatch, and no logic.
+burger:Restaurant skos:closeMatch brick:Building .
