@@ -55,8 +55,10 @@ Each day is a lesson (`dayNN.md`) and **two scripts that compute the same thing*
 uv run python lessons/course.py run 14     # Day 14: the pandas script, then the SQL script
 ```
 
-Each script ends by **printing** its answers. Put the two printouts side by side and compare them: same numbers,
-computed two different ways. The numbered comments in one script match the other, so you can read them together.
+The scripts are short and plain on purpose: read a CSV or connect to the database, a few numbered steps, print. No
+helper modules, nothing hidden. Each script ends by **printing** its answers. Put the two printouts side by side and
+compare them: same numbers, computed two different ways. The numbered comments in one script match the other, so you
+can read them together.
 
 That's how [Open-FDD](https://github.com/bbartling/open-fdd) keeps its fault rules honest: every SQL rule has a pandas
 twin, and its parity tests fail if they disagree on a single row. This course does the same.
@@ -68,7 +70,7 @@ logged (°F, inH2O, percent); Day 6 shows the conversions and later days use the
 
 ## Syllabus
 
-Printable packs of the written weeks, with both scripts of every day (PDF): [`pdf/`](pdf/README.md).
+Printable packs of the written weeks (PDF): [`pdf/`](pdf/README.md). The scripts live next to each lesson in the repo.
 
 Written lessons are linked. The rest of the outline is the plan; those lessons get written as the course goes.
 

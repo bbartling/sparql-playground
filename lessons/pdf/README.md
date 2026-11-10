@@ -1,7 +1,8 @@
 # Weekly offline packs (PDF)
 
 Printable packs of the written lessons, 5.5×8.5 in pages. Each has the week's five daily lessons with the answers
-unfolded, each followed by its two scripts (`dayNN_pandas.py` and `dayNN_sql.py`), plus a short reading list.
+unfolded, plus a short reading list. The day's two scripts (`dayNN_pandas.py` and `dayNN_sql.py`) are in the repo
+next to each lesson; run them with `uv run python lessons/course.py run N`.
 
 | Week | PDF |
 | --- | --- |

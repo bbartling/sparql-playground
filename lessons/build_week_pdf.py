@@ -166,13 +166,6 @@ def printable(body: str) -> str:
     return body.strip() + "\n"
 
 
-def day_scripts(lesson: Path) -> list[Path]:
-    """The day's scripts, pandas first then SQL, printed after the lesson in the pack."""
-    found = sorted(lesson.parent.glob(f"{lesson.stem}_*.py"))
-    order = {"pandas": 0, "sql": 1}
-    return sorted(found, key=lambda p: (order.get(p.stem.split("_", 1)[1], 2), p.name))
-
-
 def build_markdown(week: int) -> str:
     title = week_title(week)
     days = week_days(week)
@@ -185,7 +178,7 @@ def build_markdown(week: int) -> str:
         "`dayNN_pandas.py` reads the CSV export into pandas, `dayNN_sql.py` runs SQLite "
         "queries on the same rows (`uv run python lessons/course.py setup` loads them "
         "once). Run both with `uv run python lessons/course.py run N` and compare the "
-        "printouts. Each lesson's two scripts are printed after it. Keep notes under the "
+        "printouts. The scripts are in the repo next to each lesson. Keep notes under the "
         "ignored `student-work/` folder.\n\n"
         "## Contents\n\n"
     ]
@@ -195,9 +188,6 @@ def build_markdown(week: int) -> str:
     parts.append("\n---\n\n")
     for path in days:
         parts.append(printable(path.read_text(encoding="utf-8")))
-        for script in day_scripts(path):
-            code = script.read_text(encoding="utf-8").rstrip()
-            parts.append(f"\n\n### `{script.name}`\n\n```python\n{code}\n```\n")
         parts.append('\n\n<div style="page-break-before: always;"></div>\n\n')
     parts.append(
         f"# Reading — Week {week}\n\nThe lessons first, then these for exact behavior.\n\n"
