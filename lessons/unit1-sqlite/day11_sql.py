@@ -1,125 +1,57 @@
-"""Day 11, SQL: EXPLAIN QUERY PLAN, and what an index buys.
+# Day 11 (SQL): the query plan for one week of rows, and what CREATE INDEX does to a scan.
+# Run from the repo root (once: uv run python lessons/course.py setup):
+#     uv run python lessons/unit1-sqlite/day11_sql.py
 
-    uv run python lessons/course.py setup         # once: loads the CSVs into var/lessons.sqlite
-    uv run python lessons/unit1-sqlite/day11_sql.py
-
-The same two questions as day11_pandas.py on AHU_1: a time range, and a rare duct static value.
-SQLite tells us how it will run each query (EXPLAIN QUERY PLAN). The time range seeks into the
-PRIMARY KEY; the value filter has no index, so it scans. We then index a TEMP copy of the table
-(the lessons database is left untouched) and time the same query before and after.
-Compare the printout with day11_pandas.py: the row counts should match; the timings will not.
-"""
-
-import os
 import sqlite3
 import time
-from pathlib import Path
 
-import pandas as pd
+conn = sqlite3.connect("var/lessons.sqlite")
 
-ROOT = Path(__file__).resolve().parents[2]
-DB = Path(os.environ.get("LESSONS_DB", ROOT / "var" / "lessons.sqlite"))
-if not DB.exists():
-    raise SystemExit(f"{DB} not found. Run:  uv run python lessons/course.py setup")
-conn = sqlite3.connect(DB)
+# The week we want: from May 1 up to (not including) May 8
+settings = {"start": "2026-05-01 00:00:00+00:00", "end": "2026-05-08 00:00:00+00:00"}
 
-PARAMS = {
-    "start": "2026-05-01 00:00:00+00:00",  # the week we want: [start, end)
-    "end": "2026-05-08 00:00:00+00:00",
-    "high": 1.7,  # a rare duct static pressure (inH2O)
-}
+# 1. A temporary copy of the table. A copy has no PRIMARY KEY, so it has no index at all.
+conn.execute("CREATE TEMP TABLE copy AS SELECT timestamp_utc, da_p_inwc FROM ahu_1")
 
-# 2. The time range. timestamp_utc is the PRIMARY KEY, so SQLite keeps a B-tree on it.
-WEEK_SQL = """
-SELECT timestamp_utc, da_p_inwc, discharge_air_temp_f
-FROM ahu_1
-WHERE timestamp_utc >= :start AND timestamp_utc < :end
-"""
-WEEK_SUMMARY_SQL = """
-SELECT count(*) AS rows, avg(da_p_inwc) AS avg_static_inwc
-FROM ahu_1
+week_query = """
+SELECT COUNT(*), AVG(da_p_inwc)
+FROM copy
 WHERE timestamp_utc >= :start AND timestamp_utc < :end
 """
 
-# 3. A rare value in a column nobody indexed.
-HIGH_SQL = """
-SELECT timestamp_utc, da_p_inwc, discharge_air_temp_f
-FROM ahu_1
-WHERE da_p_inwc > :high
-"""
-# The same filter on a TEMP copy, which is where we will build an index.
-COPY_SQL = """
-CREATE TEMP TABLE ahu_1_copy AS
-SELECT timestamp_utc, da_p_inwc, discharge_air_temp_f FROM ahu_1
-"""
-HIGH_COPY_SQL = HIGH_SQL.replace("FROM ahu_1", "FROM ahu_1_copy")
-INDEX_SQL = "CREATE INDEX temp.copy_da_p ON ahu_1_copy (da_p_inwc)"
+# 2. Scan: the plan says SCAN, and the week is found by testing every row
+scan_plan = conn.execute("EXPLAIN QUERY PLAN " + week_query, settings).fetchall()
+t0 = time.perf_counter()
+week_rows, week_avg = conn.execute(week_query, settings).fetchone()
+scan_ms = (time.perf_counter() - t0) * 1000
 
+# 3. Index: build one on timestamp_utc, then ask the same question again
+t0 = time.perf_counter()
+conn.execute("CREATE INDEX temp.copy_time ON copy (timestamp_utc)")
+build_ms = (time.perf_counter() - t0) * 1000
 
-def best_ms(fn, repeat=7):
-    """Best of `repeat` runs, in milliseconds (the minimum is the least noisy)."""
-    times = []
-    for _ in range(repeat):
-        t0 = time.perf_counter()
-        fn()
-        times.append((time.perf_counter() - t0) * 1000)
-    return min(times)
+index_plan = conn.execute("EXPLAIN QUERY PLAN " + week_query, settings).fetchall()
+t0 = time.perf_counter()
+week_rows_indexed = conn.execute(week_query, settings).fetchone()[0]
+lookup_ms = (time.perf_counter() - t0) * 1000
 
+# 4. A rare value in a column nobody indexed
+high_rows = conn.execute("SELECT COUNT(*) FROM copy WHERE da_p_inwc > 1.7").fetchone()[0]
 
-def plan(sql, params=()):
-    """EXPLAIN QUERY PLAN as text lines: SEARCH = index seek, SCAN = every row."""
-    return [row[3] for row in conn.execute("EXPLAIN QUERY PLAN " + sql, params)]
+print("Rows in the week:", week_rows)
+print("Rows in the week (index lookup):", week_rows_indexed)
+print("Average duct static in the week (inH2O):", round(week_avg, 4))
+print("Rows with duct static above 1.7 inH2O:", high_rows)
+print("Scan time (ms):", round(scan_ms, 3))
+print("Index lookup time (ms):", round(lookup_ms, 3))
+print("Time to build the index once (ms):", round(build_ms, 3))
+print("Plan before the index:", scan_plan[0][3])
+print("Plan after the index: ", index_plan[0][3])
 
-
-print(f"AHU_1: {conn.execute('SELECT count(*) FROM ahu_1').fetchone()[0]:,} rows")
-
-print("\nPlan, one week by timestamp_utc (the PRIMARY KEY):")
-week_plan = plan(WEEK_SQL, PARAMS)
-print("  " + "\n  ".join(week_plan))
-week = pd.read_sql_query(WEEK_SQL, conn, params=PARAMS)
-t_range = best_ms(lambda: conn.execute(WEEK_SQL, PARAMS).fetchall())
-print(f"One week of rows: {len(week)}  ({t_range:.3f} ms)")
-
-print(f"\nPlan, da_p_inwc > {PARAMS['high']} (no index on that column):")
-high_plan = plan(HIGH_SQL, PARAMS)
-print("  " + "\n  ".join(high_plan))
-high = pd.read_sql_query(HIGH_SQL, conn, params=PARAMS)
-print(f"Rows with duct static > {PARAMS['high']} inH2O: {len(high)}")
-
-# 4. Index the TEMP copy and run the same query again.
-conn.execute(COPY_SQL)
-t_before = best_ms(lambda: conn.execute(HIGH_COPY_SQL, PARAMS).fetchall())
-plan_before = plan(HIGH_COPY_SQL, PARAMS)
-t_build = best_ms(
-    lambda: (conn.execute("DROP INDEX IF EXISTS temp.copy_da_p"), conn.execute(INDEX_SQL)), 5
-)
-t_after = best_ms(lambda: conn.execute(HIGH_COPY_SQL, PARAMS).fetchall())
-plan_after = plan(HIGH_COPY_SQL, PARAMS)
-high_indexed = pd.read_sql_query(HIGH_COPY_SQL, conn, params=PARAMS)
-
-print("\nTEMP copy, before the index:")
-print("  " + "\n  ".join(plan_before))
-print("TEMP copy, after CREATE INDEX:")
-print("  " + "\n  ".join(plan_after))
-print(f"Same rows with the index: {len(high_indexed)}")
-print(
-    f"  scan {t_before:.3f} ms | indexed lookup {t_after:.3f} ms | build the index {t_build:.3f} ms"
-)
-
-# 5. Break-even: how many queries until the one-time build cost is paid back?
-saving = t_before - t_after
-if saving > 0:
-    print(f"  the index pays for itself after about {t_build / saving:.1f} queries")
-else:
-    print("  at this size the scan is already so cheap that the index never pays for itself")
-
-conn.execute("DROP INDEX temp.copy_da_p")
-conn.execute("DROP TABLE temp.ahu_1_copy")  # nothing was written to the lessons database
-
-week_summary = pd.read_sql_query(WEEK_SUMMARY_SQL, conn, params=PARAMS)
+# For the course's automatic checker (tests/test_lesson_scripts.py)
 RESULTS = {
-    "week_rows": week,
-    "week_summary": week_summary,
-    "high_static_rows": high,
-    "plans": {"week": week_plan, "high": high_plan, "before": plan_before, "after": plan_after},
+    "week_rows": week_rows,
+    "week_rows_indexed": week_rows_indexed,
+    "week_avg_static_inwc": week_avg,
+    "high_static_rows": high_rows,
 }

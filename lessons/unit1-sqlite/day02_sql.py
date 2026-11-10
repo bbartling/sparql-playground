@@ -1,115 +1,52 @@
-"""Day 2, SQL: SELECT, WHERE, ORDER BY, LIMIT on a few AHU_1 columns, values as parameters.
+# Day 2 (SQL): pick columns and filter rows.
+# Run from the repo root (once: uv run python lessons/course.py setup):
+#     uv run python lessons/unit1-sqlite/day02_sql.py
 
-    uv run python lessons/course.py setup         # once: loads the CSVs into var/lessons.sqlite
-    uv run python lessons/unit1-sqlite/day02_sql.py
-
-The same questions as day02_pandas.py, answered by SQLite on the same rows. SQLite does all the
-work; pandas only turns the result rows into a table for printing.
-Every value reaches SQL as a named parameter (:limit), never pasted in with an f-string.
-Compare the printout with day02_pandas.py: the numbers should match.
-"""
-
-import os
 import sqlite3
-from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-DB = Path(os.environ.get("LESSONS_DB", ROOT / "var" / "lessons.sqlite"))
-if not DB.exists():
-    raise SystemExit(f"{DB} not found. Run:  uv run python lessons/course.py setup")
-conn = sqlite3.connect(DB)
+conn = sqlite3.connect("var/lessons.sqlite")
 
+limit_inwc = 1.5  # "high" duct static pressure, in inches of water
 
-def q(sql, params=None):
-    """Run one SELECT with its parameters and return a DataFrame."""
-    return pd.read_sql_query(sql, conn, params=params or {})
+# 1. The table is ahu_1 (the CSV, unchanged)
 
-
-# 1. The table is `ahu_1` (the CSV, unchanged). SELECT names the columns; FROM names the table.
-
-# 2. SELECT a few columns, ORDER BY time, LIMIT 3: the first three outside air readings.
-FIRST3_SQL = """
+# 2. Pick two columns and keep the first three rows
+first_three_sql = """
 SELECT timestamp_utc, outside_air_temp_f
 FROM ahu_1
 ORDER BY timestamp_utc
 LIMIT 3
 """
+first_three = pd.read_sql_query(first_three_sql, conn)
+print(first_three.to_string(index=False))
 
-# 3. Hottest and coldest reading: sort by value, keep one row. The second sort key breaks ties.
-HOTTEST_SQL = """
-SELECT timestamp_utc, outside_air_temp_f
-FROM ahu_1
-ORDER BY outside_air_temp_f DESC, timestamp_utc
-LIMIT 1
-"""
-COLDEST_SQL = """
+# 3. Sort by temperature; the first row is the coldest reading
+coldest_sql = """
 SELECT timestamp_utc, outside_air_temp_f
 FROM ahu_1
 ORDER BY outside_air_temp_f, timestamp_utc
 LIMIT 1
 """
+coldest = pd.read_sql_query(coldest_sql, conn)
+print("Coldest reading:")
+print(coldest.to_string(index=False))
 
-# 4. WHERE with the limit bound as a parameter: static above 1.5 inH2O.
-HIGH_STATIC_SQL = "SELECT count(*) AS n FROM ahu_1 WHERE da_p_inwc > :limit"
+# 4. Filter rows (WHERE): how many readings had duct static above the limit?
+high_static_sql = "SELECT COUNT(*) FROM ahu_1 WHERE da_p_inwc > :limit"
+high_static = conn.execute(high_static_sql, {"limit": limit_inwc}).fetchone()[0]
+print("Readings with static above", limit_inwc, "inH2O:", high_static)
 
-# 5. Two conditions: fan running AND hot outside. Hottest five such rows.
-HOT_RUNNING_SQL = """
-SELECT timestamp_utc, outside_air_temp_f, da_p_inwc
-FROM ahu_1
-WHERE supply_fan_status = 1 AND outside_air_temp_f > :min_oat
-ORDER BY outside_air_temp_f DESC, timestamp_utc
-LIMIT 5
-"""
+# 5. Two conditions: the fan is on AND static is below 0.5
+fan_on_low_sql = "SELECT COUNT(*) FROM ahu_1 WHERE supply_fan_status = 1 AND da_p_inwc < 0.5"
+fan_on_low = conn.execute(fan_on_low_sql).fetchone()[0]
+print("Fan on but static below 0.5 inH2O:", fan_on_low)
 
-# 6. A time range. timestamp_utc is the PRIMARY KEY, so SQLite finds `>= :start` with a B-tree
-# seek and reads on to `< :end`: O(log n + k). A pandas mask compares every row: O(n).
-JULY_1_SQL = """
-SELECT count(*) AS n FROM ahu_1
-WHERE timestamp_utc >= :start AND timestamp_utc < :end
-"""
-
-# 7. Hostile input is just a string that matches nothing: it travels beside the SQL, not inside it.
-HOSTILE_SQL = "SELECT count(*) AS n FROM ahu_1 WHERE timestamp_utc = :ts"
-
-# 8. Which values does a status point take? (DISTINCT)
-FAN_VALUES_SQL = """
-SELECT DISTINCT supply_fan_status AS fan_status FROM ahu_1 ORDER BY fan_status
-"""
-
-START, END = "2026-07-01 00:00:00+00:00", "2026-07-02 00:00:00+00:00"
-first3 = q(FIRST3_SQL)
-hottest = q(HOTTEST_SQL)
-coldest = q(COLDEST_SQL)
-high_static = q(HIGH_STATIC_SQL, {"limit": 1.5})
-hot_running = q(HOT_RUNNING_SQL, {"min_oat": 95.0})
-july_1 = q(JULY_1_SQL, {"start": START, "end": END})
-hostile = q(HOSTILE_SQL, {"ts": "x' OR '1'='1"})
-fan_values = q(FAN_VALUES_SQL)
-
-# What did SQLite plan for the time range? SEARCH ... USING INDEX is a seek; SCAN reads every row.
-plan = conn.execute("EXPLAIN QUERY PLAN " + JULY_1_SQL, {"start": START, "end": END}).fetchall()
-
+# For the course's automatic checker (tests/test_lesson_scripts.py)
 RESULTS = {
-    "first3": first3,
-    "hottest": hottest,
+    "first_three": first_three,
     "coldest": coldest,
     "high_static": high_static,
-    "hot_running": hot_running,
-    "july_1": july_1,
-    "hostile": hostile,
-    "fan_values": fan_values,
+    "fan_on_low": fan_on_low,
 }
-
-print("first three outside air readings:")
-print(first3.to_string(index=False))
-print("\nhottest / coldest reading:")
-print(pd.concat([hottest, coldest]).round(2).to_string(index=False))
-print("\nreadings with duct static above 1.5 inH2O:", high_static["n"][0])
-print("\nhottest five readings above 95.0 F with the fan on:")
-print(hot_running.round(3).to_string(index=False))
-print("\nreadings on 2026-07-01 (UTC):", july_1["n"][0])
-print("query plan for that range:", plan[0][-1])
-print("rows matching a hostile string:", hostile["n"][0])
-print("fan status takes the values:", fan_values["fan_status"].tolist())

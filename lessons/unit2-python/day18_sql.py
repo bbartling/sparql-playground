@@ -1,149 +1,117 @@
-"""Day 18, SQL side: FC1 with forward sample-and-hold, a gap limit and coverage, on data with holes.
-
-    uv run python lessons/unit2-python/day18_sql.py
-
-The same computation as day18_pandas.py on the same synthetic gappy rows (loaded into in-memory
-SQLite as setup). Same shape as Open-FDD's cmd1_fan_mismatch.sql, in SQLite's dialect:
-LEAD gives the next timestamp, so `held_seconds = next_ts - ts`; a gap longer than MAX_GAP_HOURS is
-held 0 and breaks the streak; a fault confirms after CONFIRM_SECONDS of elapsed time (a running SUM
-of held_seconds inside the streak); coverage is held seconds over the window.
-"""
+# Day 18 (SQL): FC1 on data with holes: sample-and-hold, a gap limit, and coverage.
+# Run from the repo root (once: uv run python lessons/course.py setup):
+#     uv run python lessons/unit2-python/day18_sql.py
 
 import sqlite3
-import sys
-from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "lessons"))
-import lab  # noqa: E402
+conn = sqlite3.connect("var/lessons.sqlite")
 
-PARAMS = {
-    "tol": 25.0,  # how far below setpoint counts as a fault, pascals
-    "max_gap_s": 1.0 * 3600,  # MAX_GAP_HOURS = 1: a longer silence is "unknown"
-    "confirm_s": 600,  # 10 minutes, the same as Day 14's two 5-minute rows
+settings = {
+    "start_ts": 1_773_619_200,  # the synthetic data's first timestamp (epoch seconds)
+    "tolerance_pa": 25,  # how far below setpoint counts as "too low"
+    "max_gap_seconds": 3600,  # a silence longer than 1 hour is "unknown", not "still faulty"
+    "confirm_seconds": 600,  # a fault must last 10 minutes (Day 14's two 5-minute rows)
 }
-N = 4_000  # rows per AHU before drops: about 14 days
 
-# 1. Data with holes (same recipe as the pandas script): 3% of rows dropped at random, plus one
-#    long outage on AHU_1 (100 rows, about 8 hours) inside its weak-fan window. Setup.
-raw_df = lab.synthetic_history(N, equips=2, gap_prob=0.03)
-T0 = int(raw_df.ts.min())
-outage = (raw_df.equipment_id == "AHU_1") & raw_df.ts.between(T0 + 1560 * 300, T0 + 1659 * 300)
-gappy = raw_df[~outage].sort_values(["equipment_id", "ts"]).reset_index(drop=True)
-conn = sqlite3.connect(":memory:")
-lab.to_sqlite(gappy, conn, "gap_h", index=["equipment_id", "ts"])
-print(conn.execute("SELECT count(*) FROM gap_h").fetchone()[0], "rows in gap_h")
-
-# 2. One query returns every row's state; one CTE per step.
-ROW_SQL = """
-WITH base AS (                                -- gate + raw fault
-  SELECT equipment_id, ts,
-         CASE WHEN fan_status = 1 AND duct_static < duct_static_sp - :tol
-              THEN 1 ELSE 0 END AS raw_fault
-  FROM gap_h
-), stepped AS (                               -- LEAD: seconds until the next reading
-  SELECT *, LEAD(ts) OVER (PARTITION BY equipment_id ORDER BY ts) - ts AS dt_seconds
-  FROM base
-), elapsed_hold AS (                          -- sample-and-hold, with the gap limit
-  SELECT *,
-         CASE WHEN dt_seconds IS NULL OR dt_seconds <= 0 OR dt_seconds > :max_gap_s
-              THEN 0.0 ELSE dt_seconds END AS held_seconds,
-         CASE WHEN dt_seconds > :max_gap_s THEN 1 ELSE 0 END AS gap_after
-  FROM stepped
-), lagged AS (                                -- a streak breaks on a change or after a gap
-  SELECT *,
-         CASE WHEN raw_fault = LAG(raw_fault) OVER (PARTITION BY equipment_id ORDER BY ts)
-                   AND COALESCE(LAG(gap_after) OVER (PARTITION BY equipment_id ORDER BY ts), 0) = 0
-              THEN 0 ELSE 1 END AS is_new_streak
-  FROM elapsed_hold
-), grp AS (
-  SELECT *, SUM(is_new_streak) OVER (PARTITION BY equipment_id ORDER BY ts
-                                     ROWS UNBOUNDED PRECEDING) AS streak_id
-  FROM lagged
-), ranked AS (                                -- elapsed time inside each streak
-  SELECT *, SUM(held_seconds) OVER (PARTITION BY equipment_id, streak_id ORDER BY ts
-                                    ROWS UNBOUNDED PRECEDING) AS streak_elapsed
-  FROM grp
-)
-SELECT equipment_id, ts, raw_fault, held_seconds, gap_after, streak_id, streak_elapsed,
-       CASE WHEN raw_fault = 1 AND streak_elapsed >= :confirm_s THEN 1 ELSE 0 END AS confirmed
-FROM ranked
+# 1-2. The first 4,000 rows of each AHU, with the same holes as the pandas script:
+#      every 37th row dropped, and 100 rows of AHU_1 in a row (an outage of about 8 hours)
+gappy_sql = """
+CREATE TEMP TABLE gappy AS
+SELECT equipment_id, ts, fan_status, static_pa, setpoint_pa
+FROM synthetic
+WHERE (ts - :start_ts) / 300 < 4000
+  AND (ts - :start_ts) / 300 % 37 != 5
+  AND NOT (equipment_id = 'AHU_1' AND (ts - :start_ts) / 300 BETWEEN 400 AND 499)
 """
+conn.execute(gappy_sql, settings)
 
-# 3. Summary: fault hours, covered hours and coverage per AHU
-SUMMARY_SQL = f"""
+# 3-6. One query, one WITH block per step. PARTITION BY equipment_id keeps the AHUs apart.
+rows_sql = """
+CREATE TEMP TABLE fc1 AS
+WITH
+step3 AS (                -- 3. raw fault, the same as Day 14
+  SELECT equipment_id, ts,
+         fan_status = 1 AND static_pa < setpoint_pa - :tolerance_pa AS raw_fault
+  FROM gappy
+),
+step4a AS (               -- 4a. seconds until the next reading (LEAD looks one row ahead)
+  SELECT *,
+         LEAD(ts) OVER (PARTITION BY equipment_id ORDER BY ts) - ts AS seconds_to_next
+  FROM step3
+),
+step4b AS (               -- 4b. sample-and-hold; a gap longer than the limit holds 0 seconds
+  SELECT *,
+         COALESCE(seconds_to_next > :max_gap_seconds, 0) AS gap_after,
+         CASE WHEN seconds_to_next > :max_gap_seconds THEN 0
+              ELSE COALESCE(seconds_to_next, 0) END AS held_seconds
+  FROM step4a
+),
+step5a AS (               -- 5a. a new streak starts when raw_fault changes, or after a long gap
+  SELECT *,
+         raw_fault IS NOT LAG(raw_fault) OVER (PARTITION BY equipment_id ORDER BY ts)
+           OR LAG(gap_after) OVER (PARTITION BY equipment_id ORDER BY ts) = 1 AS new_streak
+  FROM step4b
+),
+step5b AS (               -- 5b. a running total of those marks numbers each streak
+  SELECT *,
+         SUM(new_streak) OVER (PARTITION BY equipment_id ORDER BY ts) AS streak_id
+  FROM step5a
+),
+step6 AS (                -- 6. elapsed time inside each streak
+  SELECT *,
+         SUM(held_seconds) OVER (PARTITION BY equipment_id, streak_id ORDER BY ts) AS streak_seconds
+  FROM step5b
+)
+SELECT *, raw_fault = 1 AND streak_seconds >= :confirm_seconds AS fault
+FROM step6
+"""
+conn.execute(rows_sql, settings)
+
+# 7. Per AHU: fault hours, covered hours (time we can vouch for) and coverage
+summary_sql = """
 SELECT equipment_id,
        COUNT(*) AS rows,
        SUM(gap_after) AS long_gaps,
-       SUM(CASE WHEN confirmed = 1 THEN held_seconds ELSE 0.0 END) / 3600.0 AS fault_hours,
+       SUM(CASE WHEN fault = 1 THEN held_seconds ELSE 0 END) / 3600.0 AS fault_hours,
        SUM(held_seconds) / 3600.0 AS covered_hours,
        (MAX(ts) - MIN(ts)) / 3600.0 AS window_hours,
-       SUM(held_seconds) / (MAX(ts) - MIN(ts)) AS coverage
-FROM ({ROW_SQL})
+       SUM(held_seconds) * 1.0 / (MAX(ts) - MIN(ts)) AS coverage
+FROM fc1
 GROUP BY equipment_id
-ORDER BY equipment_id
 """
+summary = pd.read_sql_query(summary_sql, conn)
 
-# 4. The wrong way: Day 14's row-counting version on the same gappy table
-NAIVE_SQL = """
-WITH base AS (
-  SELECT equipment_id, ts,
-         CASE WHEN fan_status = 1 AND duct_static < duct_static_sp - :tol THEN 1 ELSE 0 END
-           AS raw_fault
-  FROM gap_h
-), marks AS (
-  SELECT *, CASE WHEN raw_fault = LAG(raw_fault) OVER (PARTITION BY equipment_id ORDER BY ts)
-                 THEN 0 ELSE 1 END AS new_streak
-  FROM base
-), streaks AS (
-  SELECT *, SUM(new_streak) OVER (PARTITION BY equipment_id ORDER BY ts) AS streak_id FROM marks
-), ranked AS (
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY equipment_id, streak_id ORDER BY ts) AS streak_len
+# 8. The wrong way, for comparison: Day 14's rule (count rows x 5 minutes, ignore the gaps)
+naive_sql = """
+WITH
+marks AS (
+  SELECT equipment_id, ts, raw_fault,
+         raw_fault IS NOT LAG(raw_fault) OVER (PARTITION BY equipment_id ORDER BY ts) AS new_streak
+  FROM fc1
+),
+streaks AS (
+  SELECT *, SUM(new_streak) OVER (PARTITION BY equipment_id ORDER BY ts) AS streak_id
+  FROM marks
+),
+numbered AS (
+  SELECT *,
+         ROW_NUMBER() OVER (PARTITION BY equipment_id, streak_id ORDER BY ts) AS row_in_streak
   FROM streaks
 )
-SELECT equipment_id, SUM(raw_fault = 1 AND streak_len >= 2) * 5 / 60.0 AS naive_fault_hours
-FROM ranked GROUP BY equipment_id ORDER BY equipment_id
+SELECT equipment_id, SUM(raw_fault = 1 AND row_in_streak >= 2) * 5 / 60.0 AS naive_fault_hours
+FROM numbered
+GROUP BY equipment_id
 """
+naive = pd.read_sql_query(naive_sql, conn)
 
-
-def run(sql, **override):
-    return pd.read_sql_query(sql, conn, params={**PARAMS, **override})
-
-
-rows = run(ROW_SQL)
-summary = run(SUMMARY_SQL)
-naive = run(NAIVE_SQL)
-
-# 5. Try-it variants: a 12-hour gap limit, and confirming over 1 hour
-summary_12h = run(SUMMARY_SQL, max_gap_s=12.0 * 3600)
-summary_confirm_1h = run(SUMMARY_SQL, confirm_s=3600)
-
-RESULTS = {
-    "rows": rows,
-    "summary": summary,
-    "naive_fault_hours": naive,
-    "summary_12h_limit": summary_12h,
-    "summary_confirm_1h": summary_confirm_1h,
-}
-
-print("\nGap-aware summary:")
+rows_left = conn.execute("SELECT COUNT(*) FROM gappy").fetchone()[0]
+print("Rows left after the holes:", rows_left, "of 8000")
+print("\nGap-aware FC1 per AHU:")
 print(summary.round(3).to_string(index=False))
-print("\nThe one row with gap_after = 1 per AHU that has an outage:")
-print(rows[rows.gap_after == 1].round(1).to_string(index=False))
+print("\nRow counting (Day 14) on the same rows:")
+print(naive.round(2).to_string(index=False))
 
-cmp = naive.merge(summary[["equipment_id", "fault_hours"]], on="equipment_id")
-cmp["difference_h"] = cmp.fault_hours - cmp.naive_fault_hours
-print("\nRow counting (Day 14) vs gap-aware, fault hours:")
-print(cmp.round(2).to_string(index=False))
-
-print("\nTry-it variants (fault hours / coverage):")
-print("MAX_GAP_HOURS = 12:")
-print(
-    summary_12h[["equipment_id", "long_gaps", "fault_hours", "coverage"]]
-    .round(3)
-    .to_string(index=False)
-)
-print("CONFIRM_SECONDS = 3600:")
-print(summary_confirm_1h[["equipment_id", "fault_hours"]].round(2).to_string(index=False))
+# For the course's automatic checker (tests/test_lesson_scripts.py)
+RESULTS = {"summary": summary, "naive_fault_hours": naive}

@@ -1,100 +1,82 @@
-"""Day 21, SQL: an outside-air damper summary across AHUs whose column names differ.
-
-    uv run python lessons/course.py setup         # once: loads the CSVs into var/lessons.sqlite
-    uv run python lessons/unit3-modeling/day21_sql.py
-
-The same computation as day21_pandas.py, done by SQLite. The column names come from
-column_map.json, so the SQL text is *built*. A value can be a bound parameter (:eq0), but a table
-or column name cannot, so every name from the map is checked against the table's real columns (a
-whitelist) and then quoted. Compare the printout with day21_pandas.py: the numbers should match."""
+# Day 21 (SQL): one script for two AHUs whose column names differ.
+# Run from the repo root (once: uv run python lessons/course.py setup):
+#     uv run python lessons/unit3-modeling/day21_sql.py
+#
+# AHU_1 calls its outside-air damper command `mad_c`; AHU_2 calls it `mad_c_pct`.
+# column_map.json (one per AHU) says which column holds each role, so the script asks for a role.
 
 import json
-import os
 import sqlite3
-from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data" / "BUILDING_50"
-DB = Path(os.environ.get("LESSONS_DB", ROOT / "var" / "lessons.sqlite"))
-if not DB.exists():
-    raise SystemExit(f"{DB} not found. Run:  uv run python lessons/course.py setup")
-conn = sqlite3.connect(DB)
+conn = sqlite3.connect("var/lessons.sqlite")
 
-EQUIPMENT = {"AHU_1": "ahu_1", "AHU_2": "ahu_2"}  # equipment id -> table (the whitelist of tables)
+ahus = ["AHU_1", "AHU_2"]
 
-# 1. The hard-coded way: ask for `mad_c` on every AHU. It works for AHU_1 and fails for AHU_2.
-tried = []
-for equip, table in EQUIPMENT.items():
+# 1. The hard-coded way: ask every AHU's table for the column `mad_c`
+hardcoded_rows = []
+for ahu in ahus:
+    table = ahu.lower()  # the tables are called ahu_1 and ahu_2
     try:
-        conn.execute(f'SELECT timestamp_utc, supply_fan_status, mad_c FROM "{table}" LIMIT 5')
-        tried.append((equip, 1, "ok"))
-    except sqlite3.OperationalError as err:
-        tried.append((equip, 0, str(err)))
-hardcoded = pd.DataFrame(tried, columns=["equipment_id", "worked", "message"])
+        conn.execute("SELECT mad_c FROM " + table + " LIMIT 5")
+        worked = 1
+    except sqlite3.OperationalError:  # SQLite says "no such column"
+        worked = 0
+    hardcoded_rows.append({"equipment_id": ahu, "worked": worked})
+hardcoded = pd.DataFrame(hardcoded_rows)
 
-# 2. The first model: column_map.json says which column holds each role, per AHU.
-ROLES = {"fan-status": "fan_status", "outside-air-damper": "oa_damper_pct"}  # role -> our own name
-col_map = {e: json.loads((DATA / e / "column_map.json").read_text())["points"] for e in EQUIPMENT}
-damper_columns = pd.DataFrame(
-    [(e, col_map[e]["outside-air-damper"]) for e in EQUIPMENT],
-    columns=["equipment_id", "damper_column"],
-)
+summary_rows = []
+for ahu in ahus:
+    table = ahu.lower()
 
+    # 2. Look up the damper column and the fan column in each AHU's column_map.json
+    with open("data/BUILDING_50/" + ahu + "/column_map.json") as f:
+        points = json.load(f)["points"]
+    damper_column = points["outside-air-damper"]
+    fan_column = points["fan-status"]
 
-def quote_ident(name: str, allowed: set[str]) -> str:
-    """Identifiers can't be bound as parameters: accept a name that really exists, then quote it."""
-    if name not in allowed:
-        raise ValueError(f"unknown column {name!r}")
-    return '"' + name.replace('"', '""') + '"'
+    # A value can be a ? parameter, but a column name cannot. So the names are pasted into
+    # the SQL text, after checking that they are real columns of the table (never paste
+    # text you have not checked).
+    real_columns = [row[1] for row in conn.execute("PRAGMA table_info(" + table + ")")]
+    if damper_column not in real_columns or fan_column not in real_columns:
+        raise ValueError("unknown column in column_map.json")
 
-
-# 3. Load by role: build one SELECT per AHU from the map, and stack them with UNION ALL.
-selects, params = [], {}
-for i, (equip, table) in enumerate(EQUIPMENT.items()):
-    real = {row[1] for row in conn.execute(f'PRAGMA table_info("{table}")')}
-    cols = {name: quote_ident(col_map[equip][role], real) for role, name in ROLES.items()}
-    params[f"eq{i}"] = equip  # a value, so it is bound
-    selects.append(
-        f"SELECT :eq{i} AS equipment_id, timestamp_utc, "
-        + ", ".join(f"{cols[name]} AS {name}" for name in ROLES.values())
-        + f' FROM "{table}"'
+    # 3. Summarize the damper while the supply fan runs (each row is 5 minutes)
+    sql = f"""
+        SELECT COUNT(*),
+               AVG({damper_column}),
+               SUM({damper_column} > 50),
+               SUM({damper_column} <= 0)
+        FROM {table}
+        WHERE {fan_column} = 1
+    """
+    run_rows, mean_damper, open_rows, closed_rows = conn.execute(sql).fetchone()
+    summary_rows.append(
+        {
+            "equipment_id": ahu,
+            "damper_column": damper_column,
+            "run_rows": run_rows,
+            "run_hours": run_rows * 5 / 60,
+            "mean_damper_pct": mean_damper,
+            "open_over_50_h": open_rows * 5 / 60,
+            "closed_h": closed_rows * 5 / 60,
+        }
     )
-OA_SQL = "CREATE TEMP TABLE oa AS " + "\nUNION ALL\n".join(selects)
-conn.execute(OA_SQL, params)
-
-# 4. One summary for both AHUs: only rows where the supply fan runs
-SUMMARY_SQL = """
-SELECT o.equipment_id, d.damper_column,
-       count(*)                                    AS run_rows,
-       count(*) * 5 / 60.0                         AS run_hours,
-       avg(o.oa_damper_pct)                        AS mean_damper_pct,
-       sum(o.oa_damper_pct > 50) * 5 / 60.0        AS open_over_50_h,
-       sum(o.oa_damper_pct <= 0) * 5 / 60.0        AS closed_h
-FROM oa o
-JOIN (SELECT :e1 AS equipment_id, :c1 AS damper_column
-      UNION ALL SELECT :e2, :c2) d ON d.equipment_id = o.equipment_id
-WHERE o.fan_status = 1
-GROUP BY o.equipment_id
-ORDER BY o.equipment_id
-"""
-dc = dict(zip(damper_columns.equipment_id, damper_columns.damper_column, strict=True))
-summary = pd.read_sql_query(
-    SUMMARY_SQL, conn, params={"e1": "AHU_1", "c1": dc["AHU_1"], "e2": "AHU_2", "c2": dc["AHU_2"]}
-)
-
-RESULTS = {
-    "hardcoded_worked": hardcoded[["equipment_id", "worked"]],
-    "damper_columns": damper_columns,
-    "damper_summary": summary,
-}
+summary = pd.DataFrame(summary_rows)
+damper_columns = summary[["equipment_id", "damper_column"]]
 
 print("Hard-coded `mad_c` on each AHU:")
 print(hardcoded.to_string(index=False))
 print("\nDamper column per AHU, from column_map.json:")
 print(damper_columns.to_string(index=False))
-print("\nThe SQL built from the map:")
-print(OA_SQL)
-print("\nOutside-air damper while the supply fan runs (one query, both AHUs):")
+print("\nOutside-air damper while the supply fan runs (one script, both AHUs):")
 print(summary.round(2).to_string(index=False))
+
+# For the course's automatic checker (tests/test_lesson_scripts.py)
+RESULTS = {
+    "hardcoded_worked": hardcoded,
+    "damper_columns": damper_columns,
+    "damper_summary": summary,
+}

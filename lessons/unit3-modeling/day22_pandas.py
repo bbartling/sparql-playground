@@ -1,111 +1,107 @@
-"""Day 22, pandas: find FC1's inputs by Haystack tags, with SPARQL on the RDF model (rdflib, no
-server).
-
-    uv run python lessons/unit3-modeling/day22_pandas.py
-
-model/building_50.ttl holds every point as Haystack tags written as RDF (markers, ofddRole,
-equipRef...). rdflib loads it into memory and runs SPARQL; the result rows become a DataFrame.
-Nothing here names a column or an id: the query asks for roles, the model answers. Compare the
-printout with day22_sql.py: the same (equipment, role, point) rows come back."""
+# Day 22 (pandas): find FC1's inputs for AHU_1 by Haystack tags, with SPARQL on the RDF model.
+# Run from the repo root:
+#     uv run python lessons/unit3-modeling/day22_pandas.py
+#
+# model/building_50.ttl holds every point as Haystack tags written as RDF. rdflib loads it into
+# memory and runs SPARQL. Nothing below names a column or an id: the query asks for roles.
 
 import unicodedata
-from pathlib import Path
 
 import pandas as pd
 from rdflib import Graph
 
-ROOT = Path(__file__).resolve().parents[2]
-MODEL = ROOT / "model" / "building_50.ttl"
-
 PREFIXES = """
 PREFIX bts:  <https://example.org/openfdd/bldgts#>
 PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ref:  <https://brickschema.org/schema/Brick/ref#>
 """
 
-
-def local(iri) -> str:
-    """The part of an IRI after '#': bldg:AHU_1 -> 'AHU_1'."""
-    return str(iri).rsplit("#", 1)[-1]
-
-
-def plain(text) -> str:
-    """NFKD turns the unit's subscript 2 into a plain 2, so any console can print the tag."""
-    return unicodedata.normalize("NFKD", local(text))
-
-
-# 1. Load the model: a graph of (subject, predicate, object) statements, held in memory.
+# 1. Load the model: a graph of (subject, predicate, object) statements, held in memory
 g = Graph()
-g.parse(MODEL, format="turtle")
+g.parse("model/building_50.ttl")
 
-# 2. What does one point look like? Its markers, then its tags (name, value) as RDF.
-MARKERS_SPARQL = PREFIXES + "SELECT ?marker WHERE { bldg:AHU_1_DA_P bts:hasHaystackMarker ?marker }"
-TAGS_SPARQL = (
+# 2. What does one point look like? Its markers (plain tags with no value)...
+markers_query = (
+    PREFIXES
+    + """
+SELECT ?marker WHERE { bldg:AHU_1_DA_P bts:hasHaystackMarker ?marker }
+"""
+)
+markers = []
+for row in g.query(markers_query):
+    markers.append(str(row.marker))
+
+# ...and its tags (a name and a value)
+tags_query = (
     PREFIXES
     + """
 SELECT ?tag_name ?tag_value WHERE {
-  bldg:AHU_1_DA_P bts:hasHaystackTag ?t .
-  ?t bts:tagName ?tag_name ; bts:tagValue ?tag_value .
-}"""
+  bldg:AHU_1_DA_P bts:hasHaystackTag ?tag .
+  ?tag bts:tagName ?tag_name ; bts:tagValue ?tag_value .
+}
+"""
 )
-markers = sorted(str(r.marker) for r in g.query(MARKERS_SPARQL))
-one_point = pd.DataFrame(
-    [(str(r.tag_name), plain(r.tag_value)) for r in g.query(TAGS_SPARQL)],
-    columns=["tag_name", "tag_value"],
-).sort_values("tag_name", ignore_index=True)
+tags = []
+for row in g.query(tags_query):
+    value = str(row.tag_value).split("#")[-1]  # equipRef is an IRI; keep the part after the #
+    value = unicodedata.normalize("NFKD", value)  # the unit's subscript 2 becomes a plain 2
+    tags.append({"tag_name": str(row.tag_name), "tag_value": value})
+one_point = pd.DataFrame(tags).sort_values("tag_name")
 
-# 3. FC1's inputs per AHU, by tags. Start from the points that have a timeseries reference (118 of
-#    them): rdflib evaluates patterns roughly in order, so a selective first pattern keeps every
-#    join after it small. Starting from "every ofddRole tag" is much slower.
-FC1_ROLES = ("fan-status", "duct-static-pressure", "duct-static-pressure-sp")
-FC1_SPARQL = (
+# 3. FC1's three inputs on AHU_1, found by tags. The first pattern starts from the points that
+#    have a timeseries reference (118 of them), so every join after it stays small.
+fc1_query = (
     PREFIXES
     + """
-SELECT ?equip ?role ?point ?timeseries_id WHERE {
+SELECT ?role ?point ?timeseries_id WHERE {
   ?point ref:hasExternalReference ?ref .
   ?ref ref:hasTimeseriesId ?timeseries_id .
   ?point bts:hasHaystackTag ?role_tag .
   ?role_tag bts:tagName "ofddRole" ; bts:tagValue ?role .
   FILTER(?role IN ("fan-status", "duct-static-pressure", "duct-static-pressure-sp"))
   ?point bts:hasHaystackTag ?equip_tag .
-  ?equip_tag bts:tagName "equipRef" ; bts:tagValue ?equip .
-}"""
+  ?equip_tag bts:tagName "equipRef" ; bts:tagValue bldg:AHU_1 .
+}
+"""
 )
-fc1_inputs = pd.DataFrame(
-    [
-        (local(r.equip), str(r.role), local(r.point), str(r.timeseries_id))
-        for r in g.query(FC1_SPARQL)
-    ],
-    columns=["equipment_id", "role", "point_id", "timeseries_id"],
-).sort_values(["equipment_id", "role"], ignore_index=True)
+input_rows = []
+for row in g.query(fc1_query):
+    # an id like https://example.org/openfdd/BUILDING_50#AHU_1_DA_P: keep what follows the #
+    point_id = str(row.point).split("#")[-1]
+    input_rows.append(
+        {
+            "equipment_id": "AHU_1",
+            "role": str(row.role),
+            "point_id": point_id,
+            "timeseries_id": str(row.timeseries_id),
+        }
+    )
+fc1_inputs = pd.DataFrame(input_rows).sort_values("role")
 
-# 4. How many points per AHU carry a fault-rule role at all?
-ROLE_COUNT_SPARQL = (
+# 4. How many AHU_1 points carry a fault-rule role at all?
+count_query = (
     PREFIXES
     + """
-SELECT ?equip (COUNT(?role) AS ?roles) WHERE {
+SELECT (COUNT(?role) AS ?roles) WHERE {
   ?point ref:hasExternalReference ?ref .
   ?ref ref:hasTimeseriesId ?timeseries_id .
   ?point bts:hasHaystackTag ?role_tag .
   ?role_tag bts:tagName "ofddRole" ; bts:tagValue ?role .
   ?point bts:hasHaystackTag ?equip_tag .
-  ?equip_tag bts:tagName "equipRef" ; bts:tagValue ?equip .
+  ?equip_tag bts:tagName "equipRef" ; bts:tagValue bldg:AHU_1 .
 }
-GROUP BY ?equip"""
+"""
 )
-roles_per_ahu = pd.DataFrame(
-    [(local(r.equip), int(r.roles)) for r in g.query(ROLE_COUNT_SPARQL)],
-    columns=["equipment_id", "roles"],
-).sort_values("equipment_id", ignore_index=True)
+for row in g.query(count_query):
+    roles_count = int(row.roles)
 
-RESULTS = {"fc1_inputs": fc1_inputs, "roles_per_ahu": roles_per_ahu, "one_point_tags": one_point}
-
-print(f"The graph has {len(g)} statements.\n")
-print("Markers of bldg:AHU_1_DA_P:", ", ".join(markers))
+print("The graph has", len(g), "statements.")
+print("\nMarkers of bldg:AHU_1_DA_P:", ", ".join(sorted(markers)))
 print("\nIts tags:")
 print(one_point.to_string(index=False))
-print("\nFC1's inputs, found by role and equipRef:")
+print("\nFC1's inputs on AHU_1, found by role and equipRef:")
 print(fc1_inputs.to_string(index=False))
-print("\nPoints with a fault-rule role, per AHU:")
-print(roles_per_ahu.to_string(index=False))
+print("\nAHU_1 points with a fault-rule role:", roles_count)
+
+# For the course's automatic checker (tests/test_lesson_scripts.py)
+RESULTS = {"fc1_inputs": fc1_inputs, "roles_count": roles_count}

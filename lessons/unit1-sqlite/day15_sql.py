@@ -1,226 +1,147 @@
-"""Day 15, SQL: data quality before you trust a rule, then the Unit 1 challenge (a DAT rule).
+# Day 15 (SQL): data-quality checks, then the Unit 1 challenge: a discharge air temp rule.
+# Run from the repo root (once: uv run python lessons/course.py setup):
+#     uv run python lessons/unit1-sqlite/day15_sql.py
 
-    uv run python lessons/course.py setup         # once: loads the CSVs into var/lessons.sqlite
-    uv run python lessons/unit1-sqlite/day15_sql.py
-
-The same computation as day15_pandas.py, done by SQLite on the same rows. SQLite does all the work;
-pandas only turns the result rows into a table for printing.
-Compare the printout with day15_pandas.py: the numbers should match.
-"""
-
-import os
 import sqlite3
-from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-DB = Path(os.environ.get("LESSONS_DB", ROOT / "var" / "lessons.sqlite"))
-if not DB.exists():
-    raise SystemExit(f"{DB} not found. Run:  uv run python lessons/course.py setup")
-conn = sqlite3.connect(DB)
+conn = sqlite3.connect("var/lessons.sqlite")
 
-PARAMS = {
-    "pa_per_inh2o": 249.08891,  # the historian logged inches of water; the math is SI (pascals)
-    "flat_rows": 12,  # an identical value for 12 rows x 5 min = 1 hour, fan running, is suspicious
-    "tol": 2.78,  # |discharge - setpoint| above this is a fault (5 degF is 2.78 degC)
-    "confirm": 6,  # 6 rows x 5 min = 30 minutes
-    "step_s": 300,  # the historian logs every 5 minutes
-    "zero_f_in_c": (0 - 32.0) * 5.0 / 9.0,  # what a dropout looks like after conversion: -17.777...
-    "temp_lo": -40.0,  # a sensor's physical range
-    "temp_hi": 60.0,
-    "static_lo": 0.0,
-    "static_hi": 1500.0,
-    "speed_lo": 0.0,
-    "speed_hi": 100.0,
+settings = {
+    "flat_rows": 12,  # the same value for 12 rows x 5 min = 1 hour, fan running, is suspicious
+    "tolerance_c": 2.78,  # more than this far from setpoint is a fault (5 degF = 2.78 degC)
+    "confirm_rows": 6,  # 6 rows x 5 min = 30 minutes
+    "temp_min_c": -40,  # what a temperature sensor can physically report
+    "temp_max_c": 60,
+    "zero_f_in_c": (0 - 32) * 5 / 9,  # a dropout, after converting: -17.777...
 }
 
-# One query, one CTE per step. ahu_1 and ahu_2 are the CSVs loaded as tables, same column names.
-QUALITY_SQL = """
-CREATE TEMP TABLE q AS
-WITH h AS (                                   -- 1. load: both AHUs, the columns we need
-  SELECT 'AHU_1' AS equipment_id, timestamp_utc, supply_fan_status, supply_fan_speed_pct, da_p_inwc,
-         discharge_air_temp_f, dat_reset_f, mixed_air_temp_f, return_air_temp_f, outside_air_temp_f
+# Steps 2-7 as one query. Each WITH block is one step.
+quality_query = """
+CREATE TEMP TABLE quality AS
+WITH
+step2 AS (                -- 2. convert temperatures to degC
+  SELECT *,
+         (discharge_air_temp_f - 32) * 5 / 9 AS dat_c,
+         (dat_reset_f - 32) * 5 / 9          AS dat_setpoint_c
   FROM ahu_1
-  UNION ALL
-  SELECT 'AHU_2', timestamp_utc, supply_fan_status, supply_fan_speed_pct, da_p_inwc,
-         discharge_air_temp_f, dat_reset_f, mixed_air_temp_f, return_air_temp_f, outside_air_temp_f
-  FROM ahu_2
-), si AS (                                    -- 2. SI units (raw degF stays for the dropout test)
-  SELECT h.*,
-         (discharge_air_temp_f - 32.0) * 5.0 / 9.0 AS dat_c,
-         (dat_reset_f - 32.0) * 5.0 / 9.0          AS dat_sp_c,
-         (mixed_air_temp_f - 32.0) * 5.0 / 9.0     AS mat_c,
-         (return_air_temp_f - 32.0) * 5.0 / 9.0    AS rat_c,
-         (outside_air_temp_f - 32.0) * 5.0 / 9.0   AS oat_c,
-         da_p_inwc * :pa_per_inh2o                 AS duct_static_pa
-  FROM h
-), flags AS (                                 -- 3-5. quality flags; 6a. flat marks; 7. time step
+),
+step3 AS (                -- 3-5, 7. flags per row; 6a. a new flat streak starts where value changes
+  SELECT timestamp_utc, supply_fan_status, dat_c, dat_setpoint_c,
+         discharge_air_temp_f = 0 OR mixed_air_temp_f = 0 OR return_air_temp_f = 0 AS dropout,
+         supply_fan_status = 1 AND dat_reset_f = 0                               AS setpoint_zero,
+         dat_c NOT BETWEEN :temp_min_c AND :temp_max_c                           AS out_of_range,
+         discharge_air_temp_f IS NOT LAG(discharge_air_temp_f) OVER w            AS new_flat,
+         unixepoch(timestamp_utc) - LAG(unixepoch(timestamp_utc)) OVER w         AS step_s
+  FROM step2
+  WINDOW w AS (ORDER BY timestamp_utc)
+),
+step6b AS (               -- 6b. running total of the marks numbers each flat streak
+  SELECT *, SUM(new_flat) OVER (ORDER BY timestamp_utc) AS flat_id
+  FROM step3
+),
+step6c AS (               -- 6c. rows in each streak, and how many of them had the fan on
   SELECT *,
-         CASE WHEN discharge_air_temp_f = 0 OR mixed_air_temp_f = 0 OR return_air_temp_f = 0
-              THEN 1 ELSE 0 END AS dropout,
-         CASE WHEN supply_fan_status = 1 AND dat_reset_f = 0 THEN 1 ELSE 0 END AS sp_zero,
-         CASE WHEN dat_c NOT BETWEEN :temp_lo AND :temp_hi
-                OR mat_c NOT BETWEEN :temp_lo AND :temp_hi
-                OR rat_c NOT BETWEEN :temp_lo AND :temp_hi
-                OR oat_c NOT BETWEEN :temp_lo AND :temp_hi
-                OR duct_static_pa NOT BETWEEN :static_lo AND :static_hi
-                OR supply_fan_speed_pct NOT BETWEEN :speed_lo AND :speed_hi
-              THEN 1 ELSE 0 END AS out_of_range,
-         CASE WHEN discharge_air_temp_f = LAG(discharge_air_temp_f) OVER w
-              THEN 0 ELSE 1 END AS new_flat,
-         unixepoch(timestamp_utc) AS epoch_s,
-         unixepoch(timestamp_utc) - LAG(unixepoch(timestamp_utc)) OVER w AS step_s
-  FROM si
-  WINDOW w AS (PARTITION BY equipment_id ORDER BY timestamp_utc)
-), flat_ids AS (                              -- 6b. running sum of marks = streak id
-  SELECT *, SUM(new_flat) OVER (PARTITION BY equipment_id ORDER BY timestamp_utc) AS flat_id
-  FROM flags
-), flat AS (                                  -- 6c. row in streak; streak size and fan rows
-  SELECT *,
-         ROW_NUMBER() OVER (PARTITION BY equipment_id, flat_id ORDER BY timestamp_utc) AS flat_len,
-         COUNT(*)               OVER (PARTITION BY equipment_id, flat_id) AS island_rows,
-         SUM(supply_fan_status) OVER (PARTITION BY equipment_id, flat_id) AS island_running
-  FROM flat_ids
+         COUNT(*) OVER (PARTITION BY flat_id)               AS streak_rows,
+         SUM(supply_fan_status) OVER (PARTITION BY flat_id) AS streak_fan_rows
+  FROM step6b
 )
-SELECT equipment_id, timestamp_utc, supply_fan_status, dat_c, dat_sp_c, mat_c, rat_c, oat_c,
-       duct_static_pa,
-       dropout, sp_zero, out_of_range, flat_id, flat_len,
-       CASE WHEN island_rows >= :flat_rows AND island_running = island_rows
-            THEN 1 ELSE 0 END AS flatline,
-       step_s, epoch_s, substr(timestamp_utc, 1, 7) AS month
-FROM flat
+SELECT *,
+       streak_rows >= :flat_rows AND streak_fan_rows = streak_rows AS flatline,
+       substr(timestamp_utc, 1, 7) AS month
+FROM step6c
 """
+conn.execute(quality_query, settings)
 
-FLAT_EPISODES_SQL = """
-SELECT equipment_id, flat_id, min(timestamp_utc) AS start_utc, max(flat_len) AS rows,
-       min(dat_c) AS value_c
-FROM q
-WHERE flatline = 1
-GROUP BY equipment_id, flat_id
-ORDER BY equipment_id, flat_id
-"""
-
-# 8. One line of checks per AHU.
-CHECKS_SQL = """
-SELECT equipment_id,
-       sum(dropout) AS dropout_rows,
-       sum(sp_zero) AS sp_zero_rows,
-       sum(out_of_range) AS out_of_range_rows,
-       sum(flatline) AS flatline_rows,
-       sum(CASE WHEN step_s <> :step_s THEN 1 ELSE 0 END) AS step_gaps,
-       max(step_s) AS max_step_s,
-       (SELECT count(DISTINCT f.flat_id) FROM q f
-         WHERE f.equipment_id = q.equipment_id AND f.flatline = 1) AS flat_episodes,
-       sum(CASE WHEN dat_c = -17.78 THEN 1 ELSE 0 END) AS dat_eq_minus_17_78,
-       sum(CASE WHEN abs(dat_c - :zero_f_in_c) < 0.01 THEN 1 ELSE 0 END)
-         AS dat_within_0_01_of_zero_f
-FROM q
-GROUP BY equipment_id
-ORDER BY equipment_id
-"""
-
-# 9. Coverage per AHU per month: rows present vs rows expected, first to last timestamp.
-COVERAGE_SQL = """
-SELECT equipment_id, month,
-       count(*) AS rows,
-       CAST(sum(supply_fan_status) AS INTEGER) AS running_rows,
-       sum(dropout) AS dropout_rows,
-       sum(sp_zero) AS sp_zero_rows,
-       sum(flatline) AS flat_rows,
-       (max(epoch_s) - min(epoch_s)) / :step_s + 1 AS expected_rows,
-       100.0 * count(*) / ((max(epoch_s) - min(epoch_s)) / :step_s + 1) AS coverage_pct
-FROM q
-GROUP BY equipment_id, month
-ORDER BY equipment_id, month
-"""
-
-# 10. Challenge: |discharge - setpoint| > 2.78 degC while running, confirmed for 6 rows.
-# Two variants: "ungated" trusts every row; "gated" skips dropouts and the missing (0) setpoint.
-DAT_SQL = """
-CREATE TEMP TABLE dat_rows AS
-WITH base AS (
-  SELECT equipment_id, timestamp_utc, month, supply_fan_status, dropout, sp_zero,
-         abs(dat_c - dat_sp_c) AS err_c
-  FROM q
-), v AS (
-  SELECT 'ungated' AS variant, equipment_id, timestamp_utc, month,
-         CASE WHEN supply_fan_status = 1 AND err_c > :tol THEN 1 ELSE 0 END AS raw_fault
-  FROM base
+# 8. The rule, once for "ungated" (every row) and once for "gated" (skip bad-data rows)
+rule_query = """
+CREATE TEMP TABLE rule AS
+WITH
+raw AS (                  -- 8a. raw fault: fan on and |discharge - setpoint| > 2.78 degC
+  SELECT 'ungated' AS variant, timestamp_utc, month,
+         supply_fan_status = 1 AND ABS(dat_c - dat_setpoint_c) > :tolerance_c AS raw
+  FROM quality
   UNION ALL
-  SELECT 'gated', equipment_id, timestamp_utc, month,
-         CASE WHEN supply_fan_status = 1 AND dropout = 0 AND sp_zero = 0 AND err_c > :tol
-              THEN 1 ELSE 0 END
-  FROM base
-), marks AS (
-  SELECT *, CASE WHEN raw_fault = LAG(raw_fault) OVER w THEN 0 ELSE 1 END AS new_streak
-  FROM v
-  WINDOW w AS (PARTITION BY variant, equipment_id ORDER BY timestamp_utc)
-), ids AS (
-  SELECT *, SUM(new_streak) OVER (PARTITION BY variant, equipment_id ORDER BY timestamp_utc)
-            AS streak_id
+  SELECT 'gated', timestamp_utc, month,
+         supply_fan_status = 1 AND dropout = 0 AND setpoint_zero = 0
+           AND ABS(dat_c - dat_setpoint_c) > :tolerance_c
+  FROM quality
+),
+marks AS (                -- 8b. a new streak starts wherever the flag changes (per variant)
+  SELECT *,
+         raw IS NOT LAG(raw) OVER (PARTITION BY variant ORDER BY timestamp_utc) AS new_streak
+  FROM raw
+),
+ids AS (                  -- 8c. number the streaks
+  SELECT *,
+         SUM(new_streak) OVER (PARTITION BY variant ORDER BY timestamp_utc) AS streak_id
   FROM marks
-), ranked AS (
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY variant, equipment_id, streak_id ORDER BY timestamp_utc)
-            AS streak_len
-  FROM ids
 )
-SELECT variant, equipment_id, timestamp_utc, month, raw_fault, streak_id,
-       CASE WHEN raw_fault = 1 AND streak_len >= :confirm THEN 1 ELSE 0 END AS fault
-FROM ranked
+SELECT variant, month,    -- 8d. confirm: the flag has held for 6 rows
+       raw = 1 AND ROW_NUMBER() OVER (PARTITION BY variant, streak_id ORDER BY timestamp_utc)
+                   >= :confirm_rows AS fault
+FROM ids
 """
-DAT_MONTH_SQL = """
-SELECT equipment_id, month,
-       sum(CASE WHEN variant = 'ungated' AND fault = 1 THEN 1 ELSE 0 END) * 5 / 60.0
-         AS ungated_fault_h,
-       sum(CASE WHEN variant = 'gated' AND fault = 1 THEN 1 ELSE 0 END) * 5 / 60.0
-         AS gated_fault_h
-FROM dat_rows
-GROUP BY equipment_id, month
-ORDER BY equipment_id, month
+conn.execute(rule_query, settings)
+
+# Totals of the checks
+checks_query = """
+SELECT SUM(dropout),
+       SUM(setpoint_zero),
+       SUM(out_of_range),
+       SUM(flatline),
+       COUNT(DISTINCT CASE WHEN flatline = 1 THEN flat_id END),
+       SUM(step_s <> 300),
+       MAX(step_s),
+       SUM(dat_c = -17.78),
+       SUM(ABS(dat_c - :zero_f_in_c) < 0.01)
+FROM quality
 """
+row = conn.execute(checks_query, settings).fetchone()
+dropouts, setpoint_zero, out_of_range, flatline_rows, flat_episodes = row[:5]
+step_gaps, max_step_s, exact_matches, tolerance_matches = row[5:]
 
-conn.execute(QUALITY_SQL, PARAMS)
-conn.execute(DAT_SQL, PARAMS)
+# 9. Fault hours: rows x 5 / 60, per month and in total
+monthly_query = """
+SELECT month,
+       SUM(CASE WHEN variant = 'ungated' THEN fault END) * 5 / 60.0 AS ungated_fault_h,
+       SUM(CASE WHEN variant = 'gated' THEN fault END) * 5 / 60.0   AS gated_fault_h
+FROM rule
+GROUP BY month
+ORDER BY month
+"""
+monthly = pd.read_sql_query(monthly_query, conn)
+ungated_h = monthly["ungated_fault_h"].sum()
+gated_h = monthly["gated_fault_h"].sum()
 
-quality = pd.read_sql_query(
-    "SELECT equipment_id, timestamp_utc, supply_fan_status, dat_c, dat_sp_c, mat_c, rat_c, oat_c,"
-    " duct_static_pa, dropout, sp_zero, out_of_range, flat_len, flatline, step_s"
-    " FROM q ORDER BY equipment_id, timestamp_utc",
-    conn,
-)
-flat_episodes = pd.read_sql_query(FLAT_EPISODES_SQL, conn)
-checks = pd.read_sql_query(CHECKS_SQL, conn, params=PARAMS)
-coverage = pd.read_sql_query(COVERAGE_SQL, conn, params=PARAMS)
-dat_rows = pd.read_sql_query(
-    "SELECT equipment_id, timestamp_utc, variant, raw_fault, streak_id, fault"
-    " FROM dat_rows ORDER BY variant, equipment_id, timestamp_utc",
-    conn,
-)
-dat_month = pd.read_sql_query(DAT_MONTH_SQL, conn)
+print("AHU_1 data-quality checks")
+print("  dropout rows (a temperature reads 0 F):", dropouts)
+print("  setpoint reads 0 while the fan runs:   ", setpoint_zero)
+print("  discharge temp out of range:           ", out_of_range)
+print("  flatline rows (1 h+ the same value):   ", flatline_rows)
+print("  flatline episodes:                     ", flat_episodes)
+print("  time steps that are not 300 s:         ", step_gaps)
+print("  longest time step (s):                 ", max_step_s)
+print("  dat_c == -17.78 matches:               ", exact_matches)
+print("  dat_c within 0.01 of -17.78 matches:   ", tolerance_matches)
+print("Challenge: discharge air temp fault hours")
+print(monthly.round(2).to_string(index=False))
+print("  total, trusting every row (h):", round(ungated_h, 2))
+print("  total, quality gate on (h):   ", round(gated_h, 2))
 
+# For the course's automatic checker (tests/test_lesson_scripts.py)
 RESULTS = {
-    "quality_rows": quality,
-    "checks": checks,
+    "dropout_rows": dropouts,
+    "setpoint_zero_rows": setpoint_zero,
+    "out_of_range_rows": out_of_range,
+    "flatline_rows": flatline_rows,
     "flat_episodes": flat_episodes,
-    "coverage": coverage,
-    "dat_rows": dat_rows,
-    "dat_month": dat_month,
+    "step_gaps": step_gaps,
+    "max_step_s": max_step_s,
+    "exact_matches": exact_matches,
+    "tolerance_matches": tolerance_matches,
+    "ungated_fault_h": ungated_h,
+    "gated_fault_h": gated_h,
+    "monthly_fault_hours": monthly,
 }
-
-print("Quality checks per AHU:")
-print(checks.round(2).T.to_string(header=False))
-print("\nThe 7 dropout rows on AHU_1 (every sensor reads 0 degF = -17.78 degC):")
-dropped = quality[(quality["equipment_id"] == "AHU_1") & (quality["dropout"] == 1)]
-print(dropped[["timestamp_utc", "dat_c", "dat_sp_c"]].round(2).to_string(index=False))
-print("\nCoverage per AHU per month (AHU_1):")
-print(coverage[coverage["equipment_id"] == "AHU_1"].round(1).to_string(index=False))
-print("\nChallenge: DAT rule fault hours per AHU per month (ungated vs gated):")
-print(dat_month.round(2).to_string(index=False))
-print("\nTotals:")
-print(
-    dat_month.groupby("equipment_id")[["ungated_fault_h", "gated_fault_h"]]
-    .sum()
-    .round(2)
-    .to_string()
-)

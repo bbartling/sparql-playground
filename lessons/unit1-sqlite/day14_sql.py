@@ -1,110 +1,92 @@
-"""Day 14, SQL: FC1 (duct static too low while the fan runs) on both AHUs.
+# Day 14 (SQL): fault rule FC1, "duct static pressure too low while the fan runs".
+# Run from the repo root (once: uv run python lessons/course.py setup):
+#     uv run python lessons/unit1-sqlite/day14_sql.py
 
-    uv run python lessons/course.py setup         # once: loads the CSVs into var/lessons.sqlite
-    uv run python lessons/unit1-sqlite/day14_sql.py
-
-The same computation as day14_pandas.py, done by SQLite on the same rows. SQLite does all the work;
-pandas only turns the result rows into a table for printing.
-Compare the printout with day14_pandas.py: the numbers should match.
-"""
-
-import os
 import sqlite3
-from pathlib import Path
 
-import pandas as pd
+conn = sqlite3.connect("var/lessons.sqlite")
 
-ROOT = Path(__file__).resolve().parents[2]
-DB = Path(os.environ.get("LESSONS_DB", ROOT / "var" / "lessons.sqlite"))
-if not DB.exists():
-    raise SystemExit(f"{DB} not found. Run:  uv run python lessons/course.py setup")
-conn = sqlite3.connect(DB)
-
-PARAMS = {
-    "pa_per_inh2o": 249.08891,  # the historian logged inches of water; fault math is SI (pascals)
-    "tol": 25.0,  # how far below setpoint counts as a fault (~0.1 inH2O)
-    "confirm": 2,  # 2 rows x 5 min = 10 minutes before a fault counts
+# Rule settings
+settings = {
+    "pa_per_inh2o": 249.08891,  # 1 inch of water = 249.09 pascals
+    "tolerance_pa": 25,  # how far below setpoint counts as "too low"
+    "confirm_rows": 2,  # the fault must last 2 rows in a row (2 x 5 min = 10 minutes)
 }
 
-# One query, one CTE per step. ahu_1 and ahu_2 are the CSVs loaded as tables, same column names.
-FC1_SQL = """
+# Steps 1-4 as one query. Each WITH block is one step; read them top to bottom.
+fc1_query = """
 CREATE TEMP TABLE fc1 AS
-WITH h AS (                                   -- 1. load: both AHUs, the columns FC1 needs
-  SELECT 'AHU_1' AS equipment_id, timestamp_utc, supply_fan_status, da_p_inwc, da_p_setpoint_inwc
+WITH
+step2 AS (                -- 1-2. read AHU_1 and convert the pressures to pascals
+  SELECT timestamp_utc,
+         supply_fan_status,
+         da_p_inwc * :pa_per_inh2o          AS static_pa,
+         da_p_setpoint_inwc * :pa_per_inh2o AS setpoint_pa
   FROM ahu_1
-  UNION ALL
-  SELECT 'AHU_2', timestamp_utc, supply_fan_status, da_p_inwc, da_p_setpoint_inwc
-  FROM ahu_2
-), si AS (                                    -- 2. SI units
-  SELECT equipment_id, timestamp_utc, supply_fan_status,
-         da_p_inwc * :pa_per_inh2o          AS duct_static_pa,
-         da_p_setpoint_inwc * :pa_per_inh2o AS duct_static_sp_pa
-  FROM h
-), base AS (                                  -- 3. gate + raw fault
-  SELECT equipment_id, timestamp_utc,
-         CASE WHEN supply_fan_status = 1 AND duct_static_pa < duct_static_sp_pa - :tol
-              THEN 1 ELSE 0 END AS raw_fault
-  FROM si
-), marks AS (                                 -- 4a. a new streak starts where raw_fault changes
-  SELECT *, CASE WHEN raw_fault = LAG(raw_fault) OVER w THEN 0 ELSE 1 END AS new_streak
-  FROM base
-  WINDOW w AS (PARTITION BY equipment_id ORDER BY timestamp_utc)
-), streaks AS (                               -- 4b. running sum of starts numbers the streaks
-  SELECT *, SUM(new_streak) OVER (PARTITION BY equipment_id ORDER BY timestamp_utc) AS streak_id
-  FROM marks
-), ranked AS (                                -- 4c. row number inside each streak
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY equipment_id, streak_id ORDER BY timestamp_utc)
-            AS streak_len
-  FROM streaks
+),
+step3 AS (                -- 3. raw fault: fan on AND static more than 25 Pa below setpoint
+  SELECT timestamp_utc,
+         supply_fan_status = 1 AND static_pa < setpoint_pa - :tolerance_pa AS raw_fault
+  FROM step2
+),
+step4a AS (               -- 4a. mark rows where the value changes (a new streak starts)
+  SELECT *,
+         raw_fault IS NOT LAG(raw_fault) OVER (ORDER BY timestamp_utc) AS new_streak
+  FROM step3
+),
+step4b AS (               -- 4b. a running total of those marks numbers each streak
+  SELECT *,
+         SUM(new_streak) OVER (ORDER BY timestamp_utc) AS streak_id
+  FROM step4a
 )
-SELECT equipment_id, timestamp_utc, raw_fault, streak_id,
-       CASE WHEN raw_fault = 1 AND streak_len >= :confirm THEN 1 ELSE 0 END AS fault
-FROM ranked
+SELECT timestamp_utc,     -- 4c. count rows inside each streak, keep the long-enough faults
+       raw_fault,
+       streak_id,
+       raw_fault = 1
+         AND ROW_NUMBER() OVER (PARTITION BY streak_id ORDER BY timestamp_utc) >= :confirm_rows
+         AS fault
+FROM step4b
 """
-conn.execute(FC1_SQL, PARAMS)
-conn.execute("CREATE INDEX temp.fc1_eq_ts ON fc1 (equipment_id, timestamp_utc)")
+conn.execute(fc1_query, settings)
 
-SUMMARY_SQL = """
-SELECT equipment_id,                          -- 5. rows x 5 minutes = hours
-       sum(raw_fault) * 5 / 60.0 AS raw_fault_h,
-       sum(fault) * 5 / 60.0     AS confirmed_fault_h,
-       count(DISTINCT CASE WHEN fault = 1 THEN streak_id END) AS episodes
-FROM fc1
-GROUP BY equipment_id
-ORDER BY equipment_id
-"""
+# 5. Totals: each row is 5 minutes, so rows x 5 / 60 = hours
+raw_hours, fault_hours, episodes = conn.execute("""
+    SELECT SUM(raw_fault) * 5 / 60.0,
+           SUM(fault) * 5 / 60.0,
+           COUNT(DISTINCT CASE WHEN fault = 1 THEN streak_id END)
+    FROM fc1
+""").fetchone()
 
-OPENFDD_SQL = """
-SELECT replace(hvac_system, 'bld_50_', '') AS equipment_id,
-       count(*) AS episodes, sum(duration_min) / 60 AS hours
-FROM fdd_events
-WHERE rule_name = 'fc1'
-GROUP BY equipment_id
-"""
+# 6. Open-FDD's results for the same data, and how many of its FC1 episodes we also found
+openfdd_episodes, openfdd_hours = conn.execute("""
+    SELECT COUNT(*), SUM(duration_min) / 60
+    FROM fdd_events
+    WHERE rule_name = 'fc1' AND hvac_system = 'bld_50_AHU_1'
+""").fetchone()
 
-# 6. For each Open-FDD episode, does at least one of our confirmed fault rows fall inside it?
-# The timestamps are ISO text in one format, so BETWEEN on text compares them in time order.
-OVERLAP_SQL = """
-SELECT count(*) AS openfdd_episodes,
-       sum(EXISTS (SELECT 1 FROM fc1 f
-                   WHERE f.equipment_id = replace(e.hvac_system, 'bld_50_', '')
-                     AND f.fault = 1
-                     AND f.timestamp_utc BETWEEN e.start_time_utc AND e.end_time_utc))
-         AS also_found_by_us
-FROM fdd_events e
-WHERE e.rule_name = 'fc1'
-"""
+found = conn.execute("""
+    SELECT COUNT(*)
+    FROM fdd_events AS e
+    WHERE e.rule_name = 'fc1' AND e.hvac_system = 'bld_50_AHU_1'
+      AND EXISTS (SELECT 1 FROM fc1
+                  WHERE fc1.fault = 1
+                    AND fc1.timestamp_utc BETWEEN e.start_time_utc AND e.end_time_utc)
+""").fetchone()[0]
 
-fc1 = pd.read_sql_query("SELECT * FROM fc1 ORDER BY equipment_id, timestamp_utc", conn)
-summary = pd.read_sql_query(SUMMARY_SQL, conn)
-openfdd = pd.read_sql_query(OPENFDD_SQL, conn)
-overlap = pd.read_sql_query(OVERLAP_SQL, conn)
+print("AHU_1, FC1 (duct static too low)")
+print("  raw fault hours:      ", round(raw_hours, 2))
+print("  confirmed fault hours:", round(fault_hours, 2))
+print("  confirmed episodes:   ", episodes)
+print("Open-FDD, FC1 on AHU_1")
+print("  episodes:", openfdd_episodes)
+print("  hours:   ", round(openfdd_hours, 1))
+print("Open-FDD episodes that contain one of our faults:", found, "of", openfdd_episodes)
 
-RESULTS = {"fc1_per_row": fc1, "fc1_summary": summary, "openfdd_fc1": openfdd, "overlap": overlap}
-
-print("FC1 per AHU (hours, episodes):")
-print(summary.round(2).to_string(index=False))
-print("\nOpen-FDD's FC1 episodes for the same data:")
-print(openfdd.round(1).to_string(index=False))
-print("\nOpen-FDD episodes that contain at least one of our confirmed fault rows:")
-print(overlap.to_string(index=False))
+# For the course's automatic checker (tests/test_lesson_scripts.py)
+RESULTS = {
+    "raw_hours": raw_hours,
+    "fault_hours": fault_hours,
+    "episodes": episodes,
+    "openfdd_episodes": openfdd_episodes,
+    "overlap": found,
+}

@@ -1,204 +1,141 @@
-"""Day 24, SQL: external timeseries references, with the history in SQLite *or* in a CSV file.
+# Day 24 (SQL): external timeseries references. One model, history in SQLite *or* in a CSV.
+# Run from the repo root (once: uv run bldgts model build && uv run bldgts bootstrap):
+#     uv run python lessons/unit3-modeling/day24_pandas.py
+#
+# Each point in the model says where its history lives: a ref:TimeseriesReference with an id
+# (ref:hasTimeseriesId) and a store (ref:storedAt). The model has one per point, to SQLite.
+# We add a second one per FC1 input, to the AHU's CSV export, in memory (the .ttl file is not
+# changed), read each series from the store its reference names, and compare the two stores.
+# SQL can't read RDF, so steps 1-3 (the model) are the same rdflib code as day24_pandas.py;
+# steps 4-5 read and compare the series with SQL.
 
-    uv run python lessons/unit3-modeling/day24_sql.py
-
-Needs var/timeseries.sqlite (`uv run bldgts model build && uv run bldgts bootstrap`). The model
-part is the same as day24_pandas.py (rdflib + SPARQL on an in-memory graph; a SQL database can't
-read RDF). The resolver differs: for each reference it returns the SQL that reads that series from
-the store the reference names, and SQLite compares the two stores. A CSV store is first loaded
-into a TEMP table. Compare the printout with day24_pandas.py: the numbers should match."""
-
-import csv
 import json
-import os
 import sqlite3
-from pathlib import Path
 
 import pandas as pd
-from rdflib import RDF, BNode, Graph, Literal, Namespace, URIRef
-
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data" / "BUILDING_50"
-MODEL = ROOT / "model" / "building_50.ttl"
-AHUS = ("AHU_1", "AHU_2")
+from rdflib import RDF, BNode, Graph, Literal, Namespace
 
 BTS = Namespace("https://example.org/openfdd/bldgts#")
 BLDG = Namespace("https://example.org/openfdd/BUILDING_50#")
 REF = Namespace("https://brickschema.org/schema/Brick/ref#")
-PREFIXES = f"PREFIX bts: <{BTS}>\nPREFIX bldg: <{BLDG}>\nPREFIX ref: <{REF}>\n"
+PREFIXES = """
+PREFIX bts:  <https://example.org/openfdd/bldgts#>
+PREFIX bldg: <https://example.org/openfdd/BUILDING_50#>
+PREFIX ref:  <https://brickschema.org/schema/Brick/ref#>
+"""
 
-
-def local(iri) -> str:
-    return str(iri).rsplit("#", 1)[-1]
-
-
-# 1. Load the model. It was built with one reference per point, all to bldg:timeseries_db (SQLite).
+# 1. Load the model
 g = Graph()
-g.parse(MODEL, format="turtle")
+g.parse("model/building_50.ttl")
 
-# 2. Add a second kind of store: a CSV file. Plain Haystack has no tag for "where is the history";
-#    the ref schema does, and it doesn't care what the store is. Brick's ref:Database means a
-#    database, so we don't call a file one: we give CSV files their own class, bts:CsvFile, with
-#    a path.
-#    The "id" a CSV reference holds is the column name (a CSV has no UUIDs).
-ROLE_POINTS_SPARQL = (
+# 2. Add a CSV store for each AHU, and a second reference on each FC1 input point.
+#    A CSV has no UUIDs, so that reference's id is the column name, from Day 21's column map.
+inputs_query = (
     PREFIXES
     + """
-SELECT ?equip ?role ?point WHERE {
-  ?point ref:hasExternalReference ?r .
-  ?point bts:hasHaystackTag ?role_tag .
-  ?role_tag bts:tagName "ofddRole" ; bts:tagValue ?role .
-  ?point bts:hasHaystackTag ?equip_tag .
-  ?equip_tag bts:tagName "equipRef" ; bts:tagValue ?equip .
-}"""
-)
-role_points = [(r.equip, str(r.role), r.point) for r in g.query(ROLE_POINTS_SPARQL)]
-col_map = {e: json.loads((DATA / e / "column_map.json").read_text())["points"] for e in AHUS}
-for equip in AHUS:
-    csv_store = BLDG[f"csv_{equip}"]
-    g.add((csv_store, RDF.type, BTS.CsvFile))
-    g.add((csv_store, BTS.path, Literal(f"data/BUILDING_50/{equip}/history_wide.csv")))
-    g.add((csv_store, BTS.timeColumn, Literal("timestamp_utc")))
-for equip_iri, role, point in role_points:
-    column = col_map[local(equip_iri)].get(role)  # role -> column, from Day 21's first model
-    if column is None:
-        continue
-    node = BNode()
-    g.add((point, REF.hasExternalReference, node))
-    g.add((node, RDF.type, REF.TimeseriesReference))
-    g.add((node, REF.hasTimeseriesId, Literal(column)))
-    g.add((node, REF.storedAt, BLDG[f"csv_{local(equip_iri)}"]))
-
-# 3. Pick FC1's inputs by tag (Day 22) and list every reference each one has.
-FC1_POINTS_SPARQL = (
-    PREFIXES
-    + """
-SELECT DISTINCT ?point WHERE {
-  ?point ref:hasExternalReference ?r .
+SELECT DISTINCT ?point ?role WHERE {
+  ?point ref:hasExternalReference ?ref .
   ?point bts:hasHaystackTag ?role_tag .
   ?role_tag bts:tagName "ofddRole" ; bts:tagValue ?role .
   FILTER(?role IN ("fan-status", "duct-static-pressure", "duct-static-pressure-sp"))
-}"""
+  ?point bts:hasHaystackTag ?equip_tag .
+  ?equip_tag bts:tagName "equipRef" ; bts:tagValue ?equip .
+}
+"""
 )
-REFS_SPARQL = (
+for ahu in ["AHU_1", "AHU_2"]:
+    csv_store = BLDG["csv_" + ahu]
+    g.add((csv_store, RDF.type, BTS.CsvFile))
+    g.add((csv_store, BTS.path, Literal("data/BUILDING_50/" + ahu + "/history_wide.csv")))
+    g.add((csv_store, BTS.timeColumn, Literal("timestamp_utc")))
+
+    with open("data/BUILDING_50/" + ahu + "/column_map.json") as f:
+        column_for_role = json.load(f)["points"]
+
+    inputs = list(g.query(inputs_query, initBindings={"equip": BLDG[ahu]}))
+    for row in inputs:
+        reference = BNode()  # a new, unnamed node: the reference itself
+        g.add((row.point, REF.hasExternalReference, reference))
+        g.add((reference, RDF.type, REF.TimeseriesReference))
+        g.add((reference, REF.hasTimeseriesId, Literal(column_for_role[str(row.role)])))
+        g.add((reference, REF.storedAt, csv_store))
+
+# 3. Every reference of FC1's input points: the id, the store, and what kind of store it is
+refs_query = (
     PREFIXES
     + """
-SELECT ?point ?ts_id ?store ?store_class WHERE {
-  ?point ref:hasExternalReference ?r .
-  ?r a ref:TimeseriesReference ; ref:hasTimeseriesId ?ts_id ; ref:storedAt ?store .
+SELECT ?point ?timeseries_id ?store ?store_class WHERE {
+  ?point ref:hasExternalReference ?ref .
+  ?point bts:hasHaystackTag ?role_tag .
+  ?role_tag bts:tagName "ofddRole" ; bts:tagValue ?role .
+  FILTER(?role IN ("fan-status", "duct-static-pressure", "duct-static-pressure-sp"))
+  ?ref ref:hasTimeseriesId ?timeseries_id ; ref:storedAt ?store .
   ?store a ?store_class .
-}"""
-)
-fc1_points = sorted(r.point for r in g.query(FC1_POINTS_SPARQL))
-refs = pd.DataFrame(
-    [
-        (local(p), local(r.store), local(r.store_class), str(r.ts_id), str(r.store), str(p))
-        for p in fc1_points
-        for r in g.query(REFS_SPARQL, initBindings={"point": p})
-    ],
-    columns=["point_id", "store", "store_class", "timeseries_id", "store_iri", "point_iri"],
-).sort_values(["point_id", "store"], ignore_index=True)
-
-
-# 4. The resolver: for one reference, the SQL (and parameters) that read its series from the
-#    store it names.
-conn = sqlite3.connect(
-    ":memory:", uri=True
-)  # scratch connection; the samples database is attached read-only below
-sqlite_stores = {}  # store IRI -> schema name of the attached SQLite database
-csv_tables = {}  # store IRI -> name of the TEMP table holding that CSV file
-
-
-def quote_ident(name: str, allowed: set[str]) -> str:
-    """Identifiers can't be bound as parameters: accept a name that really exists, then quote it."""
-    if name not in allowed:
-        raise ValueError(f"unknown column {name!r}")
-    return '"' + name.replace('"', '""') + '"'
-
-
-def attach_sqlite(store: str) -> str:
-    node = URIRef(store)
-    backend = str(g.value(node, BTS.backend))
-    if backend != "sqlite":
-        raise ValueError(f"no reader for database backend {backend!r}")
-    env = str(g.value(node, BTS.connectionEnv))
-    path = Path(os.environ.get(env, ROOT / "var" / "timeseries.sqlite"))
-    conn.execute("ATTACH DATABASE ? AS tsdb", (f"file:{path.as_posix()}?mode=ro",))
-    return "tsdb"
-
-
-def load_csv(store: str, columns: set[str]) -> str:
-    """Load the columns a CSV store is asked for into a TEMP table (REAL values, epoch ts)."""
-    node = URIRef(store)
-    time_col = str(g.value(node, BTS.timeColumn))
-    name = f"csv_{local(node)}"
-    with open(ROOT / str(g.value(node, BTS.path)), encoding="utf-8", newline="") as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        wanted = [header.index(c) for c in sorted(columns)]  # raises if a column is missing
-        t = header.index(time_col)
-        cols = ", ".join(f"{quote_ident(c, set(header))} REAL" for c in sorted(columns))
-        conn.execute(f'CREATE TEMP TABLE "{name}" (ts INTEGER PRIMARY KEY, {cols}) WITHOUT ROWID')
-        marks = ", ".join("?" * (len(wanted) + 1))
-        conn.executemany(
-            f'INSERT INTO "{name}" VALUES ({marks})',
-            ([r[t], *(float(r[i]) if r[i] != "" else None for i in wanted)] for r in reader),
-        )
-    # the time text ('2026-03-16 00:40:00+00:00') becomes epoch seconds, like samples.ts
-    conn.execute(f'UPDATE "{name}" SET ts = unixepoch(ts)')
-    return name
-
-
-def series_sql(store: str, store_class: str, ts_id: str, key: str) -> tuple[str, dict]:
-    """`key` makes the bound parameter name unique when two series go into one query."""
-    if store_class == "Database":  # ref:Database; the model says backend sqlite, path in an env var
-        if store not in sqlite_stores:
-            sqlite_stores[store] = attach_sqlite(store)
-        schema = sqlite_stores[store]
-        sql = f"SELECT ts, value FROM {schema}.samples WHERE timeseries_id = :id_{key}"
-        return sql, {f"id_{key}": ts_id}
-    if store_class == "CsvFile":  # bts:CsvFile; the id is the column name
-        table = csv_tables[store]
-        col = quote_ident(ts_id, csv_columns[store])
-        return f'SELECT ts, {col} AS value FROM temp."{table}"', {}
-    raise ValueError(f"no reader for store class {store_class!r}")
-
-
-# CSV stores are loaded once, with just the columns the references name.
-csv_columns = {}
-for r in refs[refs["store_class"] == "CsvFile"].itertuples():
-    csv_columns.setdefault(r.store_iri, set()).add(r.timeseries_id)
-for store, columns in csv_columns.items():
-    csv_tables[store] = load_csv(store, columns)
-
-# 5. Resolve every reference of every FC1 point, and compare the two stores point by point.
-COMPARE_SQL = """
-WITH a AS ({sql_a}), b AS ({sql_b})
-SELECT :point_id AS point_id,
-       (SELECT count(*) FROM a) AS rows_sqlite,
-       (SELECT count(*) FROM b) AS rows_csv,
-       sum(a.value = b.value)   AS rows_equal,
-       max(abs(a.value - b.value)) AS max_abs_diff
-FROM a JOIN b ON b.ts = a.ts
-"""
-parts = []
-for point_id, grp in refs.groupby("point_id"):
-    by_class = {r.store_class: r for r in grp.itertuples()}
-    db, cf = by_class["Database"], by_class["CsvFile"]
-    sql_a, params_a = series_sql(db.store_iri, "Database", db.timeseries_id, "a")
-    sql_b, params_b = series_sql(cf.store_iri, "CsvFile", cf.timeseries_id, "b")
-    params = {"point_id": point_id} | params_a | params_b
-    parts.append(
-        pd.read_sql_query(COMPARE_SQL.format(sql_a=sql_a, sql_b=sql_b), conn, params=params)
-    )
-series_compare = pd.concat(parts, ignore_index=True)
-
-RESULTS = {
-    "refs": refs[["point_id", "store", "store_class", "timeseries_id"]],
-    "series_compare": series_compare,
 }
+"""
+)
+ref_rows = []
+for row in g.query(refs_query):
+    ref_rows.append(
+        {
+            "point_id": str(row.point).split("#")[-1],  # keep the part after the #
+            "store": str(row.store).split("#")[-1],
+            "store_class": str(row.store_class).split("#")[-1],
+            "timeseries_id": str(row.timeseries_id),
+        }
+    )
+refs = pd.DataFrame(ref_rows).sort_values(["point_id", "store"])
 
-print("References of FC1's input points (a second store was added to each point in memory):")
-print(RESULTS["refs"].to_string(index=False))
+# 4. The resolver. The SQLite store is opened read-only. Each CSV series goes into a TEMP
+#    table, with SQLite turning the time text into epoch seconds (unixepoch).
+conn = sqlite3.connect("file:var/timeseries.sqlite?mode=ro", uri=True)
+conn.execute("CREATE TEMP TABLE csv_series (point_id TEXT, ts INTEGER, value REAL)")
+insert_sql = "INSERT INTO csv_series (point_id, ts, value) VALUES (?, unixepoch(?), ?)"
+for _, ref in refs.iterrows():
+    if ref["store_class"] == "Database":
+        continue  # already in `samples`; step 5 reads it there
+    elif ref["store_class"] == "CsvFile":  # a CSV file: the id is a column name
+        store = BLDG[ref["store"]]
+        path = str(g.value(store, BTS.path))
+        time_column = str(g.value(store, BTS.timeColumn))
+        csv = pd.read_csv(path, usecols=[time_column, ref["timeseries_id"]])
+        for time_text, value in zip(csv[time_column], csv[ref["timeseries_id"]], strict=True):
+            conn.execute(insert_sql, [ref["point_id"], time_text, value])
+    else:
+        raise ValueError("no reader for a store of class " + ref["store_class"])
+conn.execute("CREATE INDEX temp.csv_series_idx ON csv_series (point_id, ts)")
+
+# 5. Compare the two stores, point by point: same rows, same values?
+compare_sql = """
+SELECT
+  (SELECT COUNT(*) FROM samples WHERE timeseries_id = :timeseries_id) AS rows_sqlite,
+  (SELECT COUNT(*) FROM csv_series WHERE point_id = :point_id) AS rows_csv,
+  SUM(s.value = c.value) AS rows_equal,
+  MAX(ABS(s.value - c.value)) AS max_abs_diff
+FROM samples AS s
+JOIN csv_series AS c ON c.ts = s.ts
+WHERE s.timeseries_id = :timeseries_id AND c.point_id = :point_id
+"""
+db_refs = refs[refs["store_class"] == "Database"]
+compare_rows = []
+for _, ref in db_refs.iterrows():
+    ids = {"point_id": ref["point_id"], "timeseries_id": ref["timeseries_id"]}
+    rows_sqlite, rows_csv, rows_equal, max_abs_diff = conn.execute(compare_sql, ids).fetchone()
+    compare_rows.append(
+        {
+            "point_id": ref["point_id"],
+            "rows_sqlite": rows_sqlite,
+            "rows_csv": rows_csv,
+            "rows_equal": rows_equal,
+            "max_abs_diff": max_abs_diff,
+        }
+    )
+series_compare = pd.DataFrame(compare_rows)
+
+print("References of FC1's input points (one store added to each, in memory):")
+print(refs.to_string(index=False))
 print("\nThe same series, read from SQLite and from the CSV file:")
 print(series_compare.to_string(index=False))
+
+# For the course's automatic checker (tests/test_lesson_scripts.py)
+RESULTS = {"refs": refs, "series_compare": series_compare}
