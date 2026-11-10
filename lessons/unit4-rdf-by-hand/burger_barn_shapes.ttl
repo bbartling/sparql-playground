@@ -1,0 +1,59 @@
+# Burger Barn's rules, as SHACL shapes (Day 35). SHACL is a W3C standard:
+# https://www.w3.org/TR/shacl/
+#
+# A shape is a rule about the data: "every X must have ...". pyshacl reads the data and
+# these shapes and reports every thing that breaks a rule.
+#   NodeShape:     WHICH things to check (sh:targetClass), e.g. every fryer.
+#   PropertyShape: one property of those things (sh:path) and what its values must look
+#                  like: how many (sh:minCount / sh:maxCount), what kind (sh:datatype,
+#                  sh:class), what text pattern (sh:pattern). Written inside [ ... ] here.
+#   sh:severity:   how bad breaking it is: sh:Violation (the default), sh:Warning, sh:Info.
+@prefix bb:   <https://example.org/burger-barn#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# Rule 1: every fryer must have a temperature point and exactly one numeric oil setpoint.
+bb:FryerShape a sh:NodeShape ;
+    sh:targetClass bb:Fryer ;                     # check every bb:Fryer
+    sh:property [
+        sh:path bb:hasPoint ;                     # look at its points...
+        sh:qualifiedValueShape [ sh:class bb:TemperatureSensor ] ;
+        sh:qualifiedMinCount 1 ;                  # ...at least 1 must be a TemperatureSensor
+        sh:message "A fryer needs a temperature point." ;
+    ] ;
+    sh:property [
+        sh:path bb:oilSetpointC ;                 # its oil setpoint...
+        sh:minCount 1 ; sh:maxCount 1 ;           # ...exactly one value
+        sh:datatype xsd:decimal ;                 # ...and a number, not text in quotes
+        sh:message "Oil setpoint must be one decimal number." ;
+    ] .
+
+# Rule 2: a serial number is optional, but at most one, and it looks like BB-ABC-1234.
+bb:SerialShape a sh:NodeShape ;
+    sh:targetClass bb:Equipment ;
+    sh:property [
+        sh:path bb:serialNumber ;
+        sh:maxCount 1 ;                           # no sh:minCount, so having none is fine
+        sh:pattern "^BB-[A-Z]{3}-[0-9]{4}$" ;     # a regular expression the text must match
+        sh:message "Serial number must look like BB-ABC-1234." ;
+    ] .
+
+# Rule 3: every piece of equipment needs a label that is not blank.
+# sh:targetClass bb:Equipment also checks every SUBclass (Fryer, Grill, ...), as long as
+# the ontology's rdfs:subClassOf triples are in the graph being checked.
+# A missing label won't burn any fries, so these two are only warnings.
+bb:LabelShape a sh:NodeShape ;
+    sh:targetClass bb:Equipment ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;                           # catches a MISSING label (no triple at all)
+        sh:severity sh:Warning ;
+        sh:message "Missing label." ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minLength 1 ;                          # catches a BLANK label (the text is "")
+        sh:severity sh:Warning ;
+        sh:message "Blank label." ;
+    ] .

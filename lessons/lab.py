@@ -1,36 +1,32 @@
-"""Shared helpers for the daily lessons. Every lesson starts with:
+"""Shared helpers for the lesson scripts and their tests.
 
+Weeks 1-3 don't need this module: their scripts read the CSVs and var/lessons.sqlite directly.
+Week 4 uses the synthetic data and measuring helpers, Week 5 uses ``Api`` (the FastAPI app,
+in-process), and tests/test_lesson_scripts.py uses ``assert_parity`` to check that each day's pandas
+and SQL scripts agree (the pattern of Open-FDD's parity tests: pandas oracle == SQL rule pack).
+
+A script imports it with::
+
+    sys.path.insert(0, str(ROOT / "lessons"))
     import lab
-    conn = lab.connect()
-
-and then does each computation twice: once as SQL (a SQLite string run through stdlib ``sqlite3``)
-and once in pandas, and checks the two answers are the same with ``lab.assert_parity``. That's the
-pattern Open-FDD's parity tests use (``tests/parity`` there: pandas oracle == SQL rule pack).
-
-``lessons/course.py run N`` runs lesson N's ```python blocks on a temporary copy of the database,
-so nothing a lesson does touches ``var/timeseries.sqlite``. ``course.py check`` runs them all.
 """
 
 from __future__ import annotations
 
-import csv
 import os
 import sqlite3
 import time
 import tracemalloc
-from collections.abc import Callable, Iterable
-from datetime import datetime
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-DB = ROOT / "var" / "timeseries.sqlite"
-POINT_CSVS = sorted((ROOT / "model" / "points").glob("*.csv"))
-EVENT_CSVS = sorted((ROOT / "data").glob("*/*/fdd_events.csv"))
+DB = ROOT / "var" / "timeseries.sqlite"  # the API's database (Week 5)
 
-#: course.py sets this when it runs the checker, so benchmarks use their small sizes.
+#: The lesson tests set this, so benchmarks use their small sizes.
 QUICK = os.environ.get("COURSE_QUICK") == "1"
 
 # ---------------------------------------------------------------- units (SI for fault math)
@@ -46,22 +42,10 @@ def inh2o_to_pa(x):
     return x * PA_PER_INH2O
 
 
-# ---------------------------------------------------------------- connecting
+# ---------------------------------------------------------------- the API's database
 def db_path() -> Path:
-    """The database a lesson uses: $COURSE_DB (a temp copy, set by course.py) or the real one."""
+    """The API's database: $COURSE_DB if set (e.g. a temp copy), else var/timeseries.sqlite."""
     return Path(os.environ.get("COURSE_DB", DB))
-
-
-def connect(path: Path | str | None = None) -> sqlite3.Connection:
-    path = Path(path) if path else db_path()
-    if not path.exists():
-        raise SystemExit(f"{path} not found. Build it first:  uv run bldgts bootstrap")
-    return sqlite3.connect(path)
-
-
-def query(conn: sqlite3.Connection, sql: str, params: Iterable | dict = ()) -> pd.DataFrame:
-    """Run one SELECT and return a DataFrame (column names from the SQL)."""
-    return pd.read_sql_query(sql, conn, params=params)
 
 
 # ---------------------------------------------------------------- parity
@@ -124,150 +108,6 @@ def _frame(x) -> pd.DataFrame:
         if out[col].dtype == bool:
             out[col] = out[col].astype(int)
     return out
-
-
-# ---------------------------------------------------------------- lab tables
-def load_points(conn: sqlite3.Connection) -> int:
-    """lab_point: the point list the RDF model is built from, flattened into one table.
-    equipment_id is the AHU the mapping file belongs to (BUILDING_50__AHU_1.csv -> AHU_1)."""
-    conn.execute("DROP TABLE IF EXISTS lab_point")
-    conn.execute(
-        """CREATE TABLE lab_point (
-            timeseries_id TEXT PRIMARY KEY,
-            point_id      TEXT NOT NULL,
-            equipment_id  TEXT NOT NULL,
-            owner_id      TEXT,
-            label         TEXT,
-            brick_class   TEXT,
-            unit          TEXT,
-            openfdd_role  TEXT,
-            source_column TEXT
-        )"""
-    )
-    rows = []
-    for path in POINT_CSVS:
-        equipment_id = path.stem.split("__", 1)[1]
-        with open(path, encoding="utf-8", newline="") as f:
-            for r in csv.DictReader(f):
-                rows.append(
-                    (
-                        r["timeseries_id"],
-                        r["point_id"],
-                        equipment_id,
-                        r["owner_id"] or None,
-                        r["label"] or None,
-                        r["brick_class"] or None,
-                        r["unit"] or None,
-                        r["openfdd_role"] or None,
-                        r["source_column"],
-                    )
-                )
-    conn.executemany("INSERT INTO lab_point VALUES (?,?,?,?,?,?,?,?,?)", rows)
-    conn.commit()
-    return len(rows)
-
-
-def load_events(conn: sqlite3.Connection) -> int:
-    """lab_fdd_event: fault episodes Open-FDD found in this data (for comparing your rules).
-    Times become epoch seconds, like samples.ts."""
-    conn.execute("DROP TABLE IF EXISTS lab_fdd_event")
-    conn.execute(
-        """CREATE TABLE lab_fdd_event (
-            equipment_id TEXT NOT NULL,
-            rule_name    TEXT NOT NULL,
-            start_ts     INTEGER NOT NULL,
-            end_ts       INTEGER NOT NULL,
-            duration_min REAL,
-            sample_count INTEGER
-        )"""
-    )
-    rows = []
-    for path in EVENT_CSVS:
-        equipment_id = path.parent.name
-        with open(path, encoding="utf-8", newline="") as f:
-            for r in csv.DictReader(f):
-                rows.append(
-                    (
-                        equipment_id,
-                        r["rule_name"],
-                        int(datetime.fromisoformat(r["start_time_utc"]).timestamp()),
-                        int(datetime.fromisoformat(r["end_time_utc"]).timestamp()),
-                        float(r["duration_min"]),
-                        int(r["sample_count"]),
-                    )
-                )
-    conn.executemany("INSERT INTO lab_fdd_event VALUES (?,?,?,?,?,?)", rows)
-    conn.commit()
-    return len(rows)
-
-
-def has_table(conn: sqlite3.Connection, name: str) -> bool:
-    row = conn.execute("SELECT 1 FROM sqlite_master WHERE name = ?", (name,)).fetchone()
-    return row is not None
-
-
-def ensure_points(conn: sqlite3.Connection) -> None:
-    if not has_table(conn, "lab_point"):
-        load_points(conn)
-
-
-def ensure_events(conn: sqlite3.Connection) -> None:
-    if not has_table(conn, "lab_fdd_event"):
-        load_events(conn)
-
-
-# The wide `history` table every Open-FDD rule reads: one row per (equipment, ts), one column per
-# role, already in SI. Day 11 builds it step by step; later lessons call ensure_history().
-HISTORY_COLUMNS = {
-    # column: (openfdd_role, SQL expression on `value` that converts it to SI)
-    "fan_status": ("fan-status", "value"),
-    "fan_cmd": ("fan-cmd", "value / 100.0"),
-    "duct_static": ("duct-static-pressure", f"value * {PA_PER_INH2O}"),
-    "duct_static_sp": ("duct-static-pressure-sp", f"value * {PA_PER_INH2O}"),
-    "sat": ("discharge-air-temp", "(value - 32.0) * 5.0 / 9.0"),
-    "sat_sp": ("discharge-air-temp-sp", "(value - 32.0) * 5.0 / 9.0"),
-    "mat": ("mixed-air-temp", "(value - 32.0) * 5.0 / 9.0"),
-    "rat": ("return-air-temp", "(value - 32.0) * 5.0 / 9.0"),
-    "oat": ("outside-air-temp", "(value - 32.0) * 5.0 / 9.0"),
-    "oa_damper": ("outside-air-damper", "value / 100.0"),
-    "clg_valve": ("cooling-valve", "value / 100.0"),
-    "occupied": ("occupied", "value"),
-}
-
-
-def history_sql() -> str:
-    cols = ",\n  ".join(
-        f"MAX(CASE WHEN p.openfdd_role = '{role}' "
-        f"THEN {expr.replace('value', 's.value')} END) AS {col}"
-        for col, (role, expr) in HISTORY_COLUMNS.items()
-    )
-    return (
-        "SELECT p.equipment_id, s.ts,\n  "
-        + cols
-        + "\nFROM samples s\nJOIN lab_point p ON p.timeseries_id = s.timeseries_id\n"
-        "WHERE p.openfdd_role IS NOT NULL\nGROUP BY p.equipment_id, s.ts"
-    )
-
-
-def ensure_history(conn: sqlite3.Connection) -> None:
-    """Create lab_history (SI units) if it isn't there yet. Takes a few seconds the first time."""
-    ensure_points(conn)
-    if has_table(conn, "lab_history"):
-        return
-    conn.execute("CREATE TABLE lab_history AS " + history_sql())
-    conn.execute("CREATE INDEX IF NOT EXISTS lab_history_eq_ts ON lab_history (equipment_id, ts)")
-    conn.commit()
-
-
-def history(conn: sqlite3.Connection, equipment_id: str | None = None) -> pd.DataFrame:
-    """lab_history as a DataFrame, sorted by (equipment_id, ts)."""
-    ensure_history(conn)
-    sql = "SELECT * FROM lab_history"
-    params: tuple = ()
-    if equipment_id:
-        sql += " WHERE equipment_id = ?"
-        params = (equipment_id,)
-    return query(conn, sql + " ORDER BY equipment_id, ts", params)
 
 
 # ---------------------------------------------------------------- the FastAPI app, offline

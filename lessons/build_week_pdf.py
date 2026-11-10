@@ -27,9 +27,71 @@ README = HERE / "README.md"
 DAYS_PER_WEEK = 5
 
 # Weeks that have written lessons, and where they live.
-UNIT_DIRS = {1: "unit1-sqlite", 2: "unit1-sqlite", 3: "unit1-sqlite", 4: "unit2-python"}
+UNIT_DIRS = {
+    1: "unit1-sqlite",
+    2: "unit1-sqlite",
+    3: "unit1-sqlite",
+    4: "unit2-python",
+    5: "unit3-modeling",
+    6: "unit4-rdf-by-hand",
+    7: "unit4-rdf-by-hand",
+    8: "unit4-rdf-by-hand",
+    9: "unit4-rdf-by-hand",
+}
 
 REFERENCES = {
+    6: [
+        ("W3C: RDF 1.1 Primer", "https://www.w3.org/TR/rdf11-primer/"),
+        ("W3C: RDF 1.1 Turtle", "https://www.w3.org/TR/turtle/"),
+        ("W3C: SPARQL 1.1 Query Language", "https://www.w3.org/TR/sparql11-query/"),
+        ("W3C: XML Schema datatypes", "https://www.w3.org/TR/xmlschema11-2/"),
+        ("rdflib documentation", "https://rdflib.readthedocs.io/"),
+        ("Brick: relationships", "https://docs.brickschema.org/brick/relationships.html"),
+    ],
+    7: [
+        ("W3C: RDF Schema 1.1", "https://www.w3.org/TR/rdf-schema/"),
+        ("W3C: OWL 2 Web Ontology Language Primer", "https://www.w3.org/TR/owl2-primer/"),
+        ("W3C: Shapes Constraint Language (SHACL)", "https://www.w3.org/TR/shacl/"),
+        ("W3C: SPARQL 1.1 property paths", "https://www.w3.org/TR/sparql11-query/#propertypaths"),
+        ("owlrl (OWL 2 RL reasoner for rdflib)", "https://github.com/RDFLib/OWL-RL"),
+        ("pySHACL", "https://github.com/RDFLib/pySHACL"),
+        ("Brick: relationships", "https://docs.brickschema.org/brick/relationships.html"),
+        ("ASHRAE 223P (open223.info)", "https://open223.info/"),
+        ("Project Haystack: RDF", "https://project-haystack.org/doc/docHaystack/Rdf"),
+    ],
+    8: [
+        (
+            "Noy & McGuinness: Ontology Development 101",
+            "https://protege.stanford.edu/publications/ontology_development/ontology101.pdf",
+        ),
+        ("W3C: OWL 2 Web Ontology Language Primer", "https://www.w3.org/TR/owl2-primer/"),
+        ("W3C: Shapes Constraint Language (SHACL)", "https://www.w3.org/TR/shacl/"),
+        ("W3C: SPARQL 1.1 Query Language", "https://www.w3.org/TR/sparql11-query/"),
+        (
+            "csml2rdf bacnet.ttl: enumerations and class-as-shape in a real ontology",
+            "https://github.com/JoelBender/csml2rdf/blob/main/bacnet.ttl",
+        ),
+        (
+            "W3C: SKOS reference (definitions, exactMatch, closeMatch)",
+            "https://www.w3.org/TR/skos-reference/",
+        ),
+        ("Brick: extending Brick", "https://docs.brickschema.org/extra/extending.html"),
+    ],
+    9: [
+        ("w3id.org: creating an identifier", "https://docs.w3id.org/guides/create-an-id"),
+        ("w3id.org: content negotiation", "https://docs.w3id.org/guides/content-negotiation"),
+        (
+            "W3C: Best Practice Recipes for Publishing RDF Vocabularies",
+            "https://www.w3.org/TR/swbp-vocab-pub/",
+        ),
+        (
+            "W3C: OWL 2 ontology IRIs and version IRIs",
+            "https://www.w3.org/TR/owl2-syntax/#Ontology_IRI_and_Version_IRI",
+        ),
+        ("W3C: SPARQL 1.1 Update", "https://www.w3.org/TR/sparql11-update/"),
+        ("Semantic Versioning", "https://semver.org/"),
+        ("Brick: extending Brick", "https://docs.brickschema.org/extra/extending.html"),
+    ],
     1: [
         ("Python sqlite3 module", "https://docs.python.org/3/library/sqlite3.html"),
         (
@@ -69,6 +131,17 @@ REFERENCES = {
             "TimescaleDB continuous aggregates",
             "https://docs.timescale.com/use-timescale/latest/continuous-aggregates/",
         ),
+    ],
+    5: [
+        (
+            "Brick: timeseries storage (ref schema)",
+            "https://docs.brickschema.org/metadata/timeseries-storage.html",
+        ),
+        ("Project Haystack: defs", "https://project-haystack.org/doc/docHaystack/Defs"),
+        ("Project Haystack: RDF", "https://project-haystack.org/doc/docHaystack/Rdf"),
+        ("RFC 9562: UUIDs (version 5 = name-based)", "https://www.rfc-editor.org/rfc/rfc9562"),
+        ("rdflib documentation", "https://rdflib.readthedocs.io/"),
+        ("FastAPI testing (TestClient)", "https://fastapi.tiangolo.com/tutorial/testing/"),
     ],
     4: [
         ("Python timeit", "https://docs.python.org/3/library/timeit.html"),
@@ -110,8 +183,30 @@ CSS = """
     }
     a { color: #0645ad; text-decoration: none; }
     table { border-collapse: collapse; width: 100%; font-size: 10pt; }
-    th, td { border: 1px solid #ccc; padding: 0.25em 0.4em; }
+    /* pandoc's default CSS makes tables scroll sideways, which clips them on paper */
+    table { display: table; overflow-x: visible; table-layout: fixed; }
+    th, td { border: 1px solid #ccc; padding: 0.25em 0.4em; overflow-wrap: anywhere; }
+    td code, th code { overflow-wrap: anywhere; word-break: break-word; }
     """
+
+
+RDF_WEEKS = {6, 7, 8, 9}
+INTRO_PANDAS_SQL = (
+    "Five daily lessons. Each day has two scripts that compute the same thing: "
+    "`dayNN_pandas.py` reads the CSV export into pandas, `dayNN_sql.py` runs SQLite "
+    "queries on the same rows (`uv run python lessons/course.py setup` loads them "
+    "once). Run both with `uv run python lessons/course.py run N` and compare the "
+    "printouts. The scripts are in the repo next to each lesson. Keep notes under the "
+    "ignored `student-work/` folder."
+)
+INTRO_RDF = (
+    "Five daily lessons on Burger Barn, a made-up burger restaurant. Each day has one "
+    "short script, `dayNN_rdf.py`, that reads small hand-written Turtle files next to it "
+    "in `lessons/unit4-rdf-by-hand/`. Run it with `uv run python lessons/course.py run N`. "
+    "Every day ends with a box on how it maps to buildings (Brick, ASHRAE 223P, Project "
+    "Haystack) and a burger mini challenge; its answer is in the Try it section. Keep notes "
+    "under the ignored `student-work/` folder."
+)
 
 
 def pandoc() -> str:
@@ -157,12 +252,7 @@ def build_markdown(week: int) -> str:
         "% sparql-playground / lessons\n"
         "% Generated for print and offline reading\n\n"
         f"# {title}\n\n"
-        "Five daily lessons, all run from Python. Each computation is done twice, as a "
-        "SQLite query string (stdlib `sqlite3`) and in pandas, and `lab.assert_parity` "
-        "checks they agree. Run a day with `uv run python lessons/course.py run N` (it "
-        "uses a temporary copy of `var/timeseries.sqlite`; build that with "
-        "`uv run bldgts bootstrap`). `assert` lines state the answers you should see. "
-        "Keep notes under the ignored `student-work/` folder.\n\n"
+        f"{INTRO_RDF if week in RDF_WEEKS else INTRO_PANDAS_SQL}\n\n"
         "## Contents\n\n"
     ]
     for path in days:
@@ -172,8 +262,9 @@ def build_markdown(week: int) -> str:
     for path in days:
         parts.append(printable(path.read_text(encoding="utf-8")))
         parts.append('\n\n<div style="page-break-before: always;"></div>\n\n')
+    heading = "Further reading" if week in RDF_WEEKS else "Reading"
     parts.append(
-        f"# Reading — Week {week}\n\nThe lessons first, then these for exact behavior.\n\n"
+        f"# {heading} — Week {week}\n\nThe lessons first, then these for exact behavior.\n\n"
     )
     for name, url in REFERENCES.get(week, []):
         parts.append(f"- [{name}]({url})\n")

@@ -1,0 +1,9 @@
+# How each Burger Barn menu item is cooked (Days 38-39). Same site: names as burger_site.ttl.
+# Each cook method is an IRI from burger_cook_methods.ttl, never the text "fried".
+@prefix burger: <https://example.org/burger#> .
+@prefix site:   <https://example.org/burger-site#> .
+
+site:Fries a burger:FriedMenuItem ; burger:cookMethod burger:CookMethod.fried .
+site:OnionRings a burger:FriedMenuItem ; burger:cookMethod burger:CookMethod.fried .
+site:ClassicBurger burger:cookMethod burger:CookMethod.grilled .
+site:Cola burger:cookMethod burger:CookMethod.none .

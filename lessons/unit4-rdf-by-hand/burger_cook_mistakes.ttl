@@ -1,0 +1,16 @@
+# Three new menu items, each with one deliberate mistake (Days 38-39). Find them!
+@prefix burger: <https://example.org/burger#> .
+@prefix site:   <https://example.org/burger-site#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Mistake 1: the cook method is the TEXT "fried", not the named value burger:CookMethod.fried.
+site:Shake a burger:MenuItem ; rdfs:label "Shake" ;
+    burger:cookMethod "fried" .
+
+# Mistake 2: a fried menu item that says it is grilled.
+site:CrispyChicken a burger:FriedMenuItem ; rdfs:label "Crispy chicken" ;
+    burger:cookMethod burger:CookMethod.grilled .
+
+# Mistake 3: a code packed into the label ("15-" in front). The name is fine otherwise.
+site:FriedPickles a burger:FriedMenuItem ; rdfs:label "15-Fried pickles" ;
+    burger:cookMethod burger:CookMethod.fried .

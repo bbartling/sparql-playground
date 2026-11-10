@@ -1,0 +1,27 @@
+# Synthetic test data for the CI check (Day 44). Made up on purpose, with mistakes a CI
+# job should catch before anyone publishes data like it:
+#   - two typos in burger: names (a class and a property),
+#   - one deprecated class,
+#   - a fryer with no temperature point (a SHACL rule).
+# It also uses one Brick term, which is a known standard term and fine.
+@prefix brick:  <https://brickschema.org/schema/Brick#> .
+@prefix burger: <https://example.org/burger#> .
+@prefix site:   <https://example.org/burger-ci#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+site:Kitchen a burger:Kitchen ; rdfs:label "Test kitchen" .
+
+site:Fryer_1 a burger:Fryer ; rdfs:label "Test fryer 1" ;
+    burger:hasLocation site:Kitchen ; burger:oilSetpoint 175.0 ;
+    burger:hasPiont site:Fryer_1_OilTemp .           # typo: hasPiont
+site:Fryer_1_OilTemp a burger:TemperatureSensor ; rdfs:label "Test oil temperature" .
+
+site:Grill_1 a burger:Grill ; rdfs:label "Test grill" ;
+    burger:hasLocation site:Kitchen ;
+    burger:hasPoint site:Grill_1_Temp .
+site:Grill_1_Temp a brick:Temperature_Sensor ; rdfs:label "Test grill temperature" .
+
+site:Fryer_2 a burger:Fryr ; rdfs:label "Test fryer 2" .   # typo: Fryr
+
+site:Cooler_1 a burger:Cooler ; rdfs:label "Test cooler" ;  # deprecated: use WalkInCooler
+    burger:hasLocation site:Kitchen .

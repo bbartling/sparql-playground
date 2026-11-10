@@ -25,39 +25,36 @@ def load(name: str):
 def test_syllabus_links_exist():
     readme = (LESSONS / "README.md").read_text(encoding="utf-8")
     links = re.findall(r"\]\((unit[^)]+\.md)\)", readme)
-    assert len(links) == 20
+    assert len(links) == 45
     for link in links:
         assert (LESSONS / link).is_file(), link
 
 
-def test_every_lesson_has_its_sections_and_parity_checks():
-    course = load("course")
-    files = course.lesson_files()
-    assert [int(p.stem[3:]) for p in files] == list(range(1, 21))
+def test_every_lesson_has_its_sections_and_scripts():
+    files = sorted(LESSONS.glob("unit*/day*.md"), key=lambda p: int(p.stem[3:]))
+    assert [int(p.stem[3:]) for p in files] == list(range(1, 46))
     for path in files:
         text = path.read_text(encoding="utf-8")
-        assert text.startswith(f"# Day {int(path.stem[3:])} "), path.name
+        day = int(path.stem[3:])
+        assert text.startswith(f"# Day {day} "), path.name
         for section in ("**Goal:**", "## Read", "## Run"):
             assert section in text, (path.name, section)
         # each lesson ends with an exercise and either "why it matters" or a challenge
         assert "## Try it" in text or "challenge" in text, path.name
         assert "## Why it matters" in text or "challenge" in text, path.name
-        # Python-driven: runnable blocks, SQL next to pandas, and a parity check
-        assert course.blocks(path), path.name
-        assert "lab.assert_parity(" in text, path.name
-        assert "-- expect" not in text, path.name
-        assert "lessons/sql" not in text, path.name
-
-
-def test_block_extraction_skips_no_run_blocks(tmp_path):
-    course = load("course")
-    md = tmp_path / "day99.md"
-    md.write_text(
-        "# Day 99 — x\n\n```python\nx = 1\n```\n\n```python\n# no-run\nslow()\n```\n\n"
-        "```sql\nSELECT 1;\n```\n\n```python\ny = x + 1\n```\n",
-        encoding="utf-8",
-    )
-    assert course.blocks(md) == ["x = 1\n", "y = x + 1\n"]
+        # Weeks 6-9 (days 26-45): one RDF script, a buildings box and a burger mini challenge
+        kinds = ("rdf",) if day >= 26 else ("pandas", "sql")
+        if day >= 26:
+            assert "## How this maps to buildings" in text, path.name
+            assert "**Mini challenge (Burger Barn):**" in text, path.name
+        for kind in kinds:
+            script = path.with_name(f"day{day:02d}_{kind}.py")
+            assert script.is_file(), script.name
+            code = script.read_text(encoding="utf-8")
+            assert script.name in text, (path.name, f"doesn't mention {script.name}")
+            # scripts print for a human to compare; the parity test does the checking
+            assert "RESULTS" in code and "print(" in code, script.name
+            assert not re.search(r"^\s*assert", code, re.M), (script.name, "uses assert")
 
 
 def test_parity_ignores_row_order_and_bool_vs_int():
@@ -78,9 +75,7 @@ def test_parity_catches_a_different_row():
         lab.assert_parity(a, a.rename(columns={"v": "w"}))
 
 
-def test_history_sql_converts_to_si():
+def test_si_conversions():
     lab = load("lab")
-    sql = lab.history_sql()
-    assert "AS duct_static" in sql and str(lab.PA_PER_INH2O) in sql
-    assert "(s.value - 32.0) * 5.0 / 9.0" in sql
     assert round(lab.f_to_c(212.0), 9) == 100.0
+    assert round(lab.inh2o_to_pa(1.0), 5) == 249.08891

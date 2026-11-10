@@ -1,0 +1,26 @@
+# Day 26: your first triples, written by hand.
+#
+# Burger Barn is a made-up burger restaurant. This file says what is inside it.
+# Every line is ONE triple:   subject   predicate   object   .
+#   subject:   the thing we talk about
+#   predicate: the relationship
+#   object:    the other thing (or a value)
+# The dot at the end closes the triple. Everything after a # is a comment.
+#
+# Each name is a full web address (an IRI) in angle brackets. It does not have to exist
+# on the web: it is just a name nobody else will use by accident. Long, isn't it?
+# Tomorrow's file uses prefixes to shorten them.
+#
+# WARNING: there is one deliberate typo in this file. Day 26's script helps you find it.
+
+# The restaurant contains a kitchen.
+<https://example.org/burger-barn#BurgerBarn> <https://example.org/burger-barn#contains> <https://example.org/burger-barn#Kitchen> .
+
+# The kitchen contains a fryer, a walk-in cooler and a grill.
+<https://example.org/burger-barn#Kitchen> <https://example.org/burger-barn#contains> <https://example.org/burger-barn#Fryer_1> .
+<https://example.org/burger-barn#Kitchen> <https://example.org/burger-barn#contains> <https://example.org/burger-barn#WalkInCooler> .
+<https://example.org/burger-barn#Kitchen> <https://example.org/burger-barn#contians> <https://example.org/burger-barn#Grill> .
+
+# Each piece of equipment has a temperature sensor point (like an AHU has points).
+<https://example.org/burger-barn#Fryer_1> <https://example.org/burger-barn#hasPoint> <https://example.org/burger-barn#Fryer_1_OilTemp> .
+<https://example.org/burger-barn#WalkInCooler> <https://example.org/burger-barn#hasPoint> <https://example.org/burger-barn#Cooler_AirTemp> .

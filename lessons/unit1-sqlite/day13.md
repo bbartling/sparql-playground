@@ -1,257 +1,102 @@
-# Day 13 — Window functions: LAG, rolling averages, streaks
+# Day 13 — Streaks (gaps and islands): how long has this been true?
 
-**Goal:** compare each row with its neighbours in time, without collapsing rows like `GROUP BY` does. SQL window
-functions and pandas `shift` / `rolling` / `cumsum` are the same ideas; do each both ways and check they agree.
+**Goal:** find runs of consecutive rows with the same value, using the three-step streak trick in SQL and its
+`cumsum` twin in pandas. Use it to find the longest continuous fan run and to count "true for N rows in a row", the
+confirmation step in every Open-FDD rule.
 
 ## Read
 
-A **window function** computes a value for each row from a "window" of related rows. All rows stay in the result.
+A lot of FDD questions are about **duration**, not single readings: "the fan has been on for 30 minutes", "static
+has been low for an hour", "this sensor hasn't changed all night". A raw fault on one row is noise; a raw fault that
+holds for N rows is a finding. Rows in a table don't know their neighbours, so we need a way to say "these
+consecutive rows belong to one run". This is the classic *gaps and islands* problem.
+
+The trick has three steps. Take the fan status as an example:
 
 ```
-LAG(x)        OVER (PARTITION BY equipment_id ORDER BY ts)   -- x from the previous row
-LEAD(x)       OVER (...)                                      -- x from the next row
-ROW_NUMBER()  OVER (PARTITION BY ... ORDER BY ts)             -- 1, 2, 3 ... within each partition
-AVG(x)        OVER (PARTITION BY ... ORDER BY ts
-                    ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) -- rolling mean of the last 12 rows (1 hour)
-SUM(x)        OVER (PARTITION BY ... ORDER BY ts)             -- running total
+status        0 0 1 1 1 0 1 1
+new_streak    1 0 1 0 0 1 1 0      1 where the value differs from the previous row (the first row is always 1)
+streak_id     1 1 2 2 2 3 4 4      running total of new_streak: every row of a run shares one id
+row in streak 1 2 1 2 3 1 1 2      counts 1, 2, 3 ... inside each run
 ```
 
-- `PARTITION BY equipment_id` keeps AHU_1 and AHU_2 separate. Without it, AHU_2's first row would "follow" AHU_1's
-  last.
-- `ORDER BY ts` defines what "previous" means.
+Now a run is just a `GROUP BY streak_id`, and "true for N rows in a row" is `row in streak >= N`. Each step is cheap
+and the whole thing is one pass over the rows, O(n) after sorting.
 
-pandas has a one-to-one map. `PARTITION BY` becomes `groupby`, and `ORDER BY` becomes "the frame is already sorted"
-(`lab.history()` returns rows sorted by `(equipment_id, ts)`):
+| Step | `day13_sql.py` (window functions) | `day13_pandas.py` (vectorized) |
+|---|---|---|
+| mark changes | `x IS NOT LAG(x) OVER (ORDER BY timestamp_utc)` | `x != x.shift()` |
+| streak id | `SUM(new_streak) OVER (ORDER BY timestamp_utc)` | `(x != x.shift()).cumsum()` |
+| row in streak | `ROW_NUMBER() OVER (PARTITION BY streak_id ORDER BY timestamp_utc)` | `x.groupby(streak_id).cumcount() + 1` |
+| each run | `GROUP BY streak_id` | `groupby(streak_id).agg(...)` |
+| longest run | `ORDER BY rows DESC, start_utc LIMIT 1` | `runs.loc[runs["rows"].idxmax()]` |
 
-| SQL | pandas |
-|---|---|
-| `LAG(x) OVER (PARTITION BY e ORDER BY ts)` | `df.groupby("e")["x"].shift()` |
-| `LEAD(x) OVER (...)` | `df.groupby("e")["x"].shift(-1)` |
-| `AVG(x) OVER (... ROWS BETWEEN 11 PRECEDING AND CURRENT ROW)` | `df.groupby("e")["x"].rolling(12, min_periods=1).mean()` |
-| `SUM(x) OVER (PARTITION BY e ORDER BY ts)` | `df.groupby("e")["x"].cumsum()` |
-| `ROW_NUMBER() OVER (PARTITION BY e, s ORDER BY ts)` | `df.groupby(["e", "s"]).cumcount() + 1` |
-| first row's `LAG` is NULL | first row's `shift()` is NaN |
+Two details. On the first row `LAG` is `NULL`, and `x IS NOT NULL` is true (plain `x != NULL` would be `NULL`, not
+true): the first row starts a streak, as it should. In pandas `shift()` gives `NaN` there, and `x != NaN` is `True`.
+And a *tie* for the longest run needs a rule, or two runs of equal length make the answer unstable; both scripts take
+the earlier start. The scripts look at AHU_1; with both AHUs in one table every window would also need
+`PARTITION BY equipment_id` (pandas: `groupby("equipment_id")`), so a streak never runs from one AHU into the next.
 
-Two details that bite: `rolling(12)` alone leaves the first 11 rows NaN (it wants a full window), while SQL averages
-whatever rows exist, so ask for `min_periods=1` to match. And `shift()` turns an integer column into floats (NaN needs
-a float), harmless here.
+**A second route to "true for N rows in a row".** Instead of numbering streaks, slide a window of N rows over the 0/1
+raw flag and ask whether all N are 1: `SUM(raw) OVER (... ROWS BETWEEN 5 PRECEDING AND CURRENT ROW) = 6` in SQL,
+`raw.rolling(6).sum() == 6` in pandas (Day 12's windows). Both scripts compute both routes and print their counts
+one under the other: they agree. The streak route needs no window size, and it gives you the streak id so you can count
+episodes and measure their length. The window route is shorter when you only need the flag.
 
-**Streaks (gaps and islands).** Fault rules need "this condition has been true for N rows in a row". The standard
-trick takes three steps, in either language:
-
-1. Mark where the value changes: `CASE WHEN x = LAG(x) OVER w THEN 0 ELSE 1 END AS new_streak`, or
-   `x.ne(x.groupby(eq).shift())` in pandas.
-2. A running sum of those marks numbers each streak: `SUM(new_streak) OVER w AS streak_id`, or `.cumsum()`.
-3. Number the rows inside each streak: `ROW_NUMBER() OVER (PARTITION BY equipment_id, streak_id ...)`, or `cumcount()`.
-
-A window function can't be used directly in `WHERE`, because windows are computed after filtering. Wrap the query in
-a subquery, or a `WITH name AS (...)` common table expression (CTE), and filter outside. (pandas has no such rule:
-a column is just a column, so you filter it right away.)
+Today's raw flag is "supply fan at 95% speed or more while running", confirmed after **6 rows** (30 minutes).
+Day 14 uses the same shape with a pressure rule.
 
 ## Run
-
-```python
-import numpy as np
-import pandas as pd
-
-import lab
-
-conn = lab.connect()
-lab.ensure_history(
-    conn
-)  # lab_history: wide SI table with an (equipment_id, ts) index (Day 11, Day 12)
-h = lab.history(conn)  # the same table as a DataFrame, sorted by (equipment_id, ts)
-eq = h["equipment_id"]
+```bash
+uv run python lessons/course.py run 13
 ```
 
-Units are SI now (Day 11), so duct static pressure is in pascals. **LAG: each reading next to the previous one.**
+That runs [`day13_pandas.py`](day13_pandas.py), then [`day13_sql.py`](day13_sql.py). Both print:
 
-```python
-LAG_SQL = """
-SELECT equipment_id, ts, duct_static,
-       LAG(duct_static) OVER (PARTITION BY equipment_id ORDER BY ts) AS prev
-FROM lab_history
-"""
-lag_sql = lab.query(conn, LAG_SQL)
-
-prev_static = h.groupby("equipment_id")["duct_static"].shift()
-lag_pd = h[["equipment_id", "ts", "duct_static"]].assign(prev=prev_static)
-lab.assert_parity(lag_pd, lag_sql, keys=["equipment_id", "ts"], label="LAG(duct_static)")
-
-first = lag_pd[lag_pd.equipment_id == "AHU_1"].head(3)
-print(first.assign(t=pd.to_datetime(first.ts, unit="s", utc=True)).to_string(index=False))
-assert (
-    lag_pd[lag_pd.equipment_id == "AHU_1"].prev.isna().sum() == 1
-)  # only the first row has no previous
+```
+AHU_1 fan runs (status = 1)
+  runs: 123
+  average run (hours): 12.8
+  longest run (rows): 1313
+  longest run (hours): 109.42
+  longest run started: 2026-07-06 09:45:00+00:00
+Full speed (>= 95 %) for 6 rows in a row
+  raw rows: 1349
+  confirmed rows (streak route): 1153
+  confirmed rows (rolling route): 1153
+  episodes: 31
 ```
 
-The first row's `prev` is NULL in SQL and NaN in pandas: nothing came before it. The parity check treats the two as
-equal, and the second AHU's first row is NULL too, because the window is partitioned.
+The fan normally runs about 14 hours a day. The longest run is **109 hours**, from 6 July 09:45 to 10 July 23:05 UTC:
+the fan never stopped for over four days, so something (probably a schedule override) kept it on. AHU_2 has the same
+109-hour run. A person reading a chart would find that; the streak trick finds it for every AHU in a building with
+one query.
 
-**Fan starts:** off in the previous row, on in this one.
-
-```python
-STARTS_SQL = """
-WITH w AS (
-  SELECT equipment_id, ts, fan_status,
-         LAG(fan_status) OVER (PARTITION BY equipment_id ORDER BY ts) AS prev
-  FROM lab_history
-)
-SELECT equipment_id, count(CASE WHEN fan_status = 1 AND prev = 0 THEN 1 END) AS starts
-FROM w
-GROUP BY equipment_id
-ORDER BY equipment_id
-"""
-starts_sql = lab.query(conn, STARTS_SQL)
-
-prev_fan = h.groupby("equipment_id")["fan_status"].shift()
-starts_pd = ((h.fan_status == 1) & (prev_fan == 0)).groupby(eq).sum().rename("starts").reset_index()
-lab.assert_parity(starts_pd, starts_sql, label="fan starts")
-print(starts_sql.to_string(index=False))
-assert starts_sql.set_index("equipment_id").loc["AHU_1", "starts"] == 123
-```
-
-About one start a day for 123 days, as you'd expect for a scheduled AHU. (A NaN or NULL `prev` makes the comparison
-false in both languages, so the very first row can never count as a start.)
-
-**Longest continuous run** of each fan, in hours: the streak trick.
-
-```python
-RUN_SQL = """
-WITH marks AS (
-  SELECT equipment_id, ts, fan_status,
-         CASE WHEN fan_status = LAG(fan_status) OVER (PARTITION BY equipment_id ORDER BY ts)
-              THEN 0 ELSE 1 END AS new_streak
-  FROM lab_history
-), streaks AS (
-  SELECT *, SUM(new_streak) OVER (PARTITION BY equipment_id ORDER BY ts) AS streak_id FROM marks
-)
-SELECT equipment_id, max(n) * 5 / 60.0 AS longest_run_h
-FROM (SELECT equipment_id, streak_id, count(*) AS n FROM streaks WHERE fan_status = 1
-      GROUP BY equipment_id, streak_id)
-GROUP BY equipment_id
-ORDER BY equipment_id
-"""
-run_sql = lab.query(conn, RUN_SQL)
-
-new_streak = h.fan_status.ne(h.fan_status.groupby(eq).shift()).astype(
-    int
-)  # step 1: where it changes
-streak_id = new_streak.groupby(eq).cumsum()  # step 2: number the streaks
-on = h[h.fan_status == 1].assign(streak_id=streak_id)  # step 3 is just a row count per streak
-rows_per_run = on.groupby(["equipment_id", "streak_id"]).size()
-run_pd = (
-    rows_per_run.groupby("equipment_id").max().mul(5 / 60).rename("longest_run_h").reset_index()
-)
-lab.assert_parity(run_pd, run_sql, label="longest fan run")
-print(run_sql.round(1).to_string(index=False))
-assert round(run_sql.set_index("equipment_id").loc["AHU_1", "longest_run_h"], 1) == 109.4
-```
-
-109 hours: the fan ran for more than four days straight. For an office AHU that's worth asking about (an override?
-a schedule left in occupied?). It's the same question Day 9's unoccupied runtime raised.
-
-**Rolling average:** a 1-hour (12-row) mean of duct static, for every row.
-
-```python
-ROLL_SQL = """
-SELECT equipment_id, ts,
-       AVG(duct_static) OVER (PARTITION BY equipment_id ORDER BY ts
-                              ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS static_1h
-FROM lab_history
-"""
-roll_sql = lab.query(conn, ROLL_SQL)
-
-roll = h.groupby("equipment_id")["duct_static"].rolling(12, min_periods=1).mean()
-roll_pd = h[["equipment_id", "ts"]].assign(static_1h=roll.reset_index(level=0, drop=True))
-lab.assert_parity(roll_pd, roll_sql, keys=["equipment_id", "ts"], label="1 h rolling mean")
-```
-
-SQLite keeps a running sum it adds to and subtracts from, while pandas uses its own online update, so the two differ
-in the last few bits. That's why `assert_parity` compares with a tolerance, never with `==`.
-
-**Why vectorized?** SQL and pandas both walk the sorted rows once, O(n). The difference between them and a Python
-`for` loop is the constant: the loop runs the interpreter 71,072 times, the others run compiled code. This loop does
-almost nothing per row, so it is only a few times slower; put real logic in the loop body and the gap grows to 100x.
-
-```python
-def lag_loop(equips, values):
-    out = [float("nan")] * len(values)
-    for i in range(1, len(values)):
-        if equips[i] == equips[i - 1]:  # same partition?
-            out[i] = values[i - 1]
-    return out
-
-
-loop_prev = lag_loop(eq.tolist(), h.duct_static.tolist())
-lab.assert_parity(
-    pd.DataFrame({"prev": loop_prev}), pd.DataFrame({"prev": prev_static}), label="loop == shift"
-)
-
-t_sql = lab.best_time(lambda: lab.query(conn, LAG_SQL))
-t_shift = lab.best_time(lambda: h.groupby("equipment_id")["duct_static"].shift())
-t_loop = lab.best_time(lambda: lag_loop(eq.tolist(), h.duct_static.tolist()))
-print(
-    f"LAG over {len(h):,} rows: SQL {t_sql * 1000:.0f} ms (includes fetching) | "
-    f"pandas shift {t_shift * 1000:.1f} ms | python loop {t_loop * 1000:.0f} ms"
-)
-```
-
-pandas looks far faster than SQL here only because the data is already in memory; the SQL time includes reading the
-table and building a DataFrame out of it. Compare like with like: both are the same order of work.
+The confirmed count is smaller than the raw count because the first 5 rows of each full-speed run are not yet
+"confirmed" (and one-row blips never are). AHU_1 spends far more time at full speed than AHU_2 (1,349 vs 222 raw
+rows), which is itself worth a question.
 
 ## Try it
 
-1. A 1-hour rolling average of AHU_2's duct static pressure. What's its maximum, in pascals?
-2. Count AHU_1 fan **stops** (on, then off). Should it equal the starts? Why might it differ by one?
+1. Change the confirmation from 6 rows to 12 (one hour) in both scripts. In SQL there are two places to change.
+   What happens to the two routes if you only change `:confirm`?
+2. Find the longest time each AHU was **off** (status 0) in a row.
 
 <details><summary>Answers</summary>
 
-1. Filter the rows to AHU_2 first (the inner query's `WHERE` in SQL, a mask in pandas), then window.
-
-```python
-MAX_ROLL_SQL = """
-SELECT max(r) AS max_static_1h_pa FROM (
-  SELECT AVG(duct_static) OVER (ORDER BY ts ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS r
-  FROM lab_history WHERE equipment_id = 'AHU_2'
-)
-"""
-max_sql = lab.query(conn, MAX_ROLL_SQL)
-ahu2 = h[h.equipment_id == "AHU_2"]
-max_pd = pd.DataFrame(
-    {"max_static_1h_pa": [ahu2.duct_static.rolling(12, min_periods=1).mean().max()]}
-)
-lab.assert_parity(max_pd, max_sql, label="max rolling static, AHU_2")
-print(round(max_sql.iloc[0, 0], 1), "Pa")
-assert round(max_sql.iloc[0, 0], 1) == 417.3
-```
-
-   About 417 Pa (1.675 inH2O, the number this lesson used to print before the history became SI).
-
-2. Same shape as the starts, with the comparison flipped:
-
-```python
-STOPS_SQL = """
-WITH w AS (
-  SELECT fan_status, LAG(fan_status) OVER (ORDER BY ts) AS prev
-  FROM lab_history WHERE equipment_id = 'AHU_1'
-)
-SELECT count(*) AS stops FROM w WHERE fan_status = 0 AND prev = 1
-"""
-stops_sql = lab.query(conn, STOPS_SQL)
-f1 = h.loc[h.equipment_id == "AHU_1", "fan_status"]
-stops_pd = pd.DataFrame({"stops": [int(((f1 == 0) & (f1.shift() == 1)).sum())]})
-lab.assert_parity(stops_pd, stops_sql, label="AHU_1 fan stops")
-assert stops_sql.stops[0] == 122
-```
-
-   122 stops against 123 starts. They can differ by one because the data can begin or end in the middle of a run
-   (it ends with the fan running).
+1. With 12 rows, AHU_1 drops to 995 confirmed rows in 21 episodes. The streak route only needs `:confirm_rows` (or
+   `CONFIRM_ROWS`). The window route also needs its frame (`ROWS BETWEEN 11 PRECEDING`). Change only the parameter and the
+   frame still holds 6 rows, so the window route finds none (SQL) while the streak route finds the new answer. The
+   two columns disagree, which is how you'd spot the slip. pandas hides it, because `rolling(CONFIRM_ROWS)` reads
+   the same constant.
+2. Filter the streaks to `supply_fan_status = 0` instead of `1` and take the longest. It is 999 rows, 83.25 hours,
+   on AHU_1 (and the same on AHU_2). The streak numbers already cover the runs of both kinds; only the filter
+   changes.
 
 </details>
 
 ## Why it matters
 
-"Condition true for N consecutive rows" is how a fault rule ignores a one-sample blip and reports only persistent
-problems. Tomorrow that's the confirmation step of a real rule, written once in SQL and once in pandas, with a parity
-check between them.
+Day 14 builds an entire fault rule from these pieces: a raw flag, the streak trick, `streak_len >= N`, and a sum of
+fault rows times five minutes. Day 15 reuses the trick to find flatlined sensors, where the "value" being compared is
+the sensor reading itself.

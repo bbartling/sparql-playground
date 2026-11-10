@@ -1,0 +1,45 @@
+# Burger Barn's menu (Day 34): what the restaurant serves, what goes into it,
+# and which piece of equipment cooks or stores each part.
+#
+# This file links to burger_barn.ttl: bb:Fryer_1 here is the same bb:Fryer_1 there.
+# Same name (IRI), same thing. That is how RDF files join: no foreign keys, just names.
+@prefix bb:   <https://example.org/burger-barn#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+bb:BurgerBarn bb:servesItem bb:ClassicBurger, bb:ChickenSandwich, bb:Fries, bb:OnionRings,
+    bb:Cola, bb:BarnCombo .
+
+# ---- menu items ---------------------------------------------------------------
+# bb:hasCalories is FUNCTIONAL (Day 32): each item has exactly one calorie number.
+bb:ClassicBurger a bb:Burger ;          # a Burger is a kind of MenuItem (see the ontology)
+    rdfs:label "Classic burger" ; bb:hasCalories 540 ;
+    bb:hasIngredient bb:Bun, bb:BeefPatty, bb:Pickles .
+
+bb:ChickenSandwich a bb:MenuItem ; rdfs:label "Crispy chicken sandwich" ; bb:hasCalories 480 ;
+    bb:hasIngredient bb:Bun, bb:CrispyChicken, bb:Pickles .
+
+bb:Fries a bb:MenuItem ; rdfs:label "Fries" ; bb:hasCalories 320 ;
+    bb:cookedOn bb:Fryer_1 .
+
+bb:OnionRings a bb:MenuItem ; rdfs:label "Onion rings" ; bb:hasCalories 410 ;
+    bb:cookedOn bb:Fryer_2 .
+
+bb:Cola a bb:Drink ; rdfs:label "Cola" ; bb:hasCalories 150 .
+
+bb:BarnCombo a bb:MenuItem ; rdfs:label "Barn combo" ;   # a combo is made of other menu items
+    bb:includes bb:ClassicBurger, bb:Fries, bb:Cola .     # (its calories: Day 34's challenge)
+
+# Fries and the crispy chicken are cooked in the same oil (Fryer_1). Symmetric: one triple
+# is enough, the other direction follows (Day 32).
+bb:Fries bb:sharesFryerWith bb:CrispyChicken .
+
+# ---- ingredients ----------------------------------------------------------------
+bb:Bun a bb:Ingredient ; rdfs:label "Bun" .
+bb:BeefPatty a bb:Ingredient ; rdfs:label "Beef patty" ;
+    bb:cookedOn bb:Grill_1 ;
+    bb:storedIn bb:WalkInCooler_1 .
+bb:CrispyChicken a bb:Ingredient ; rdfs:label "Crispy chicken" ;
+    bb:cookedOn bb:Fryer_1 ;
+    bb:storedIn bb:WalkInCooler_1 .
+bb:Pickles a bb:Ingredient ; rdfs:label "Pickles" ;
+    bb:storedIn bb:WalkInCooler_1 .

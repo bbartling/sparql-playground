@@ -1,375 +1,185 @@
-# Day 15 — What production does differently (Timescale), and the UUID bridge to RDF
+# Day 15 — Data quality before you trust a rule, and the Unit 1 challenge
 
-**Goal:** know which parts of Unit 1 carry over to a production historian, see where the RDF model picks up, and
-run one fault rule end to end with the points found by the **model** rather than by a table you wrote.
+**Goal:** check the data before judging the equipment: dropouts, a setpoint that reads zero, out-of-range values,
+flatlined sensors, the time step, and coverage. Then finish Unit 1 by writing a discharge air temperature rule in
+both pandas and SQL.
 
 ## Read
 
-### SQLite here, Timescale in production
+A fault rule can only be as good as its inputs. A rule that fires on a sensor dropout reports a broken *logger*, not
+a broken *air handler*, and the person who gets the work order can't tell the difference. So before a rule, check
+the data. Today's checks run on AHU_1, in both scripts, with the same answers. They are
+[`day15_pandas.py`](day15_pandas.py) and [`day15_sql.py`](day15_sql.py). (Point them at AHU_2 to compare; its numbers
+are quoted below too.)
 
-Open-FDD's production stack keeps history in **PostgreSQL + TimescaleDB**. Everything you wrote this unit is plain
-SQL and carries over. The differences are operational:
+| Check | What it looks for | pandas | SQL |
+|---|---|---|---|
+| 3. dropout | a temperature that reads exactly 0 °F | `(df["discharge_air_temp_f"] == 0) \| ...` | `discharge_air_temp_f = 0 OR ...` |
+| 4. missing setpoint | setpoint reads 0 while the fan runs | `fan_on & (df["dat_reset_f"] == 0)` | `supply_fan_status = 1 AND dat_reset_f = 0` |
+| 5. out of range | outside what a sensor can report | `(x < -40) \| (x > 60)` | `x NOT BETWEEN :temp_min_c AND :temp_max_c` |
+| 6. flatline | an identical value for 1 h or more | Day 13's streaks: `(x != x.shift()).cumsum()` | Day 13's window steps |
+| 7. time step | every row 300 s after the last | `pd.to_datetime(...).diff()` | `unixepoch(ts) - LAG(unixepoch(ts)) OVER w` |
 
-| Need | This course (SQLite) | Timescale |
-|---|---|---|
-| Store readings | `samples(timeseries_id, ts, value)`, key on series + time | a **hypertable**: same columns, split into time **chunks** automatically, so "last week" only touches a few chunks |
-| Bucket by time | `strftime('%Y-%m', ts, 'unixepoch')`, `ts / 3600 * 3600` | `time_bucket('1 hour', time)` |
-| Summary tables | `CREATE TABLE lab_hourly AS ...`, rebuilt by hand | **continuous aggregates**, refreshed incrementally as data arrives |
-| Old data | keep everything | **compression** and **retention policies** per chunk |
-| Many writers and readers | one writer at a time | a server with concurrent connections and roles |
-| Wide `history` input | `lab_history` table | a view or temporary table built for one site, then the rule SQL runs as is |
+All temperatures are converted to °C (`(°F − 32) × 5/9`) and static to Pa before the checks, like Day 14. The
+dropout test is the one place where we look at the raw °F value on purpose.
 
-The pandas side of "bucket by time" is the same idea again: `dt.strftime("%Y-%m")`, `dt.to_period("M")`, or
-`resample`. The rules don't change. The Open-FDD SQL you read yesterday runs on Postgres with small dialect changes
-(`sql/fdd/README.md` lists them). SQLite needs a few more, like sample standard deviation, which it lacks.
+### Dropouts, and the comparison trap
 
-### The UUID bridge
+Seven rows on each AHU have the mixed, return and discharge temperatures all reading **exactly 0 °F**. A logger
+writes 0 when it gets no reading; 0 °F is a perfectly valid number, so nothing flags it. After conversion that
+0 °F is **-17.78 °C**, and that is where the trap is.
 
-All unit long you used `lab_point` to know that `52422584-…` is AHU_1's duct static pressure. The API doesn't use a
-table for that. It uses the RDF model, `model/building_50.ttl`. Open it in a text editor and search for
-`52422584-9894-50bd-9696-2fbb8b062518`:
-
-```turtle
-bldg:AHU_1_DA_P a bts:Entity ;
-    rdfs:label "AHU1 DA-P" ;
-    ref:hasExternalReference [ a ref:TimeseriesReference ;
-            ref:hasTimeseriesId "52422584-9894-50bd-9696-2fbb8b062518" ;
-            ref:storedAt bldg:timeseries_db ] ;
-    bts:hasHaystackMarker "air", "discharge", "his", ...
+```python
+df["discharge_air_temp_f"] == 0  # 7 rows: the raw value is exactly 0.0
+df["dat_c"] == -17.78  # 0 rows: the converted value is -17.7777777...
+(df["dat_c"] - ZERO_F_IN_C).abs() < 0.01  # 7 rows: compare with a tolerance
 ```
 
-Read it as statements, each one **subject, predicate, object**:
+-17.78 is a rounded, printed number. The value in memory is -17.777777... and floating-point `==` against any
+rounded constant never matches. Two safe ways: test the **raw value** before converting (exact zeros are stored
+exactly), or compare converted values with a **tolerance**. Never `==` a float you computed. The scripts print both
+the exact-match count (0) and the tolerance count (7), one under the other.
 
-- `AHU_1_DA_P` has label "AHU1 DA-P".
-- `AHU_1_DA_P` has an external reference, a TimeseriesReference with id `52422584-…`, stored at
-  `bldg:timeseries_db`.
-- `AHU_1_DA_P` has the Haystack markers `air`, `discharge`, …
+The seven rows form three episodes: one row on 31 March, five on 22 April (16:10 to 16:30 UTC), one on 15 June.
+Notice that they are not caught by the **range check**: our sensor range is -40 to 60 °C, and -17.78 °C is
+inside it.
+A range check catches impossible values (a duct at 500 °C); a dropout is a *plausible wrong* value, which is
+harder. Out-of-range is 0 rows here. That is a result too.
 
-And further down, `bldg:timeseries_db` describes the database you've been querying, including its schema:
-`samples(timeseries_id TEXT, ts INTEGER epoch-s UTC, value REAL)`.
+### A setpoint of zero, and flatlines
 
-So the model is a graph of statements about things, and one kind of statement points into the time-series store by
-UUID. Units 2–4 teach you to store, query and build graphs like this. Then the question "give me duct static and fan
-status for every AHU" is answered by the model. The answer comes back as UUIDs, and those go into the SQL you already
-know. The last section of this lesson does exactly that, through the repo's real API.
+`dat_reset_f` is the discharge air temperature **setpoint**. While the fan runs it should sit between 50 and 71 °F.
+It reads **0 °F** for 1,233 running rows on AHU_1 and 984 on AHU_2, mostly in June. Seven of those are the dropout
+rows. The rest are the control system publishing no setpoint. A rule comparing the discharge temperature with a
+setpoint of -17.78 °C would call the whole stretch a fault.
+
+**Flatlines.** A working temperature sensor wiggles in its last digits. The same value for an hour or more while the
+fan runs is suspicious. This is Day 13's streak trick on the sensor reading: streaks of an identical
+`discharge_air_temp_f`, kept if the streak is at least 12 rows (1 hour) and the fan ran for all of it. That finds
+66 episodes (1,333 rows) on AHU_1 and 48 (1,064 rows) on AHU_2, the longest 136 and 135 rows (11 hours).
+Remember Day 12: the historian logs change-of-value, so a stable reading is *normally* repeated. Treat flatlines as
+"look here", not as proof, and raise the threshold if it's too chatty (see Try it).
+
+### The time step, and coverage
+
+Every row should be exactly 300 s after the one before. The check takes the difference to the previous timestamp
+and counts rows where it isn't 300: **0 gaps, max step 300 s** on both AHUs. That is why counting rows works as
+counting time in Days 12 to 14 (`ROWS BETWEEN 11 PRECEDING` really is one hour). Real data usually has gaps. Day 18
+builds the gap-aware version.
+
+**Coverage per month** (Try it 3) compares the rows present with the rows expected from the first to the last
+timestamp in the month: 100% for every month here. March and July are partial months (the export starts on
+16 March and ends on 17 July), so compare coverage against the *span*, not against a calendar month.
 
 ## Run
-
-```python
-import numpy as np
-import pandas as pd
-
-import lab
-
-conn = lab.connect()
-lab.ensure_history(conn)  # lab_history: one row per AHU per 5 minutes, SI units (Day 11)
-h = lab.history(conn)  # sorted by equipment_id, ts
+```bash
+uv run python lessons/course.py run 15
 ```
 
-**FC1 again, compactly.** This lesson runs on its own, so rebuild Day 14's rule. The SQL is one template where only
-the raw condition changes (`__RAW__`); the pandas side is one function. Both are the four steps from Day 14: gate and
-raw fault, streak id, row within streak, confirm.
+Both scripts print the same numbers (pandas shows `300.0` where SQL shows `300`):
 
-```python
-RULE_SQL = """
-WITH base AS (
-  SELECT equipment_id, ts, CASE WHEN __RAW__ THEN 1 ELSE 0 END AS raw_fault FROM lab_history
-), marks AS (
-  SELECT *, CASE WHEN raw_fault = LAG(raw_fault) OVER (PARTITION BY equipment_id ORDER BY ts)
-                 THEN 0 ELSE 1 END AS new_streak FROM base
-), streaks AS (
-  SELECT *, SUM(new_streak) OVER (PARTITION BY equipment_id ORDER BY ts) AS streak_id FROM marks
-), ranked AS (
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY equipment_id, streak_id ORDER BY ts) AS streak_len FROM streaks
-)
-SELECT equipment_id, ts, raw_fault, streak_id,
-       CASE WHEN raw_fault = 1 AND streak_len >= :confirm THEN 1 ELSE 0 END AS fault
-FROM ranked ORDER BY equipment_id, ts
-"""
-FC1_SQL = RULE_SQL.replace("__RAW__", "fan_status = 1 AND duct_static < duct_static_sp - :tol")
-
-
-def rule_pandas(h: pd.DataFrame, raw: pd.Series, confirm: int) -> pd.DataFrame:
-    """Day 14's logic: raw 0/1 -> streak id -> row-in-streak -> confirmed fault. h is sorted by (equipment, ts)."""
-    eq = h["equipment_id"]
-    raw = raw.astype(int)
-    streak_id = raw.ne(raw.groupby(eq).shift()).astype(int).groupby(eq).cumsum()
-    streak_len = raw.groupby([eq, streak_id]).cumcount() + 1
-    fault = ((raw == 1) & (streak_len >= confirm)).astype(int)
-    return h[["equipment_id", "ts"]].assign(raw_fault=raw, streak_id=streak_id, fault=fault)
-
-
-TOL_PA, CONFIRM_ROWS = 25.0, 2
-fc1_sql = lab.query(conn, FC1_SQL, {"tol": TOL_PA, "confirm": CONFIRM_ROWS})
-fc1_pd = rule_pandas(
-    h, (h.fan_status == 1) & (h.duct_static < h.duct_static_sp - TOL_PA), CONFIRM_ROWS
-)
-lab.assert_parity(fc1_pd, fc1_sql, keys=["equipment_id", "ts"], label="FC1 per row")
-
-lab.to_sqlite(fc1_sql, conn, "lab_fc1", index=["equipment_id", "ts"])
-hours = fc1_sql.groupby("equipment_id").fault.sum() * 5 / 60
-print(hours.to_dict())
-assert hours["AHU_1"] == 114.25  # Day 14's number
+```
+AHU_1 data-quality checks
+  dropout rows (a temperature reads 0 F): 7
+  setpoint reads 0 while the fan runs:    1233
+  discharge temp out of range:            0
+  flatline rows (1 h+ the same value):    1333
+  flatline episodes:                      66
+  time steps that are not 300 s:          0
+  longest time step (s):                  300.0
+  dat_c == -17.78 matches:                0
+  dat_c within 0.01 of -17.78 matches:    7
 ```
 
-**What the course added to the database.** The catalogue is itself a table, `sqlite_master`:
+followed by the challenge answer below.
 
-```python
-lab_objects = lab.query(
-    conn, "SELECT type, name FROM sqlite_master WHERE name LIKE 'lab\\_%' ESCAPE '\\' ORDER BY 1, 2"
-)
-print(lab_objects.to_string(index=False))
-assert {"lab_point", "lab_history", "lab_fc1"} <= set(lab_objects.name)
-```
+## Try it
 
-**The one-line summary of Unit 1: confirmed FC1 hours per AHU per month,** in SQL with `strftime`, and in pandas
-by turning epoch seconds into datetimes.
+1. Raise the flatline threshold from 12 rows to 36 (3 hours), in both scripts (`FLAT_ROWS` in pandas, `flat_rows` in
+   SQL). How many episodes are left?
+2. The `dropout` flag looks at three temperatures. Why is it safer to flag the *row* than to remove the one
+   dropout sensor?
+3. Coverage: for each month, count the rows present and the rows expected from the month's first to its last
+   timestamp (`span_s / 300 + 1`, Day 3). What percentage is present?
 
-```python
-MONTHLY_SQL = """
-SELECT equipment_id, strftime('%Y-%m', ts, 'unixepoch') AS month,
-       sum(fault) * 5 / 60.0 AS fc1_hours
-FROM lab_fc1
-GROUP BY equipment_id, month
-ORDER BY equipment_id, month
-"""
-monthly_sql = lab.query(conn, MONTHLY_SQL)
+<details><summary>Answers</summary>
 
-when = pd.to_datetime(fc1_pd.ts, unit="s", utc=True)  # epoch seconds -> UTC datetimes
-monthly_pd = (
-    fc1_pd.assign(month=when.dt.strftime("%Y-%m"))  # the same format string as SQLite's strftime
-    .groupby(["equipment_id", "month"])["fault"]
-    .sum()
-    .mul(5 / 60)
-    .rename("fc1_hours")
-    .reset_index()
-)
-lab.assert_parity(monthly_pd, monthly_sql, label="FC1 hours per month")
-
-# the other idiom: a Period is "the month this timestamp falls in" (drop the timezone first)
-period = when.dt.tz_localize(None).dt.to_period("M").astype(str)
-assert (period == when.dt.strftime("%Y-%m")).all()
-
-print(monthly_sql.pivot(index="month", columns="equipment_id", values="fc1_hours").round(1))
-assert abs(monthly_sql[monthly_sql.equipment_id == "AHU_1"].fc1_hours.sum() - 114.25) < 1e-9
-```
-
-Notice `GROUP BY equipment_id, month` uses the alias from the `SELECT`: SQLite allows that, standard SQL doesn't.
-In pandas you simply group on the column you just made. Both are O(n): one pass over the fault rows.
-
-When you're done, `uv run python lessons/course.py reset` drops every `lab_*` object. The API's data is untouched.
-
-### The model-driven run: FC1 through the real API
-
-Everything above found "duct static" and "fan status" with `lab_point`, a table built from CSVs. Production doesn't.
-Here is the same rule with every point found by **SPARQL against the RDF model**, and every series fetched through
-the app's **HTTP API**, with no ids written in the code. `lab.Api` runs the repo's FastAPI app in-process (no server,
-no network) on the same database. Pattern order matters to rdflib's simple engine: starting from the 118 points
-that have a timeseries reference keeps every later join small (Day 6 explains why).
-
-```python
-FC1_POINTS_SPARQL = """
-PREFIX bts: <https://example.org/openfdd/bldgts#>
-PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
-SELECT ?ahu ?role ?point ?timeseriesId WHERE {
-  ?point ref:hasExternalReference ?ref .
-  ?ref ref:hasTimeseriesId ?timeseriesId .
-  ?point bts:hasHaystackTag ?roleTag .
-  ?roleTag bts:tagName "ofddRole" ; bts:tagValue ?role .
-  FILTER(?role IN ("fan-status", "duct-static-pressure", "duct-static-pressure-sp"))
-  ?point bts:hasHaystackTag ?direct .
-  ?direct bts:tagName "equipRef" ; bts:tagValue ?ahu .
-}
-ORDER BY ?ahu ?role
-"""
-with lab.Api() as api:
-    found = api.sparql(FC1_POINTS_SPARQL)  # one row per (AHU, role): the point and its UUID
-    found["equipment_id"] = found.ahu.str.rsplit("#", n=1).str[-1]  # IRI local name: AHU_1
-    found["point_id"] = found.point.str.rsplit("#", n=1).str[-1]
-    series = {
-        (r.equipment_id, r.role): api.timeseries(r.point_id)  # GET /api/points/{id}/timeseries
-        for r in found.itertuples()
-    }
-print(found[["equipment_id", "role", "point_id", "timeseriesId"]].to_string(index=False))
-assert len(found) == 6  # 2 AHUs x 3 roles, found by the model
-assert all(
-    s.attrs["timeseries_id"] == r.timeseriesId for s, r in zip(series.values(), found.itertuples())
-)
-```
-
-The model said which UUID is which role on which AHU, and the API returned each series from that point's name; the
-`timeseries_id` the API reports back is the UUID the model gave us. Now the same steps as Day 11, in pandas: long,
-pivot to wide, convert to SI (the history from the API is as logged: inH2O).
-
-```python
-long = pd.concat(
-    [s.assign(equipment_id=eq_id, role=role) for (eq_id, role), s in series.items()],
-    ignore_index=True,
-)
-wide = long.pivot(index=["equipment_id", "ts"], columns="role", values="value").reset_index()
-api_h = (
-    pd.DataFrame(
-        {
-            "equipment_id": wide.equipment_id,
-            "ts": wide.ts,
-            "fan_status": wide["fan-status"],
-            "duct_static": lab.inh2o_to_pa(wide["duct-static-pressure"]),
-            "duct_static_sp": lab.inh2o_to_pa(wide["duct-static-pressure-sp"]),
-        }
-    )
-    .sort_values(["equipment_id", "ts"])
-    .reset_index(drop=True)
-)
-print(len(api_h), "rows from the API")
-
-raw_api = (api_h.fan_status == 1) & (api_h.duct_static < api_h.duct_static_sp - TOL_PA)
-fc1_api = rule_pandas(api_h, raw_api, CONFIRM_ROWS)
-
-lab.assert_parity(
-    fc1_api, fc1_sql, keys=["equipment_id", "ts"], label="API -> pandas FC1 == SQL FC1"
-)
-lab.assert_parity(
-    fc1_api, fc1_pd, keys=["equipment_id", "ts"], label="API -> pandas FC1 == sqlite -> pandas FC1"
-)
-```
-
-Three routes to the same answer: SQL on the `lab_history` table, pandas on a DataFrame read from SQLite, and pandas
-on series fetched over HTTP after the model located them. Every row agrees. That is what "model-driven" means: change
-building and the SPARQL finds that building's points, and the rule doesn't change.
-
-## Unit 1 challenge
-
-Write a **discharge air temperature** rule for AHU_1 and AHU_2: while the fan runs, discharge air temperature (`sat`)
-is more than **5 °F** away from its setpoint (`sat_sp`) for at least 30 minutes. The history is in SI, so convert the
-threshold. Mind the trap from Day 11: 5 °F is a temperature **difference**, so it is 5 × 5/9 = 2.78 °C, **not**
-`(5 - 32) * 5 / 9`. Then:
-
-1. Exclude dropout rows (`sat` logged as 0 °F) and explain how many rows that removed.
-2. Report fault hours per AHU per month, in SQL and in pandas, and check parity.
-3. Pick the worst day and chart `sat`, `sat_sp` and `fan_status` for it. DB Browser's **Plot** tab works, or
-   matplotlib (`uv run --with matplotlib python`).
-4. Write two sentences an operator could act on.
-
-Reuse `RULE_SQL` and `rule_pandas`: only the raw condition changes. Try it before opening the answer.
-
-<details><summary>Answer</summary>
-
-```python
-DELTA_C = 5 * 5 / 9  # 5 degF of *difference* -> 2.78 degC
-ZERO_F_IN_C = lab.f_to_c(0.0)  # dropout value in the SI history
-CONFIRM_SAT = 6  # 6 rows x 5 min = 30 minutes
-p = {"delta": DELTA_C, "z": ZERO_F_IN_C, "confirm": CONFIRM_SAT}
-
-SAT_COND = "fan_status = 1 AND abs(sat - sat_sp) > :delta"
-SAT_NODROP_COND = SAT_COND + " AND abs(sat - :z) > 1e-6"  # item 1: a dropout row is not a fault
-sat_sql = lab.query(conn, RULE_SQL.replace("__RAW__", SAT_COND), p)
-sat_nd_sql = lab.query(conn, RULE_SQL.replace("__RAW__", SAT_NODROP_COND), p)
-
-off = (h.sat - h.sat_sp).abs() > DELTA_C
-dropout = np.isclose(h.sat, ZERO_F_IN_C)
-sat_pd = rule_pandas(h, (h.fan_status == 1) & off, CONFIRM_SAT)
-sat_nd_pd = rule_pandas(h, (h.fan_status == 1) & off & ~dropout, CONFIRM_SAT)
-lab.assert_parity(sat_pd, sat_sql, keys=["equipment_id", "ts"], label="SAT rule")
-lab.assert_parity(
-    sat_nd_pd, sat_nd_sql, keys=["equipment_id", "ts"], label="SAT rule, dropouts excluded"
-)
-
-# item 1: what did excluding dropouts change?
-n_drop = int(((h.fan_status == 1) & dropout).sum())
-print(
-    "running rows with sat dropout:",
-    n_drop,
-    "| raw fault rows",
-    int(sat_pd.raw_fault.sum()),
-    "->",
-    int(sat_nd_pd.raw_fault.sum()),
-    "| confirmed rows",
-    int(sat_pd.fault.sum()),
-    "->",
-    int(sat_nd_pd.fault.sum()),
-)
-
-# item 2: hours per AHU per month (the confirmed fault rows, dropouts excluded)
-lab.to_sqlite(sat_nd_sql, conn, "lab_sat", index=["equipment_id", "ts"])
-SAT_MONTHLY_SQL = MONTHLY_SQL.replace("lab_fc1", "lab_sat").replace("fc1_hours", "sat_hours")
-sat_monthly_sql = lab.query(conn, SAT_MONTHLY_SQL)
-when = pd.to_datetime(sat_nd_pd.ts, unit="s", utc=True)
-sat_monthly_pd = (
-    sat_nd_pd.assign(month=when.dt.strftime("%Y-%m"))
-    .groupby(["equipment_id", "month"])["fault"]
-    .sum()
-    .mul(5 / 60)
-    .rename("sat_hours")
-    .reset_index()
-)
-lab.assert_parity(sat_monthly_pd, sat_monthly_sql, label="SAT hours per month")
-print(sat_monthly_sql.pivot(index="month", columns="equipment_id", values="sat_hours").round(1))
-
-# item 3: the worst day per AHU (hours of confirmed fault), both ways
-DAILY_SQL = """
-SELECT equipment_id, strftime('%Y-%m-%d', ts, 'unixepoch') AS day, sum(fault) * 5 / 60.0 AS sat_hours
-FROM lab_sat GROUP BY equipment_id, day
-"""
-daily_sql = lab.query(conn, DAILY_SQL)
-day = when.dt.strftime("%Y-%m-%d")
-daily_pd = (
-    sat_nd_pd.assign(day=day)
-    .groupby(["equipment_id", "day"])["fault"]
-    .sum()
-    .mul(5 / 60)
-    .rename("sat_hours")
-    .reset_index()
-)
-lab.assert_parity(daily_pd, daily_sql, label="SAT hours per day")
-worst = (
-    daily_sql.sort_values(["sat_hours", "day"], ascending=[False, True])
-    .groupby("equipment_id")
-    .head(1)
-)
-print(worst.to_string(index=False))
-assert n_drop == 14 and int(sat_pd.raw_fault.sum()) == int(sat_nd_pd.raw_fault.sum()) == 10007
-w = worst.set_index("equipment_id")
-assert w.loc["AHU_1", "day"] == "2026-05-18" and abs(w.loc["AHU_1", "sat_hours"] - 24.0) < 1e-9
-assert sat_monthly_sql.groupby("equipment_id").sat_hours.sum().round(1).tolist() == [416.5, 298.0]
-```
-
-```python
-# no-run
-# item 3, the chart (needs matplotlib: uv run --with matplotlib python)
-import matplotlib.pyplot as plt
-
-d = worst.iloc[0]
-one = h[
-    (h.equipment_id == d.equipment_id)
-    & (pd.to_datetime(h.ts, unit="s", utc=True).dt.strftime("%Y-%m-%d") == d.day)
-]
-t = pd.to_datetime(one.ts, unit="s", utc=True)
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(t, one.sat, label="sat (degC)")
-ax.plot(t, one.sat_sp, label="sat_sp (degC)")
-ax.fill_between(
-    t, one.sat.min(), one.sat.max(), where=one.fan_status == 1, alpha=0.1, label="fan on"
-)
-ax.legend()
-plt.show()
-```
-
-1. **Dropouts.** 14 running rows have `sat` at exactly 0 °F. Excluding them removes **0** raw fault rows (10,007
-   before and after). Why? These are whole-row dropouts: `sat_sp`, `mat` and `rat` read 0 °F too, so
-   `abs(sat - sat_sp)` is 0 and the rule never fired on them anyway. It's still the right habit: a rule comparing
-   `sat` against a *different* reference (like `mat`) would have fired on every one of them. Note the unit trap
-   again: a dropout is -17.78 °C in this history, never 0.
-2. **Hours.** AHU_1 has about 417 confirmed hours and AHU_2 about 298, mostly in May and June. That's far more than
-   FC1 found (114 h and 1.5 h).
-3. **Worst day.** AHU_1 on 2026-05-18 is off its setpoint by more than 2.8 °C for all 24 hours; AHU_2's worst is
-   2026-06-16 at 23.1 hours. Whole days like that are a stuck valve, damper or setpoint, not weather.
-4. Something like: "AHU_1's discharge air stayed more than 2.8 °C from setpoint for the whole of 18 May and about
-   417 hours since March. Check the cooling valve and the discharge sensor on AHU_1, and look at what changed in
-   May." Be specific, give the date and a first thing to check.
-
-Because Day 14's rule and this one share `RULE_SQL` and `rule_pandas`, adding a third rule is one new condition
-string and one new boolean mask, with parity checking the pair.
+1. Five episodes remain on AHU_1 (419 rows; AHU_2 also has five, 416 rows). Most hour-long flatlines are probably
+   change-of-value repeats. The few stretches of 3 hours or more are the ones worth asking about.
+2. In a dropout all three sensors fail at the same moment, which points at the controller or the network rather than
+   one sensor. A rule that mixes several temperatures would otherwise compute with a mix of real and fake values.
+   Flag the whole row and let each rule skip it.
+3. 100% for every month. In pandas: `df.groupby("month")["time"].agg(["size", "min", "max"])` with
+   `time = pd.to_datetime(df["timestamp_utc"])`, then `(max - min).dt.total_seconds() / 300 + 1`. In SQL: `GROUP BY
+   strftime('%Y-%m', timestamp_utc)` with `COUNT(*)` and `(unixepoch(MAX(...)) - unixepoch(MIN(...))) / 300 + 1`.
 
 </details>
 
-Next: **Unit 2** builds a tiny triple store in Python, so the Turtle above stops being mysterious.
+## Unit 1 challenge: a discharge air temperature rule, in SI, with a quality gate
+
+Write the rule in both scripts (it's already in both, as steps 8 and 9, so the parity test covers it; try writing it
+yourself first):
+
+> While the supply fan runs, the discharge air temperature is **more than 2.78 °C (5 °F) away from its setpoint**
+> (`discharge_air_temp_f` vs `dat_reset_f`), and this holds for **30 minutes (6 rows)**.
+
+Report **fault hours per month** (AHU_1; then AHU_2). Do it twice: once trusting every row, once skipping rows where the data
+quality checks fail.
+
+<details><summary>Answer</summary>
+
+Same shape as Day 14: gate, raw fault, confirm, aggregate.
+
+```python
+error_c = (df["dat_c"] - df["dat_setpoint_c"]).abs()  # both converted: (F - 32) * 5 / 9
+raw_ungated = fan_on & (error_c > TOLERANCE_C)
+raw_gated = raw_ungated & ~df["dropout"] & ~df["setpoint_zero"]
+# then Day 13's streak trick: fault = raw & (row_in_streak >= 6); hours = rows * 5 / 60
+```
+
+```sql
+supply_fan_status = 1 AND ABS(dat_c - dat_setpoint_c) > :tolerance_c                       -- ungated
+supply_fan_status = 1 AND ABS(dat_c - dat_setpoint_c) > :tolerance_c
+  AND NOT dropout AND NOT setpoint_zero                                                    -- gated
+-- LAG / SUM OVER / ROW_NUMBER as on Day 13, then SUM(fault) * 5 / 60.0 per month
+```
+
+The absolute value matters: the discharge temperature can be too high or too low. A *difference* of temperatures
+converts with only the 5/9 factor (the 32 cancels), so 5 °F is 5 × 5/9 = 2.78 °C. The scripts convert each
+temperature first and then subtract, which gives the same answer and keeps every column in °C.
+
+Fault hours on AHU_1 (ungated / gated), as the scripts print them:
+
+```
+  month  ungated_fault_h  gated_fault_h
+2026-03            22.25          22.25
+2026-04            46.00          46.00
+2026-05           113.50         113.50
+2026-06           213.75         123.75
+2026-07            21.00          11.33
+  total, trusting every row (h): 416.5
+  total, quality gate on (h):    316.83
+```
+
+AHU_2, with the scripts pointed at it: 298.00 h ungated, 218.25 h gated (June 174.75 -> 104.67).
+
+Both AHUs miss their discharge setpoint for a good part of the time, most of all in June. The quality gate matters:
+the missing setpoint adds about 100 hours on AHU_1 and 80 on AHU_2, roughly a quarter of the ungated totals, almost
+all of it in June and July, because a setpoint of -17.78 °C is "wrong" by 30 °C whenever the fan is on. Those are
+not faults in the air handler. March and April are unchanged: the 7 dropout rows are too few and too short to
+reach the 6-row confirmation. Fixing the setpoint publisher is its own work order.
+
+</details>
+
+## Why it matters
+
+The quality gate changed the answer by about a quarter. That's the point of the day: **read the data before you read
+the rule's output**. Production FDD does the same checks on every run. The gap-aware sample-and-hold
+(`MAX_GAP_HOURS`) comes on Day 18.
+
+**What production does differently (Timescale).** Everything this unit used (CSV, SQLite) is one machine and a few
+hundred thousand rows. Open-FDD's production stack keeps history in **PostgreSQL with the TimescaleDB extension**: the
+same SQL (window functions, `CASE`, `GROUP BY` all carry over), but the table is split into time chunks, old chunks
+compress, and queries for one series and one time range touch only their chunks. That is Day 11's index idea,
+applied automatically. Hard-coded column names are the other thing that changes: Week 5 replaces
+`discharge_air_temp_f` with a lookup in a building model, so one rule runs over many buildings and exports.

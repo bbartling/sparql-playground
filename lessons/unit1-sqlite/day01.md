@@ -1,191 +1,111 @@
-# Day 1 — Open the database; what one row is
+# Day 1 — Open the data; what one row is
 
-**Goal:** open the API's database from Python and say in one sentence what a row means.
+**Goal:** open AHU_1's export in pandas and in SQLite, and say in one sentence what a row means.
 
 ## Read
 
 An HVAC controller measures things (temperatures, pressures, fan status) and a **historian** saves a reading every
-few minutes. Building 50's historian exported a CSV with one column per point. `uv run bldgts bootstrap` turned
-that into the API's SQLite database, `var/timeseries.sqlite`.
+few minutes. Building 50's historian exported one CSV per air handler (AHU): `data/BUILDING_50/AHU_1/history_wide.csv`
+and the same for `AHU_2`. This week you work with AHU_1, and bring in AHU_2 only where it helps.
 
-SQLite is a whole SQL database in one file: no server, no login. Python ships with it (`import sqlite3`), and so
-do phones and browsers.
+The CSV is a **wide** table:
 
-This course is driven from Python. Each lesson is a Markdown file whose ```python blocks you can paste into a
-REPL or notebook, or run top to bottom with `uv run python lessons/course.py run 1`. That command works on a
-**temporary copy** of the database, so nothing you try can change `var/timeseries.sqlite`. (DB Browser for SQLite
-is still handy as a *viewer*: open the file read-only and browse. It is optional.)
+- **One row is one moment**: a timestamp, every five minutes, in UTC.
+- **One column is one point**: a sensor, a setpoint, a status or a command. The cell holds that point's value at
+  that moment.
 
-Every computation is done **twice**, the way Open-FDD tests its rules:
+So `timestamp_utc = 2026-03-16 00:40:00+00:00` and `outside_air_temp_f = 69.0327` in the same row means: at 00:40 UTC
+the outside air sensor read 69.0327 °F. AHU_1's file has 84 columns (the timestamp plus 83 points) and 35,536 rows.
+(The opposite shape, one row per point per timestamp, is called **long**. Day 11 converts between the two, and
+Week 5's API stores long data.)
 
-- as **SQL**: a SQLite query held in a Python string, run through `lab.query`, which returns a DataFrame;
-- as **pandas**: the same answer from a DataFrame, as an independent "oracle";
-- then `lab.assert_parity(pandas_result, sql_result)` fails loudly if the two ever differ.
+Two scripts open the same data two ways:
 
-If you know pandas, SQL is the other way to say the same thing. If you know SQL, pandas is. Doing both is how
-you learn which one to reach for. A rough map for this week:
-
-| Question | SQL (runs inside the database) | pandas (runs on data already in memory) |
+| | `day01_pandas.py` | `day01_sql.py` |
 |---|---|---|
-| which rows | `WHERE` | boolean mask, `df[mask]` |
-| which columns | `SELECT a, b` | `df[["a", "b"]]` |
-| sorted | `ORDER BY` | `sort_values` |
-| first n | `LIMIT n` | `head(n)` |
-| one number from many rows | `count`, `avg`, `sum` ... | `.count()`, `.mean()`, `.sum()` ... |
-| one row per group | `GROUP BY` | `groupby(...).agg(...)` |
+| open | `pd.read_csv("data/BUILDING_50/AHU_1/history_wide.csv")` | the table `ahu_1` in `var/lessons.sqlite` |
+| how many rows | `df.shape` (rows, columns) | `SELECT COUNT(*) FROM ahu_1` |
+| what are the columns | `df.columns` | `pragma_table_info('ahu_1')` |
+| first rows | `df[show].head(5)` | `SELECT ... FROM ahu_1 ORDER BY timestamp_utc LIMIT 5` |
 
-The big difference is **where the data lives**. A SQL query is sent to the database and only the *answer* comes
-back. With pandas you first pull the rows into Python, then work on them. Much of this week is about when that
-matters.
+**What `setup_db.py` does.** `uv run python lessons/course.py setup` runs `lessons/setup_db.py`, which reads each CSV
+and writes one SQLite table: `ahu_1`, `ahu_2` (and `fdd_events`, which Day 14 uses). Nothing is transformed. The
+columns keep their names and their order, `timestamp_utc` is stored as the same text as in the file and is the
+`PRIMARY KEY`, and every other column is `REAL`. So the pandas script and the SQL script look at identical rows.
+SQLite is a whole SQL database in one file: no server, no login, and Python ships with it (`import sqlite3`).
 
-## The samples table
+**What the columns mean.** Next to each CSV sits `columns.csv`: one line per column with the historian's point name
+(`bld_50_AHU_1 AHU1 OA-T`), its unit and a rough role. Names like `outside_air_temp_f` are cleaned-up versions
+of those.
+Units are US units: °F, inches of water (`inwc`), percent 0–100, and statuses are 0 or 1 stored as numbers.
+`columns.csv` is a file, not a table in the database; open it with `pd.read_csv` when you want the full names.
 
-The first block opens the database and reads its structure from SQLite's own catalog, `sqlite_master`.
-
-```python
-import time
-
-import numpy as np
-import pandas as pd
-
-import lab
-
-conn = lab.connect()  # sqlite3.connect() on the course database
-
-tables = lab.query(
-    conn,
-    "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'lab\\_%' ESCAPE '\\'",
-)
-print(tables.name.tolist())
-print(tables.set_index("name").loc["samples", "sql"])
-assert set(tables.name) == {"samples", "ingest_log"}
-```
-
-| Table | What it holds |
-|---|---|
-| `samples` | every reading: `timeseries_id`, `ts`, `value` |
-| `ingest_log` | one row per CSV the bootstrap loaded (file hash and row count), so it can skip unchanged files |
-
-The `CREATE TABLE` for `samples`:
-
-```
-CREATE TABLE samples (
-    timeseries_id TEXT NOT NULL,
-    ts INTEGER NOT NULL,
-    value REAL,
-    PRIMARY KEY (timeseries_id, ts)
-) WITHOUT ROWID
-```
-
-Read it like this:
-- **One row is one reading:** this point (`timeseries_id`) had this `value` at this time (`ts`).
-- The **primary key** `(timeseries_id, ts)` means a point can't have two readings at the same moment.
-- `WITHOUT ROWID` stores the rows *in a B-tree sorted by that key*, so all the readings of one point sit together,
-  in time order. Day 2 and Day 12 show why that makes reads fast.
-
-This shape is called **long** (or narrow) format: three columns, millions of rows. The CSV it came from was
-**wide**: one row per timestamp and one column per point. Day 11 converts between the two. A pandas DataFrame can
-be either; `SELECT * FROM samples` gives you a long one.
+**Why the column names are typed into code.** All of Weeks 1–4 write names like `outside_air_temp_f` and
+`supply_fan_status` straight into the scripts. That is how a first analysis looks, and it is fine for one building. It
+also means the code only works on exports that use exactly those names: AHU_2's file has 67 columns, and calls its
+outside-air damper `mad_c_pct` where AHU_1 has `mad_c`. Week 5 replaces typed names with a model that says which
+column is the duct static pressure, so the same rule runs on any air handler.
 
 ## Run
-
-**How many readings are there?** In SQL it's one aggregate. In pandas we have to load the table first.
-
-```python
-COUNT_SQL = "SELECT count(*) AS n FROM samples"
-t = time.perf_counter()
-count_sql = lab.query(conn, COUNT_SQL)
-t_count = time.perf_counter() - t
-print(count_sql)
-
-t = time.perf_counter()
-samples = lab.query(
-    conn, "SELECT timeseries_id, ts, value FROM samples"
-)  # all rows, loaded ONCE this lesson
-t_load = time.perf_counter() - t
-count_pd = pd.DataFrame({"n": [len(samples)]})
-
-lab.assert_parity(count_pd, count_sql, label="row count")
-assert count_sql.n[0] == 4_193_248
+```bash
+uv run python lessons/course.py setup        # once
+uv run python lessons/course.py run 1
 ```
 
-Both say 4,193,248. Notice what it cost, though.
+That runs [`day01_pandas.py`](day01_pandas.py), then [`day01_sql.py`](day01_sql.py). Read them side by side: each
+numbered comment in one has the same number in the other. Both print:
 
-```python
-print(f"count(*) in SQL:        {t_count * 1000:9.1f} ms   (returns 1 row)")
-print(f"load into pandas first: {t_load * 1000:9.1f} ms   (returns {len(samples):,} rows)")
+```
+Rows: 35536
+Columns: 84
+First column names: ['timestamp_utc', '50ahu1aalrm', 'bld_p_setpoint_inwc', 'bld_pressure_inwc', 'chw_valve_pct']
+            timestamp_utc  outside_air_temp_f  da_p_inwc  da_p_setpoint_inwc
+2026-03-16 00:40:00+00:00             69.0327   0.024594                 1.2
+2026-03-16 00:45:00+00:00             69.0327   0.024594                 1.2
+...
 ```
 
-`count(*)` on a table stored as a B-tree walks the tree's leaf pages without building a single Python object. It
-is still O(n) in the worst case, but it moves **one number** into Python. pandas had to *materialise* 4.2 million
-rows first: also O(n), plus a copy of every row across the SQLite/Python boundary and a few hundred MB of
-memory. Pushing work into SQL means fewer bytes cross that boundary. This is the only time this lesson loads
-the whole table; most of the work this week loads one series (about 35,000 rows).
+35,536 rows × 5 minutes is about 123 days. The first column is the timestamp; the other 83 are points.
 
-**The first five rows, in key order.**
+Two things to notice:
 
-```python
-FIRST5_SQL = "SELECT timeseries_id, ts, value FROM samples LIMIT 5"
-first5_sql = lab.query(conn, FIRST5_SQL)
-print(first5_sql)
-
-# `samples` came back in primary-key order, so head() is the same five rows. (SQL promises no order without
-# ORDER BY; it is key order here only because that is how the B-tree is laid out. Day 2 sorts explicitly.)
-lab.assert_parity(samples.head(5), first5_sql, label="first five rows")
-assert len(first5_sql) == 5
-```
-
-**What did the bootstrap load?**
-
-```python
-LOG_SQL = "SELECT dataset_key, row_count FROM ingest_log ORDER BY dataset_key"
-log_sql = lab.query(conn, LOG_SQL)
-print(log_sql.to_string(index=False))
-assert len(log_sql) == 2
-assert log_sql.row_count.tolist() == [2_949_488, 1_243_760]
-assert log_sql.row_count.sum() == len(samples)
-```
-
-The two `row_count`s (2,949,488 for AHU_1 and 1,243,760 for AHU_2) add up to the total above.
+- The outside air reading repeats: `69.0327` row after row. A historian often keeps the last value until the sensor
+  changes enough, so repeated values are normal (Day 15 comes back to this).
+- `read_csv` pulled all 84 columns into memory (about 24 MB). Fine here. From Day 2 on the scripts load only the
+  columns they use (`usecols=[...]`).
 
 ## Try it
 
-1. Pick any `timeseries_id` from `samples` and look at its rows. Do all its rows share the same id and step
-   forward in `ts`? (pandas: `samples[samples.timeseries_id == some_id]`; SQL: a `WHERE`, with the id passed as a
-   parameter, not pasted into the string. Day 2 explains why.)
-2. How many different points are there?
+1. How many columns does AHU_2 share with AHU_1? Which non-zone columns does only one of them have?
+2. How many of AHU_1's columns are zone temperatures (names starting `zone_t50_`)?
 
-<details><summary>Answer</summary>
+<details><summary>Answers</summary>
 
-```python
-some_id = samples.timeseries_id.iloc[0]
-one_pd = samples[samples.timeseries_id == some_id].reset_index(
-    drop=True
-)  # O(n): looks at every row
-one_sql = lab.query(
-    conn,
-    "SELECT timeseries_id, ts, value FROM samples WHERE timeseries_id = ? ORDER BY ts",  # B-tree seek
-    (some_id,),
-)
-lab.assert_parity(one_pd, one_sql, keys=["ts"], label="one series")
-assert one_sql.ts.is_monotonic_increasing and one_sql.ts.is_unique
-print(one_sql.ts.diff().value_counts())  # every step is 300 s
-assert one_sql.ts.diff().dropna().eq(300).all()
+1. 34 columns are common, 50 are only in AHU_1 and 33 only in AHU_2. Outside the zone temperatures, AHU_1 alone has
+   `50ahu1aalrm`, `mad_c` and a long auto-generated `hu_50_duration_...` column; AHU_2 alone has `50ahu2aalrm` and
+   `mad_c_pct`. The `mad_c`/`mad_c_pct` pair is the same kind of point (outside air damper) under two names: a rule
+   written with a typed column name would work on one AHU and not the other.
 
-DISTINCT_SQL = "SELECT count(DISTINCT timeseries_id) AS series FROM samples"
-distinct_sql = lab.query(conn, DISTINCT_SQL)
-distinct_pd = pd.DataFrame({"series": [samples.timeseries_id.nunique()]})
-lab.assert_parity(distinct_pd, distinct_sql, label="distinct series")
-assert distinct_sql.series[0] == 118
-assert len(samples) // 118 == 35_536
-```
+   ```python
+   ahu_1 = pd.read_csv("data/BUILDING_50/AHU_1/history_wide.csv", nrows=0)  # nrows=0: header only
+   ahu_2 = pd.read_csv("data/BUILDING_50/AHU_2/history_wide.csv", nrows=0)
+   a = set(ahu_1.columns)
+   b = set(ahu_2.columns)
+   print(len(a & b), sorted(a - b), sorted(b - a))
+   ```
 
-118 points (series). 4,193,248 / 118 = 35,536 readings each: every point was logged at every timestamp.
+   In SQL the same comparison is `SELECT name FROM pragma_table_info('ahu_1') EXCEPT SELECT name FROM
+   pragma_table_info('ahu_2')`.
+
+2. 47 of the 84 (31 in AHU_2). In pandas: `sum(c.startswith("zone_t50_") for c in df.columns)`; in SQL, count the rows
+   of `pragma_table_info('ahu_1')` whose `name LIKE 'zone%'`. Most of an AHU's columns are readings from the zones
+   it serves, not from the AHU itself.
 
 </details>
 
 ## Why it matters
 
-Every time-series database (Timescale, InfluxDB, a data lake) stores some version of *(series id, time, value)*.
-The hard part is never storing it. It's knowing **which** series id is the duct static pressure on AHU_1. That
-knowledge isn't in this table at all, and finding it is what the RDF half of the course is about.
+Every analysis starts with "what is one row, and what is one column?". Here a row is a moment and a column is a point,
+which makes questions about one moment easy (compare the fan and the duct static in the same row) and questions about
+one point easy (take a column). What this table does not say is what each column *is*: `da_p_inwc` is the duct static
+pressure only because `columns.csv`, and some building knowledge, say so. Closing that gap is the point of Week 5.

@@ -1,0 +1,24 @@
+# Shapes for cook methods, in their own file with sh:targetClass (Day 39).
+# Compare with burger:FriedMenuItem in burger_cook_methods.ttl, which is its own shape.
+@prefix burger: <https://example.org/burger#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+
+burger:MenuItemCookShape a sh:NodeShape ;
+    sh:targetClass burger:MenuItem ;   # every menu item, FriedMenuItem included
+    # The cook method must be ONE of the named values. sh:in lists them; the text "fried"
+    # is not in the list, so it fails.
+    sh:property [
+        sh:path burger:cookMethod ;
+        sh:in ( burger:CookMethod.fried burger:CookMethod.grilled burger:CookMethod.none ) ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "A menu item needs exactly one cook method, one of the CookMethod values." ;
+    ] ;
+    # Clean labels: start with a letter, no codes in front. A warning, not an error.
+    sh:property [
+        sh:path rdfs:label ;
+        sh:pattern "^[A-Za-z]" ;
+        sh:severity sh:Warning ;
+        sh:message "Keep labels clean: start with a letter, no codes like '15-' in front." ;
+    ] .
