@@ -10,8 +10,13 @@ Each day is a Markdown lesson (dayNN.md) plus two scripts next to it:
     dayNN_pandas.py   reads the CSV export into a DataFrame and computes the answer with pandas
     dayNN_sql.py      runs the same computation as SQLite queries on the same rows
 
+Weeks 6-9 (days 26-45, unit4-rdf-by-hand/) teach RDF and ontologies on a made-up burger restaurant.
+Those days have ONE script each, dayNN_rdf.py, reading small hand-written Turtle files next to it;
+`run 26` runs it the same way.
+
 Each script prints its answers at the end so you can compare them by eye. Each also keeps them in a
-RESULTS dict, which tests/test_lesson_scripts.py uses to check the two agree.
+RESULTS dict, which tests/test_lesson_scripts.py uses to check the two agree (or, for the RDF days,
+that the answers are the expected ones).
 """
 
 from __future__ import annotations
@@ -61,7 +66,8 @@ def run(day: int) -> int:
     paths = scripts(day)
     if not paths:
         raise SystemExit(f"no scripts for day {day}")
-    if not setup_db.db_path().exists():
+    needs_db = any(not path.stem.endswith("_rdf") for path in paths)  # RDF days read .ttl only
+    if needs_db and not setup_db.db_path().exists():
         setup_db.build()
     rc = 0
     for path in paths:
