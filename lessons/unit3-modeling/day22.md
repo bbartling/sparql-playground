@@ -27,7 +27,8 @@ is this repo's tag for the Open-FDD role: the same role names as Day 21's map, n
 point. `equipRef`'s value is a node (`bldg:AHU_1`), not a string, so the graph can follow it.
 
 **Finding FC1's inputs.** FC1 needs the fan status, duct static pressure and its setpoint, for each AHU. In SPARQL
-that is a pattern of tags with a `FILTER` on the role:
+that is a pattern of tags with a `FILTER` on the role (the scripts ask for AHU_1 by putting `bldg:AHU_1` in place of
+`?equip`):
 
 ```sparql
 SELECT ?equip ?role ?point ?timeseries_id WHERE {
@@ -47,9 +48,8 @@ SELECT ?equip ?role ?point ?timeseries_id WHERE {
 database planner reorders joins for you; a simple engine does not, so put the most selective pattern first.
 
 **The flat shadow.** The model was built from `model/points/*.csv`, one row per point (point id, equipment, role,
-source column, UUID, ...). The SQL script loads those rows into a `TEMP` table `point` and asks the same question as a
-plain `WHERE openfdd_role IN (...)`. The same three points per AHU come
-back. The SQL version is *simpler*. So why have a graph?
+source column, UUID, ...). The SQL script loads AHU_1's rows into an in-memory table `point` and asks the same
+question as a plain `WHERE openfdd_role IN (...)`. The same three points come back. The SQL version is *simpler*. So why have a graph?
 
 | | flat table `point` | RDF graph |
 |---|---|---|
@@ -65,9 +65,10 @@ The graph keeps the structure.
 
 | Step | `day22_pandas.py` (rdflib) | `day22_sql.py` (SQLite) |
 |---|---|---|
-| load | `Graph().parse("building_50.ttl")` (4,147 triples) | `INSERT` 118 CSV rows into `TEMP TABLE point` |
-| FC1's inputs | SPARQL `FILTER(?role IN ...)` | `WHERE openfdd_role IN (...)` |
-| per-AHU count | `GROUP BY ?equip` | `GROUP BY equipment_id` |
+| 1. load | `Graph().parse("model/building_50.ttl")` (4,147 triples) | `to_sql("point", ...)`: AHU_1's 83 CSV rows |
+| 2. one point | its markers and tags | its row |
+| 3. FC1's inputs | SPARQL `FILTER(?role IN ...)` | `WHERE openfdd_role IN (...)` |
+| 4. role count | `COUNT(?role)` | `COUNT(openfdd_role)` |
 
 ## Run
 
@@ -76,19 +77,22 @@ uv run python lessons/course.py run 22
 ```
 
 That runs [`day22_pandas.py`](day22_pandas.py), then [`day22_sql.py`](day22_sql.py). No server is involved: rdflib
-reads the Turtle file straight into memory. Both end with the same six rows (the pandas script also prints one
-point's markers and tags, which the table doesn't have):
+reads the Turtle file straight into memory. The pandas script first prints one point's markers and tags; the SQL
+script prints the same point as a row (it has columns, but no markers). Both end with the same three rows:
 
 ```
+FC1's inputs on AHU_1, found by role and equipRef:
 equipment_id                    role        point_id                        timeseries_id
        AHU_1    duct-static-pressure      AHU_1_DA_P 52422584-9894-50bd-9696-2fbb8b062518
        AHU_1 duct-static-pressure-sp   AHU_1_DA_P_SP 761c2b61-4982-5157-bc66-2010cf6e2a47
        AHU_1              fan-status AHU_1_SF_Status 9ebf80dd-7821-510b-b2c0-cd0151e093c9
-       AHU_2    ...
+
+AHU_1 points with a fault-rule role: 13
 ```
 
 Nothing in either script names a column. The two are compared on `(equipment, role, point id)` plus the UUID, and on
-the number of role-tagged points per AHU (13 each).
+the number of role-tagged points (13). Put `bldg:AHU_2` in the SPARQL (and AHU_2's CSV in the SQL) for the other
+AHU: 13 again.
 
 ## Try it
 

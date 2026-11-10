@@ -44,11 +44,11 @@ Going from long to wide is a **pivot**: one output row per timestamp, one output
 
 | Step | `day23_pandas.py` | `day23_sql.py` |
 |---|---|---|
-| role → UUID | `read_csv(model/points/...)` | `TEMP TABLE point` from the same CSV |
-| recompute the UUID | `uuid.uuid5(...)` | a Python function registered in SQLite (`create_function`): SQLite has no SHA-1 |
-| read the long rows | `pd.read_sql_query("... WHERE timeseries_id IN (?,?,?)")` | `FROM samples s JOIN point p ON p.timeseries_id = s.timeseries_id` |
-| pivot | `long.pivot(index="ts", columns="column", values="value")` | `MAX(CASE WHEN p.col = 'fan_status' THEN s.value END) ... GROUP BY s.ts` |
-| compare to the CSV | `merge` on epoch seconds, `==` per column | `JOIN les.ahu_1 ON unixepoch(timestamp_utc) = w.ts`, from an `ATTACH`ed second database |
+| 1. role → UUID | `pd.read_csv("model/points/BUILDING_50__AHU_1.csv")` | `CREATE TEMP TABLE point` from the same CSV |
+| 2. recompute the UUID | `uuid.uuid5(...)` | the same Python loop: SQLite has no SHA-1 |
+| 3. read the long rows | `SELECT ts, value FROM samples WHERE timeseries_id = ?`, once per point | `FROM samples AS s JOIN point AS p ON p.timeseries_id = s.timeseries_id` |
+| 4. pivot | `long.pivot(index="ts", columns="role", values="value")` | `MAX(CASE WHEN p.role = 'fan-status' THEN s.value END) ... GROUP BY s.ts` |
+| 5. compare to the CSV | `merge` on epoch seconds, `==` per column | `JOIN wide AS w ON w.ts = unixepoch(c.timestamp_utc)`, with the CSV's table from an `ATTACH`ed second database |
 
 `MAX(CASE ...)` is conditional aggregation again: within one timestamp each series has exactly one row, so `MAX`
 just picks it and the other rows' NULLs are ignored. pandas' `pivot` is stricter and raises if a `(ts, series)` pair
@@ -67,20 +67,30 @@ skips the day if the file is missing.) The scripts open it read-only.
 uv run python lessons/course.py run 23
 ```
 
-That runs [`day23_pandas.py`](day23_pandas.py), then [`day23_sql.py`](day23_sql.py). Both print:
+That runs [`day23_pandas.py`](day23_pandas.py), then [`day23_sql.py`](day23_sql.py). Both print (the wide
+table's columns come out in a different order, and its first rows are left out here):
 
 ```
 The UUID of each FC1 input, and the same UUID minted again from its name:
- ... 52422584-9894-50bd-9696-2fbb8b062518 52422584-9894-50bd-9696-2fbb8b062518   True
-Long table: 106,608 rows for 3 series.
-Wide table: 35,536 rows, one per timestamp.
+                   role      source_column                        timeseries_id                      recomputed_uuid  matches
+   duct-static-pressure          da_p_inwc 52422584-9894-50bd-9696-2fbb8b062518 52422584-9894-50bd-9696-2fbb8b062518     True
+duct-static-pressure-sp da_p_setpoint_inwc 761c2b61-4982-5157-bc66-2010cf6e2a47 761c2b61-4982-5157-bc66-2010cf6e2a47     True
+             fan-status  supply_fan_status 9ebf80dd-7821-510b-b2c0-cd0151e093c9 9ebf80dd-7821-510b-b2c0-cd0151e093c9     True
+
+Long table: 106608 rows for 3 series.
+                   role  rows   first_ts    last_ts
+   duct-static-pressure 35536 1773621600 1784282100
+duct-static-pressure-sp 35536 1773621600 1784282100
+             fan-status 35536 1773621600 1784282100
+
+Compared with the CSV's own columns:
                    role      source_column  rows_compared  rows_equal  max_abs_diff
    duct-static-pressure          da_p_inwc          35536       35536           0.0
 duct-static-pressure-sp da_p_setpoint_inwc          35536       35536           0.0
              fan-status  supply_fan_status          35536       35536           0.0
 ```
 
-(The SQL script prints `1` where pandas prints `True`; the tests treat them as equal.) 3 series × 35,536 rows =
+3 series × 35,536 rows =
 106,608 long rows become 35,536 wide rows.
 
 ## Try it
@@ -94,7 +104,8 @@ duct-static-pressure-sp da_p_setpoint_inwc          35536       35536           
 
 1. Completely different: a hash has no "nearby" ids. So an id can't be fixed by hand, and a rename means a new
    series unless you keep the old id. That is why the id is frozen in the point list.
-2. One more `FROM`/`WHERE` match on a UUID, and no schema change at all. The long table just has more rows. That is
+2. One more role in the point filter and one more `MAX(CASE ...)` line (pandas' `pivot` adds the column by itself),
+   and no schema change at all. The long table just has more rows. That is
    the storage argument for long form: points come and go without altering the table.
 
 </details>

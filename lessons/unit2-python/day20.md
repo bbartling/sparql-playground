@@ -12,7 +12,7 @@ each row's answer depends on the rows before it. That's the part that makes the 
 
 | | Plain Python (`day20_pandas.py`) | pandas (`day20_pandas.py`) | SQLite (`day20_sql.py`) |
 |---|---|---|---|
-| Idea | one pass, a tiny state machine: `streak_len` | column ops: `shift`, `cumsum`, `cumcount` | window functions: `LAG`, `SUM OVER`, `ROW_NUMBER` |
+| Idea | one pass, a tiny state machine: `streak_length` | column ops: `shift`, `cumsum`, `cumcount` | window functions: `LAG`, `SUM OVER`, `ROW_NUMBER` |
 | State | one integer, carried along | none: streak ids are *recomputed* with `cumsum` | none: window frames recompute it |
 | Work | 1 pass, interpreter speed | ~5 passes over whole arrays, C speed | sort/partition, several window passes |
 | Memory | O(1) (streams the rows) | O(n) (needs all rows in arrays) | the database engine's (not in Python) |
@@ -22,8 +22,9 @@ A state machine is the natural way to say "count consecutive rows" in a loop, an
 column operations (Day 13 needed a trick: compare with the previous row, running-sum the changes). SQL and pandas are
 both doing that trick. Whether the trick costs more than the interpreter overhead is what the tables below show.
 
-The data is `lab.synthetic_history`, the same rows in both scripts. The loop in `day20_pandas.py` resets its state when
-the AHU changes (like `PARTITION BY` does for SQL), so it can be checked row by row on two AHUs.
+The data is Day 16's synthetic AHUs, the same rows in both scripts. The showdown uses AHU_1 only, so the loop never
+has to notice a change of AHU; the challenge at the end takes both AHUs, one at a time in pandas and with
+`PARTITION BY equipment_id` in SQL.
 
 ## Run
 
@@ -32,69 +33,57 @@ uv run python lessons/course.py run 20
 ```
 
 That runs [`day20_pandas.py`](day20_pandas.py) (the loop and the pandas rule), then [`day20_sql.py`](day20_sql.py) (the
-window SQL). It is the longest pair of the week (about 35 seconds in all: the million-row steps dominate). `RESULTS`
-in both holds `per_row` (every row's confirmed-fault flag on two AHUs of 5,000 rows), `totals_by_size`
-(confirmed rows and episodes at every benchmark size), `first_fault` (the first confirmed fault in a table) and
-`longest_episode` (the challenge below). Compared with each other by the unit test; you compare the timings.
-
-Both scripts print the totals at every size, the same in both:
+window SQL). It is the longest pair of the week (several seconds each). `RESULTS` in both holds `totals_by_size`
+(confirmed rows and episodes at every size), `first_fault_ts` (the first confirmed fault) and `longest_episode` (the
+challenge below). The unit test compares them; you compare the timings. The pandas script prints:
 
 ```
-   rows  fault_rows  episodes
-   1000          72         1
-  10000         479         4
- 100000        4924        36
-1000000       49684       348
+rows: 1000 | fault rows: 286 | episodes: 2
+  loop agrees: True
+  seconds: loop 0.0001 | pandas 0.0014
+rows: 10000 | fault rows: 1430 | episodes: 10
+  loop agrees: True
+  seconds: loop 0.0013 | pandas 0.0013
+rows: 100000 | fault rows: 14300 | episodes: 100
+  loop agrees: True
+  seconds: loop 0.012 | pandas 0.0059
+rows: 500000 | fault rows: 70928 | episodes: 496
+  loop agrees: True
+  seconds: loop 0.0588 | pandas 0.0343
 ```
 
-`streak_id` restarts at 1 for each AHU (the window is partitioned), so counting episodes across AHUs needs
-`COUNT(DISTINCT equipment_id || ':' || streak_id)` in SQL; counting plain `streak_id` merges different AHUs'
-episodes into one. In the loop, the equivalent is the `if eq != cur_eq:` reset at the top of the body: without it, a
-streak at the end of AHU_1 would carry into the start of AHU_2.
-
-**The showdown.** Synthetic data, 10x more rows each step, one AHU. SQL loading is **setup** and timed apart from the
-query (`sql_load`). On the machine this was written on (seconds):
+and the SQL script the same counts with its own timing (on the machine this was written on):
 
 ```
-              loop    pandas              (day20_pandas.py)
-rows
-1000     0.0005124  0.002609
-10000     0.005097  0.003933
-100000     0.05864   0.03202
-1000000     0.5769    0.2743
-
-         sql_load sql_window              (day20_sql.py)
-rows
-1000     0.005301   0.005588
-10000     0.02772    0.04336
-100000     0.2854     0.5476
-1000000     3.042      5.953
+rows: 100000 | fault rows: 14300 | episodes: 100
+  seconds: window SQL 0.2479
+rows: 500000 | fault rows: 70928 | episodes: 496
+  seconds: window SQL 1.2679
 ```
 
-and the growth table each script prints (time at this size over time at the previous, 10x smaller size). How to read
-it: about 10 means O(n): ten times the data, ten times the time. Smaller than 10 at the first rows means fixed
-overhead (starting a query, allocating arrays) is still a big part of the time. Bigger than 10 would mean worse than
-linear: sorting adds a log factor, and once arrays stop fitting in CPU cache each pass slows down. Here, the loop's
-growth is 10-12 at every step (1 pass at interpreter speed), pandas is 1.5, then 8, then 9 as it leaves the overhead
-regime, and the window SQL is 8 to 13 (that last bit of extra is the sort).
+**Reading the timings.** Times vary by machine and run, so they are printed, never compared. Down the sizes, about
+10x per 10x of rows means O(n). Less than that at the small sizes means fixed overhead (starting a query, allocating
+arrays) is still a big part of the time; more than that would mean worse than linear (sorting adds a log factor). The
+loop grows about 10x per step from the start; pandas barely grows at first (overhead), then about 5x per 5x; the
+window SQL about 10x per step.
 
-At a million rows: pandas on resident data 0.27 s, the plain loop 0.58 s, window SQL 6.0 s (plus 3.0 s to load it, a
-cost Day 16 measured). Three readings of the same table:
+At 500,000 rows: pandas on data already in memory 0.034 s, the plain loop 0.059 s, window SQL 1.27 s. Three readings
+of the same numbers:
 
-- *If the data is already a DataFrame*, pandas wins, by about 2x over the loop. The loop's penalty is smaller than on
-  Day 16's trivial counting because a state machine is *one* pass, while the pandas version needs several full-array
-  passes (`shift`, `ne`, `cumsum`, `groupby.cumcount`). The vectorized version is still quicker, but not by 50x.
-- *If the data lives in the database*, add Day 16's cost of moving it out (2.5 s for a million rows) to the pandas
-  number before comparing; the loop pays a similar price to pull rows out of a cursor.
-- *Window SQL is the slowest of all here*, about 20x pandas and 10x the loop: SQLite sorts the rows, then makes four
-  window passes, each of which materializes intermediate rows. SQL's strength is not this kind of row-to-row logic. It
-  is the *selective* query that an index answers without reading most of the table (Day 12), and the aggregate that
-  runs where the data is (Day 16).
+- *If the data is already a DataFrame*, pandas wins, but only by about 2x over the loop. The loop's penalty is smaller
+  than on Day 16's plain counting would suggest, because a state machine is *one* pass, while the pandas version needs
+  several full-array passes (`shift`, `!=`, `cumsum`, `groupby(...).cumcount()`).
+- *If the data lives in the database*, add Day 16's cost of moving it out (about 1.5 s for a million rows) to the
+  pandas number before comparing; the loop pays a similar price to pull rows out of a cursor.
+- *Window SQL is the slowest here*, about 35x pandas and 20x the loop: SQLite sorts the rows, then makes several
+  window passes, each of which materializes intermediate rows (the script also copies the rows into temp tables `h`
+  and `fc1` for each size). SQL's strength is not this kind of row-to-row logic. It is the *selective* query that an
+  index answers without reading most of the table (Day 11), and the aggregate that runs where the data is (Day 16).
 
 **So when does each one win?**
 
 - **SQL** when the data already lives in the database and you want a small answer: a total, a top-10, one
-  AHU's last week. The index finds the rows without reading the rest (Day 12), nothing is copied into Python, and the
+  AHU's last week. The index finds the rows without reading the rest (Day 11), nothing is copied into Python, and the
   result is one small table. Also when many people or programs need the same logic: the query ships with the data.
   It loses on cost-per-row for complicated row-to-row logic, and it is awkward to step through.
 - **pandas** for in-memory column math and exploratory work: it is the fastest once the data is in arrays, and
@@ -110,50 +99,49 @@ parity test is what lets you pick per situation.
 
 ## Try it
 
-**Stop early.** How long does each version take to find the *first* confirmed fault timestamp in a 200,000-row table
-(20,000 under the test)? Compare the loop that returns at the first hit with the loop that reads everything, with
-pandas, and with the window SQL. The scripts print it, and both find the same timestamp (`first_fault`).
+**Stop early.** Step 3 finds the *first* confirmed fault in AHU_1's first 200,000 rows: the loop stops (`break`) at
+the first hit, pandas and the window SQL compute every row first. All three find the same timestamp. Compare their
+times, then delete the `break` (so the loop reads the whole table) and compare again.
 
 <details><summary>Answer</summary>
 
-On the machine this was written on, for 200,000 rows:
+The scripts print:
 
 ```
-loop, early exit               0.0389 s
-loop, whole table              0.1198 s
-pandas (computes every row)    0.0745 s
-SQL, MIN(ts) over the faults   1.0152 s       (the totals query: 1.0804 s)
+First confirmed fault in 200,000 rows: ts 1773727500
+  pandas finds the same one: True
+  seconds: loop with early exit 0.0001
+  seconds: pandas (computes every row first) 0.0125
 ```
 
-The early-exit loop does a fraction of the work, because the first confirmed fault is about a third of the way into
-the table (that is where the synthetic weak-fan window starts), so two thirds are never read. It is faster than the
-vectorized pandas version here, though pandas beats the full loop. pandas and the window SQL have no equivalent:
-they compute every row's state before you can ask for the first. `SELECT MIN(ts)` takes as long as the whole query (and
-a `LIMIT 1` would not help for the same reason). Early exit is the loop's unique strength: it would matter far more if
-the first fault were near the start or each row cost a network call. The loop's win is in *not needing the rest of
-the data at all*.
+and `seconds: window SQL 0.4939`. The first confirmed fault is row 361 (ts 1773727500 is 108,300 s, about 30 hours,
+after the start), so the loop reads 361 rows of 200,000 and stops: about 100x faster than pandas, and thousands of
+times faster than SQL. pandas and the window SQL have no equivalent: they compute every row's state before you can
+ask for the first. `SELECT MIN(ts)` takes as long as the whole query (and a `LIMIT 1` would not help for the same
+reason). Without the `break` the loop reads all 200,000 rows, about twice the 100,000-row time above, and it is
+slower than pandas again. The loop's win is in *not needing the rest of the data at all*, which matters most when
+the answer is near the start or each row costs a network call.
 
 </details>
 
 ## Week 4 challenge
 
-Find the **longest confirmed fault episode** for each AHU: its length in rows and in minutes, on a table with two AHUs
-of 20,000 rows each (5,000 under the test). An episode is a maximal run of consecutive raw-fault rows that lasts at
-least `CONFIRM` rows. Implement it three ways, and say which one you would ship if the data were (a) one building's
-database, (b) a notebook of a month of data, (c) a stream on a controller.
+Find the **longest confirmed fault episode** for each AHU: its length in rows and in minutes, in the first 20,000
+rows of each AHU. An episode is a maximal run of consecutive raw-fault rows that lasts at least `CONFIRM_ROWS` rows.
+Implement it three ways, and say which one you would ship if the data were (a) one building's database, (b) a
+notebook of a month of data, (c) a stream on a controller.
 
-- **Loop** (`longest_loop` in `day20_pandas.py`): a streaming loop that tracks the current and the best run, per AHU.
-- **pandas** (`longest_pandas`): the size of each streak with `groupby([eq, streak])`, keep the raw-fault ones that
-  last long enough, take the max per AHU.
-- **SQL** (`LONGEST_SQL` in `day20_sql.py`): `GROUP BY equipment_id, streak_id HAVING COUNT(*) >= :confirm`, then `MAX`.
+- **pandas** (step 4 in `day20_pandas.py`): number the streaks, get the size of each with `groupby("streak_id")`,
+  keep the raw-fault ones that last long enough, take the max, for each AHU in turn.
+- **SQL** (step 4 in `day20_sql.py`): `GROUP BY equipment_id, streak_id HAVING COUNT(*) >= :confirm_rows`, then `MAX`.
+- **Loop** (your turn): a streaming loop that tracks the current and the best run.
 
-Both scripts print the same table (`longest_episode` in `RESULTS`), and the pandas script also checks its loop and
-pandas versions agree:
+Both scripts print the same table (`longest_episode` in `RESULTS`):
 
 ```
 equipment_id  longest_rows  longest_min
-       AHU_1           144        720.0
-       AHU_2           144        720.0
+       AHU_1           144          720
+       AHU_2           144          720
 ```
 
 <details><summary>Answer</summary>
@@ -161,9 +149,17 @@ equipment_id  longest_rows  longest_min
 Both AHUs have a longest episode of 144 rows = 12 hours: the 12-hour fan schedule (06:00-18:00) lies entirely inside
 the weak-fan window, so the whole run is one episode (synthetic data: a real building would be messier).
 
-The key step in all three is the same trick as Day 14: a new streak starts where the raw flag changes, the running sum of
-starts numbers the streaks, and the size of a streak is its length. In pandas that is `raw.ne(raw.groupby(eq).shift())`
-then `cumsum`; in SQL `LAG` then `SUM() OVER`; in the loop, `run = run + 1 if raw == prev_raw else 1`.
+The key step in all three is the same trick as Day 14: a new streak starts where the raw flag changes, the running sum
+of starts numbers the streaks, and the size of a streak is its length. In pandas that is `(raw != raw.shift()).cumsum()`;
+in SQL `LAG` then `SUM() OVER`; in the loop, step 2a's `streak_length`, plus one more variable:
+
+```python
+longest = 0
+for i in range(n):
+    # ... step 2a's lines that update raw and streak_length ...
+    if raw and streak_length >= CONFIRM_ROWS and streak_length > longest:
+        longest = streak_length
+```
 
 Which to ship: (a) one building's database: **SQL**, next to the data, with an index, returning two numbers.
 (b) a notebook with a month of data: **pandas**, because you'll want to plot the episodes next. (c) a stream on a

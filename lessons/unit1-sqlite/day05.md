@@ -44,11 +44,10 @@ group" a one-liner, and it is the shape most fault-detection summaries take.
 O(n). SQLite either **sorts** the rows by the key (into a temporary B-tree) and sums runs of equal keys, O(n log n),
 or, if the rows already come out in key order, streams them without a sort. `timestamp_utc` is the primary key, so rows
 come out in time order, but a *day* is computed from it and SQLite doesn't know the computed values are in order, so
-`GROUP BY date(timestamp_utc)` needs the temporary B-tree. The SQL script prints the plan:
+`GROUP BY date(timestamp_utc)` needs the temporary B-tree. `EXPLAIN QUERY PLAN` in front of the query says so:
 `SCAN ahu_1 | USE TEMP B-TREE FOR GROUP BY`. At 35,536 rows this costs nothing you can notice.
 
 ## Run
-
 ```bash
 uv run python lessons/course.py run 5
 ```
@@ -57,36 +56,24 @@ That runs [`day05_pandas.py`](day05_pandas.py), then [`day05_sql.py`](day05_sql.
 
 | Step | `day05_sql.py` | `day05_pandas.py` |
 |---|---|---|
-| day and month labels | `date(timestamp_utc)`, `strftime('%Y-%m', timestamp_utc)` | `t.dt.strftime("%Y-%m-%d")`, `"%Y-%m"` |
-| monthly average | `GROUP BY month` + `avg(...)` | `groupby("month").agg(avg_f=(..., "mean"))` |
-| hottest day | `GROUP BY day ORDER BY avg_f DESC LIMIT 1` | `groupby` then `sort_values(...).head(1)` |
-| short days | `HAVING count(*) < :full_day` | `counts[counts.n < 288]` |
-| hot readings per day | `WHERE ... > :hot_f GROUP BY day` | mask first, then `groupby` |
-| daily run hours | `sum(supply_fan_status) * 5 / 60.0` | `s.sum() * 5 / 60` in an `agg` |
-| both AHUs | a temp view of `ahu_1 UNION ALL ahu_2` | `pd.concat` of the two CSVs |
+| 2. month and day labels | `strftime('%Y-%m', timestamp_utc)`, `date(timestamp_utc)` | `time.dt.strftime("%Y-%m")`, `"%Y-%m-%d"` |
+| 3. one row per month | `GROUP BY month` + `AVG`, `SUM`, `SUM(da_p_inwc > 1.5)` | `df.groupby("month").agg(...)` |
+| 4. hottest day | `GROUP BY day ORDER BY avg_f DESC LIMIT 1` | `groupby("day")[...].mean()`, then `idxmax()` |
+| 5. short days | `GROUP BY day HAVING COUNT(*) < 288` | `groupby("day").size()`, then a filter on `n < 288` |
 
 Both print:
 
 ```
-AHU_1 monthly average outside air temperature (F):
-  month  avg_f
-2026-03   41.5
-2026-04   53.0
-2026-05   59.8
-2026-06   71.3
-2026-07   80.0
-
-the hottest day on average:
-       day  avg_f
-2026-07-01  88.30
-
-days with fewer than 288 readings:
+  month  avg_oat_f  fan_run_hours  static_above_1_5
+2026-03       41.5          182.7                 0
+2026-04       53.0          341.9                 0
+2026-05       59.8          331.7                 0
+2026-06       71.3          411.6              4721
+2026-07       80.0          306.6              3615
+Hottest day: 2026-07-01 average (F): 88.3
        day   n
 2026-03-16 280
 2026-07-17 120
-
-days that ever passed 90 F: 10 of 124
-days the fan ran all 24 hours: 13 of 124
 ```
 
 1 July (88.30) edges out 2 July (88.25) by 0.04 °F, so the two look tied at one decimal. The sort used the unrounded
@@ -94,14 +81,8 @@ averages. Round for display only.
 
 The two short days are the first (2026-03-16, starts at 00:40, 280 readings) and the last (2026-07-17, ends at 09:55,
 120 readings). There are no gaps in between. Real historians usually aren't this tidy, so checking is always worth it.
-
-`WHERE` vs `HAVING`: the hot-readings query filters rows *before* grouping, so days with no reading above 90 °F have no
-rows to group and vanish from the result. That is why it returns 10 of the 124 days, not 124 rows with a zero. A
-`HAVING` can only remove groups that exist.
-
-Thirteen days had the fan running all 24 hours, mostly in the hot spells of late June and July. Is that normal for an
-office AHU? That is a question for the building's operators, and it is the kind of finding retro-commissioning
-starts from.
+The short days need `HAVING` in SQL because the condition is on a count, which only exists after grouping; in pandas
+it is an ordinary filter on the small grouped table.
 
 ## Try it
 
@@ -113,7 +94,7 @@ starts from.
 
 1. June, with 411.6 hours (March 182.7, April 341.9, May 331.7, July 306.6; March and July are partial months).
 2. Only June (4,721 readings on AHU_1) and July (3,615). In March, April and May AHU_1's static never went above 1.5.
-   In pandas: filter the challenge table with `challenge[challenge.static_above_1_5 > 0]`.
+   In pandas: filter the monthly table with `monthly[monthly["static_above_1_5"] > 0]`.
 3. `HAVING`, because it is a condition on an aggregate (`sum(...)`) of the group:
 
    ```sql
@@ -123,35 +104,25 @@ starts from.
    HAVING sum(supply_fan_status) * 5 / 60.0 > 400
    ```
 
-   Only `2026-06` comes back. In pandas it is `monthly[monthly.run_hours > 400]`, after the groupby.
+   Only `2026-06` comes back. In pandas it is `monthly[monthly["fan_run_hours"] > 400]`, after the groupby.
 
 </details>
 
 ## Week 1 challenge
 
-For each AHU and each month, report **the average outside air temperature, the fan run hours, and the number of
-readings where duct static was above 1.5 inH2O**. One result, ten rows (two AHUs × five months).
+For each month, report **the average outside air temperature, the fan run hours, and the number of readings where
+duct static was above 1.5 inH2O**.
 
-This is step 7 in both scripts. Try writing it yourself first, in each tool, before you read the scripts' versions.
-What to notice:
+This is step 3 in both scripts, the first table they print. Try writing it yourself first, in each tool, before you
+read the scripts' versions. What to notice:
 
 - In the old long layout the three measures lived in three different series, and one query could not easily combine
   them. In the wide table all three are columns of the same row, so one `GROUP BY` and three aggregates answer the
-  question: `avg(outside_air_temp_f)`, `sum(supply_fan_status) * 5 / 60.0`, `sum(da_p_inwc > 1.5)`.
-- Grouping by two keys, `equipment_id` and `month`, gives one row per pair. `equipment_id` is not a column of either
-  table, so both scripts add it when they stack the AHUs (`SELECT 'AHU_1' AS equipment_id ... UNION ALL ...` in SQL,
-  `insert(0, "equipment_id", ...)` and `concat` in pandas).
-
-Both scripts print the same table; the AHU_1 rows are:
-
-```
-equipment_id   month  avg_oat_f  fan_run_hours  static_above_1_5
-       AHU_1 2026-03       41.5          182.7                 0
-       AHU_1 2026-04       53.0          341.9                 0
-       AHU_1 2026-05       59.8          331.7                 0
-       AHU_1 2026-06       71.3          411.6              4721
-       AHU_1 2026-07       80.0          306.6              3615
-```
+  question: `AVG(outside_air_temp_f)`, `SUM(supply_fan_status) * 5 / 60.0`, `SUM(da_p_inwc > 1.5)`.
+- Then do it for **both AHUs** in one table: ten rows, two AHUs × five months. `equipment_id` is not a column of
+  either table, so add it as you stack them: `SELECT 'AHU_1' AS equipment_id, ... FROM ahu_1 UNION ALL SELECT
+  'AHU_2', ... FROM ahu_2` in SQL, `df["equipment_id"] = "AHU_1"` on each DataFrame and `pd.concat` in pandas. Then
+  group by two keys, `equipment_id` and `month`.
 
 Static above 1.5 shows up only once it is warm, in June and July, for both AHUs. Next week's questions are about
 *why*, and whether that is a problem: AHU_1's average setpoint is 1.37 inH2O, so a reading above 1.5 might be

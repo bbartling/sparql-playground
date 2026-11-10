@@ -23,10 +23,10 @@ Two scripts open the same data two ways:
 
 | | `day01_pandas.py` | `day01_sql.py` |
 |---|---|---|
-| open | `pd.read_csv(".../AHU_1/history_wide.csv")` | the table `ahu_1` in `var/lessons.sqlite` |
-| how many rows | `len(df)` / `df.shape[0]` | `SELECT count(*) FROM ahu_1` |
-| what are the columns | `df.columns`, `df.dtypes` | `PRAGMA table_info(ahu_1)` |
-| first rows | `df[cols].head(5)` | `SELECT cols FROM ahu_1 ORDER BY timestamp_utc LIMIT 5` |
+| open | `pd.read_csv("data/BUILDING_50/AHU_1/history_wide.csv")` | the table `ahu_1` in `var/lessons.sqlite` |
+| how many rows | `df.shape` (rows, columns) | `SELECT COUNT(*) FROM ahu_1` |
+| what are the columns | `df.columns` | `pragma_table_info('ahu_1')` |
+| first rows | `df[show].head(5)` | `SELECT ... FROM ahu_1 ORDER BY timestamp_utc LIMIT 5` |
 
 **What `setup_db.py` does.** `uv run python lessons/course.py setup` runs `lessons/setup_db.py`, which reads each CSV
 and writes one SQLite table: `ahu_1`, `ahu_2` (and `fdd_events`, which Day 14 uses). Nothing is transformed. The
@@ -38,7 +38,7 @@ SQLite is a whole SQL database in one file: no server, no login, and Python ship
 (`bld_50_AHU_1 AHU1 OA-T`), its unit and a rough role. Names like `outside_air_temp_f` are cleaned-up versions
 of those.
 Units are US units: °F, inches of water (`inwc`), percent 0–100, and statuses are 0 or 1 stored as numbers.
-`columns.csv` is a file, not a table in the database, so only the pandas script reads it (step 6).
+`columns.csv` is a file, not a table in the database; open it with `pd.read_csv` when you want the full names.
 
 **Why the column names are typed into code.** All of Weeks 1–4 write names like `outside_air_temp_f` and
 `supply_fan_status` straight into the scripts. That is how a first analysis looks, and it is fine for one building. It
@@ -47,40 +47,30 @@ outside-air damper `mad_c_pct` where AHU_1 has `mad_c`. Week 5 replaces typed na
 column is the duct static pressure, so the same rule runs on any air handler.
 
 ## Run
-
 ```bash
 uv run python lessons/course.py setup        # once
 uv run python lessons/course.py run 1
 ```
 
 That runs [`day01_pandas.py`](day01_pandas.py), then [`day01_sql.py`](day01_sql.py). Read them side by side: each
-numbered comment in one has the same number in the other. Both print the same shape, column names, first rows and
-time span:
+numbered comment in one has the same number in the other. Both print:
 
 ```
-rows x columns per AHU:
-equipment_id  rows  columns
-       AHU_1 35536       84
-       AHU_2 35536       67
-
-the first five rows, five columns:
-            timestamp_utc  outside_air_temp_f  da_p_inwc  da_p_setpoint_inwc  supply_fan_status
-2026-03-16 00:40:00+00:00             69.0327   0.024594                 1.2                0.0
+Rows: 35536
+Columns: 84
+First column names: ['timestamp_utc', '50ahu1aalrm', 'bld_p_setpoint_inwc', 'bld_pressure_inwc', 'chw_valve_pct']
+            timestamp_utc  outside_air_temp_f  da_p_inwc  da_p_setpoint_inwc
+2026-03-16 00:40:00+00:00             69.0327   0.024594                 1.2
+2026-03-16 00:45:00+00:00             69.0327   0.024594                 1.2
 ...
-
-time span:
-                first_utc                  last_utc  distinct_timestamps
-2026-03-16 00:40:00+00:00 2026-07-17 09:55:00+00:00                35536
 ```
 
-35,536 rows × 5 minutes is about 123 days, and 35,536 distinct timestamps means every row is its own moment. pandas
-reports dtype `float64` for the 83 points and `object` (text) for the timestamp; SQLite reports declared types `REAL`
-and `TEXT`. The same fact in each tool's vocabulary.
+35,536 rows × 5 minutes is about 123 days. The first column is the timestamp; the other 83 are points.
 
 Two things to notice:
 
-- `supply_fan_status` prints as `0.0`, not `0`. A status is a number in a historian, and the CSV stores it as a
-  decimal.
+- The outside air reading repeats: `69.0327` row after row. A historian often keeps the last value until the sensor
+  changes enough, so repeated values are normal (Day 15 comes back to this).
 - `read_csv` pulled all 84 columns into memory (about 24 MB). Fine here. From Day 2 on the scripts load only the
   columns they use (`usecols=[...]`).
 
@@ -97,8 +87,10 @@ Two things to notice:
    written with a typed column name would work on one AHU and not the other.
 
    ```python
-   a = set(pd.read_csv(DATA / "AHU_1" / "history_wide.csv", nrows=0).columns)  # nrows=0: header only
-   b = set(pd.read_csv(DATA / "AHU_2" / "history_wide.csv", nrows=0).columns)
+   ahu_1 = pd.read_csv("data/BUILDING_50/AHU_1/history_wide.csv", nrows=0)  # nrows=0: header only
+   ahu_2 = pd.read_csv("data/BUILDING_50/AHU_2/history_wide.csv", nrows=0)
+   a = set(ahu_1.columns)
+   b = set(ahu_2.columns)
    print(len(a & b), sorted(a - b), sorted(b - a))
    ```
 

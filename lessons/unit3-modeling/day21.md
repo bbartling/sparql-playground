@@ -34,10 +34,10 @@ How each half uses the map:
 
 | Step | `day21_pandas.py` | `day21_sql.py` |
 |---|---|---|
-| role → column | `col_map[equip][role]` | the same dict, from the same JSON |
-| load by role | `read_csv(usecols=[...]).rename(columns={col: shared_name})` | `SELECT "mad_c_pct" AS oa_damper_pct FROM "ahu_2"` |
-| stack AHUs | `pd.concat` | `UNION ALL` |
-| summary | `groupby("equipment_id").agg(...)` | `GROUP BY equipment_id` |
+| 1. hard-coded attempt | `pd.read_csv(path, usecols=["mad_c"])` in a `try` | `SELECT mad_c FROM ...` in a `try` |
+| 2. role → column | `points["outside-air-damper"]`, from `column_map.json` | the same dict, from the same JSON |
+| 3. load by role | `read_csv(usecols=[...]).rename(columns={damper_column: "oa_damper_pct"})` | the checked names pasted into the `SELECT` |
+| 3-4. summary | `running["oa_damper_pct"].mean()` ..., one row per AHU in a loop | `AVG(mad_c_pct)` ... `WHERE supply_fan_status = 1`, one query per AHU |
 
 **Renaming vs building SQL.** pandas just renames the loaded columns to shared names, so everything after the load is
 identical for both AHUs. SQL has no "rename after the fact": the query text itself must differ per AHU, so the
@@ -45,8 +45,8 @@ script *builds* it from the map. That brings a rule you should never forget: a *
 (`:eq0`), but an **identifier** (a table or column name) cannot. `SELECT :col FROM t` returns the string, not the
 column. So identifiers get pasted into the SQL text, and text pasted into SQL is how SQL injection happens. The
 defence is a **whitelist**: accept a name only if it is a real column of the real table (`PRAGMA table_info`), then
-quote it (`"`, doubled if it appears inside). The script's `quote_ident` does both. Today the map is a file you trust,
-but the habit costs nothing and matters the first time a name comes from a user or a web form.
+quote it (`"`, doubled if it appears inside). The SQL script does the whitelist check (step 2) before it pastes a name.
+Today the map is a file you trust, but the habit costs nothing and matters the first time a name comes from a user or a web form.
 
 ## Run
 
@@ -58,19 +58,24 @@ That runs [`day21_pandas.py`](day21_pandas.py), then [`day21_sql.py`](day21_sql.
 `var/lessons.sqlite`. Both print the failed hard-coded attempt, the damper column per AHU and the summary:
 
 ```
-Hard-coded `mad_c` on each AHU:        AHU_1 worked, AHU_2 did not
+Hard-coded `mad_c` on each AHU:
+equipment_id  worked
+       AHU_1    True
+       AHU_2   False
+
 Damper column per AHU, from column_map.json:
 equipment_id damper_column
        AHU_1         mad_c
        AHU_2     mad_c_pct
+
 Outside-air damper while the supply fan runs (one script, both AHUs):
 equipment_id damper_column  run_rows  run_hours  mean_damper_pct  open_over_50_h  closed_h
        AHU_1         mad_c     18893    1574.42            42.88          605.83    357.83
        AHU_2     mad_c_pct     17995    1499.58            51.90          696.42    347.75
 ```
 
-(The error *message* differs between pandas and SQLite; only whether it worked is compared.) While the fan runs,
-AHU_1's damper averages 43% open and AHU_2's 52%. Both spend about 350 running hours fully closed.
+(SQL prints `1`/`0` where pandas prints `True`/`False`. The error *message* differs between pandas and SQLite; only
+whether it worked is compared.) While the fan runs, AHU_1's damper averages 43% open and AHU_2's 52%. Both spend about 350 running hours fully closed.
 
 ## Try it
 
@@ -81,11 +86,12 @@ AHU_1's damper averages 43% open and AHU_2's 52%. Both spend about 350 running h
 
 <details><summary>Answers</summary>
 
-1. Add `"mixed-air-temp": "mat"` to `ROLES` (the shared name is yours to choose) and one more aggregate in the
-   summary. The loading code doesn't change: it loops over `ROLES`. In the SQL script the generated `SELECT` gains one
-   more column automatically. Adding a role is data, not control flow.
-2. `quote_ident` raises `ValueError: unknown column ...` before any SQL runs, because that string is not a column of
-   the table. Without the whitelist, the string would have been pasted into the query text.
+1. One more lookup (`mat_column = points["mixed-air-temp"]`, which is `mixed_air_temp_f` on both AHUs), one more
+   name in `usecols` and the `rename` (pandas) or in the whitelist check and the `SELECT` (SQL), and one more number in
+   the summary. The loop over AHUs, and everything that says *which AHU*, doesn't change. Adding a role is data, not
+   control flow.
+2. The whitelist check raises `ValueError: unknown column in column_map.json` before any SQL runs, because that
+   string is not a column of the table. Without the whitelist, the string would have been pasted into the query text.
 
 </details>
 

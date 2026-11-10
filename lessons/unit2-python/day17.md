@@ -11,7 +11,7 @@ job over a year of 5-minute data on a hundred AHUs is tens of millions of rows. 
 | Shape | What Python holds | Memory grows with |
 |---|---|---|
 | a `list` of tuples (`fetchall()`) | every row as a tuple of float objects | rows (and a lot of it per row) |
-| a stream (`for row in cursor`, or `zip` over columns) | one tuple at a time | nothing: O(1) |
+| a stream (`for row in cursor`, or `for row in df.itertuples()`) | one tuple at a time | nothing: O(1) |
 | a DataFrame (`read_csv`, `read_sql_query`) | NumPy arrays, one per column | rows x bytes per value |
 | a chunked read (`chunksize=`) | one chunk of arrays at a time | the chunk size |
 | a SQL aggregate | the answer (a couple of rows) | nothing: SQLite holds the data |
@@ -23,22 +23,21 @@ string.
 
 Two memory-saving moves, and one honest warning:
 
-- **Right-size the dtypes.** `equipment_id` has 2 distinct values in 200,000 rows: store it as `category` (small
-  integer codes plus one lookup table). A 0/1 status fits in `int8`. `float32` halves a column, but has only about
-  7 significant digits. That's fine for a temperature, risky for an epoch timestamp, and always something to *check*
-  rather than assume.
+- **Right-size the dtypes.** A 0/1 status fits in `int8`. `float32` halves a column, but has only about 7
+  significant digits. That's fine for a pressure, risky for an epoch timestamp, and always something to *check*
+  rather than assume. A text column with a few distinct values (`equipment_id`) can be stored as `category`: small
+  integer codes plus one lookup table.
 - **Stream in chunks.** If the answer is an aggregate (counts, sums, a few rows per equipment), you never need the
   whole table in memory. Read a chunk, fold it into running totals, throw it away. Peak memory is O(chunk), and the
   result is the same as one big aggregate. Because sums and counts are *associative*, summing the chunk sums gives
   the total.
-- **Warning:** `lab.peak_mib` uses `tracemalloc`, which sees memory allocated by Python and by NumPy/pandas buffers.
-  It does **not** see memory SQLite allocates inside its own C library (page cache, sort buffers, the in-memory
-  database itself). A SQL aggregate over 200,000 rows reports about zero because Python really did hold about
-  nothing; SQLite's own footprint just isn't measured by it.
+- **Warning:** the scripts measure memory with `tracemalloc` (start it, do the work, read the peak). It sees memory
+  allocated by Python and by NumPy/pandas buffers. It does **not** see memory SQLite allocates inside its own C
+  library (page cache, sort buffers). A SQL aggregate over 100,000 rows reports about zero because Python really did
+  hold about nothing; SQLite's own footprint just isn't measured by it.
 
-The task is the same as Day 16 per AHU: the count of raw FC1 faults (fan running, static more than 25 Pa below
-setpoint), plus run hours. The data is `lab.synthetic_history(100_000, equips=2)` (20,000 rows per AHU under the
-test): two AHUs, identical in both scripts.
+The task is the same as Day 16: the count of raw FC1 faults (fan running, static more than 25 Pa below setpoint),
+plus run hours, on the first 100,000 rows of the synthetic data (all AHU_1), identical in both scripts.
 
 ## Run
 
@@ -51,84 +50,68 @@ rows live in the pandas script; the SQL script is the aggregate, plus the cost o
 
 | Step | `day17_pandas.py` | `day17_sql.py` |
 |---|---|---|
-| reference answer | `hits(df).groupby(df.equipment_id).sum()` | `SUM(fan_status = 1 AND ...) ... GROUP BY equipment_id` |
-| rows as a list | `list(df.itertuples(index=False, name=None))` | `cursor.fetchall()` (transfer only) |
-| rows as a stream | `for ... in zip(*(df[c] for c in COLS))` | `for _ in cursor` (transfer only) |
-| whole DataFrame | `pd.read_csv(path)` | `pd.read_sql_query(ROWS_SQL, conn)` |
-| smaller dtypes | `astype({"equipment_id": "category", "duct_static": "float32", ...})` | (SQLite stores what it stores) |
-| chunks | `pd.read_csv(path, chunksize=CHUNK)`, fold the partial sums | `read_sql_query(..., chunksize=CHUNK)` (transfer only) |
-| answers kept | `fault_counts`, `fault_hours` | `fault_counts`, `fault_hours` |
+| answer | 3. `(fan_on & too_low).sum()` | 1. `SUM(fan_status = 1 AND ...)` |
+| rows as a list | 1. `list(df.itertuples(index=False, name=None))` | 2. `conn.execute(...).fetchall()` (transfer only) |
+| rows as a stream | 2. `for ... in df.itertuples(...)` | 3. `for _ in conn.execute(...)` (transfer only) |
+| whole DataFrame | 3. `pd.read_csv(path, nrows=N, usecols=columns)` | 4. `pd.read_sql_query(rows_sql, conn, ...)` |
+| chunks | 4. `pd.read_csv(..., chunksize=10_000)`, add up the pieces | 5. `read_sql_query(..., chunksize=10_000)` (transfer only) |
+| smaller dtypes | 5. `astype({"fan_status": "int8", "static_pa": "float32", ...})` | (SQLite stores what it stores) |
 
-The pandas script writes the synthetic rows to a temporary CSV, so its chunked read is a real file read. The SQL
-script's rows live in SQLite, so its chunked read comes from the database. Both print the per-AHU answer:
+The pandas script prints (MiB of Python heap at the peak; the numbers vary a little by Python and pandas version):
 
 ```
-equipment_id  fault_rows  run_hours
-       AHU_1        4993     4164.0
-       AHU_2        5081     4164.0
+AHU_1, first 100000 rows
+  fault rows: 14428
+  run hours:  4164.0
+Peak Python memory (MiB)
+  list of tuples: 11.45
+  stream:         0.01
+  whole DataFrame: 5.35
+  chunked read:   1.5
+DataFrame size (MiB): default dtypes 2.29 -> smaller dtypes 0.86
 ```
 
-Then the memory tables (MiB of Python heap at the peak; the numbers vary a little by Python version, but not by much):
+and the SQL script:
 
 ```
-        approach  peak_MiB             (day17_pandas.py)
-  list of tuples     36.49
-    stream (zip)      0.00
-  read whole CSV     15.67
-chunked CSV read      2.25
-
-                   approach  peak_MiB (day17_sql.py)
-SQL aggregate (2 rows back)     0.008
-              fetchall list    45.414
-              cursor stream     0.001
-       read_sql_query whole    67.012
-     read_sql_query chunked     6.189
+AHU_1, first 100000 rows
+  fault rows: 14428
+  run hours:  4164.0
+Peak Python memory (MiB)
+  SQL aggregate:  0.001
+  fetchall list:  11.45
+  cursor stream:  0.0
+  whole DataFrame: 19.14
+  chunked read:   2.55
 ```
 
 Three things to see.
 
 - **The stream is flat.** The loop holds one tuple, so its peak is about zero. Streaming trades speed for space (the
   interpreter loop is Day 16's slow one), but its memory cost is nothing.
-- **A DataFrame's peak can be higher than its resting size.** `read_csv` parses straight into arrays (15.7 MiB). But
+- **A DataFrame's peak can be higher than its resting size.** `read_csv` parses straight into arrays (5.4 MiB). But
   `read_sql_query` has to fetch every row as Python tuples first and then convert them into column arrays, so for a
-  moment both copies exist: 67 MiB, more than the 45 MiB list on its own. `chunksize` fixes that: 6 MiB, about a
-  tenth of the whole read. Memory now scales with the **chunk**: double the table and the peak stays put (only the loop
-  runs longer). The price is that this works for aggregates that can be folded (counts, sums, min/max). A rolling
-  window or a streak that crosses a chunk boundary needs the chunks to carry state across, which is what Day 18's
-  loop does naturally.
-- **The SQL aggregate is the cheapest in Python memory**, 0.008 MiB: Python holds a 2-row result while SQLite scans
-  every row. But that number is incomplete: it's the Python side. SQLite's own memory (the page cache, and here the
-  entire in-memory database, 11.3 MiB as the second script prints from `PRAGMA page_count * page_size`) is invisible to
-  `tracemalloc`. To see it you would watch the process, for example with `psutil`'s resident set size.
+  moment both copies exist: 19 MiB, more than the 11 MiB list on its own. `chunksize` fixes that: about 2.5 MiB.
+  Memory now scales with the **chunk**: double the table and the peak stays put (only the loop runs longer). The
+  price is that this works for aggregates that can be folded (counts, sums, min/max). A rolling window or a streak
+  that crosses a chunk boundary needs the chunks to carry state across, which is what Day 18's loop does naturally.
+- **The SQL aggregate is the cheapest in Python memory**, 0.001 MiB: Python holds a 1-row result while SQLite scans
+  every row. But that number is incomplete: it's the Python side. SQLite's own memory (its page cache) is invisible
+  to `tracemalloc`. To see it you would watch the process, for example with `psutil`'s resident set size.
 
-**Shrinking the DataFrame.** `memory_usage(deep=True)` counts the real bytes, including the Python objects behind an
-`object` column. The pandas script prints the table:
-
-```
-                before_MiB  after_MiB
-equipment_id         10.30       0.19
-ts                    1.53       1.53
-fan_status            1.53       0.19
-duct_static           1.53       0.76
-duct_static_sp        1.53       0.76
-total                16.40       3.43
-```
-
-The big win is `equipment_id`: an `object` column of strings becomes a column of 1-byte codes. The float columns
-halve, the flag drops 8x, and `ts` stays `int64` (epoch seconds need 32+ bits, and `float32` would corrupt them).
-`float32` changed the *values*, so the script checks that the fault decision survives: it prints
-`float32 flipped 0 of 200,000 fault decisions`. On this data no row flips: the readings carry two decimals and the
-threshold is a round number, so float32's rounding (about 3e-5 at 350 Pa) never crosses it. On data that sits *exactly
-on* a threshold, it could. Checking is how you find out, and why Open-FDD keeps one declared scale and dtype per
-column instead of guessing.
+**Shrinking the DataFrame.** Step 5 stores the flag as `int8` (1 byte instead of 8) and the two pressures as
+`float32` (4 instead of 8): 2.29 MiB becomes 0.86 MiB. Epoch timestamps would have to stay `int64` (they need 32+
+bits, and `float32` would corrupt them). `float32` changes the *values* slightly (about 3e-5 at 350 Pa), so check that
+the fault decision survives (Try it 3). On data that sits *exactly on* a threshold, it could flip. Checking is how
+you find out, and why Open-FDD keeps one declared scale and dtype per column instead of guessing.
 
 ## Try it
 
 1. How big would the full DataFrame be for 100 AHUs x 1 year of 5-minute data (about 105,000 rows each) with five
-   float64 columns plus an int64 `ts`? Compute it from the table above, no new data needed.
-2. The chunked read in `day17_pandas.py` also returns run hours per AHU (`fan_status == 1` rows x 5 / 60), and
-   `fault_hours` in `RESULTS` is compared with the SQL aggregate. Why is *run hours* easy to fold across chunks, and
-   what about a median duct static?
+   float64 columns plus an int64 `ts`? Work it out from bytes per value, no new data needed.
+2. The chunked read adds up `fault_rows` and `run_rows` per chunk. Why is *run hours* easy to fold across chunks,
+   and what about a median duct static?
+3. After step 5, count the fault rows again on `small` and compare with `fault_rows`. How many decisions flipped?
 
 <details><summary>Answers</summary>
 
@@ -142,9 +125,11 @@ column instead of guessing.
 
    About 0.5 GiB for 10.5 million rows: fine on a laptop, but tens of GiB across a portfolio of buildings. That is
    where chunking, dtypes and "let the database aggregate" stop being optional.
-2. The partial results are small tables you can add: sums add. `faults_and_hours()` keeps a `fault_rows` and a
-   `run_rows` column per chunk, adds the chunks' tables, and converts rows to hours at the end. A *mean* you'd carry
-   as (sum, count) and divide at the end; a median doesn't fold this way at all.
+2. Sums add: each chunk's run rows plus the next chunk's is the total, and hours = rows x 5 / 60 at the end. A
+   *mean* you'd carry as (sum, count) and divide at the end; a median doesn't fold this way at all.
+3. None: `((small["fan_status"] == 1) & (small["static_pa"] < small["setpoint_pa"] - TOLERANCE_PA)).sum()` is also
+   14,428. The readings carry two decimals and the threshold is a round number, so float32's rounding never crosses
+   it.
 
 </details>
 

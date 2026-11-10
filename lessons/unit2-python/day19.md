@@ -15,29 +15,25 @@ hourly and sometimes not at all. You can't `JOIN ... ON h.ts = w.ts`. You want, 
 row at or before that time, but only if it is recent enough** (here: no more than 2 hours old; otherwise it is
 "stale", and the answer is `NULL`/`NaN`, meaning unknown, not "use whatever's old"). This is an **as-of join**.
 
-**The data.** The AHU side is the real Building 50 export (both CSVs, 71,072 rows, `supply_fan_status` and
-`outside_air_temp_f` converted to °C: `(f - 32) * 5 / 9`, since fault math is SI). **The weather is a stand-in.**
-There is no weather feed in this repo, so we make one honestly: hourly means of AHU_1's own outdoor sensor, plus
-0.5 °C of noise (real weather never matches a sensor exactly), with 12% of the hours deleted and one 6-hour block
-missing, the way a feed with failures looks (2,592 of 2,961 hours remain). In production this table is the Open-Meteo
-feed. It is derived from AHU_1, so AHU_1 will agree with it; AHU_2 has its own sensor, which reads about 1.2 °C
-higher on average and has a few readings of 0 °F, which look like dropouts. The rule should notice.
-
-The weather stand-in is made by the same small `make_weather` function in both scripts (pandas builds it, the SQL
-script loads it into a `wx` table): it is *input data*, not the computation we compare.
+**The data.** The AHU side is the synthetic AHU from Day 16: AHU_1's first 100,000 rows (about 347 days), with
+`oat_c`, its outdoor-air sensor in °C. **The weather is synthetic too**, in `var/synthetic_weather.csv` (and the
+`synthetic_weather` table): one row per hour, the same daily temperature wave as the AHU's sensor plus noise, with 12%
+of the hours deleted at random and six hours in a row missing near the start, the way a feed with failures looks. In
+production this table is the Open-Meteo feed. The AHU's sensor has a planted problem: for 100 rows in every week it
+reads **6 °C high**, like a sensor with the sun on it. The rule should notice.
 
 How the join is done in each tool:
 
 | | SQL (`day19_sql.py`) | pandas (`day19_pandas.py`) | plain Python (`day19_pandas.py`) |
 |---|---|---|---|
-| Idea | per AHU row, look up the newest weather row `<= ts` | merge two sorted tables in one pass | per AHU row, search the weather list |
-| Code | `(SELECT w.ts FROM wx w WHERE w.ts <= h.ts AND w.ts >= h.ts - :tol ORDER BY w.ts DESC LIMIT 1)` | `pd.merge_asof(h, wx, on="ts", direction="backward", tolerance=...)` | `bisect_right(wx_ts, ts) - 1` |
-| Stale handling | extra `AND w.ts >= h.ts - :tol` | `tolerance=` argument | `if ts - wx_ts > tol` |
+| Idea | per AHU row, look up the newest weather row `<= ts` | merge two sorted tables in one pass | per AHU row, binary-search the weather times |
+| Code | `(SELECT w.ts FROM synthetic_weather AS w WHERE w.ts <= h.ts AND w.ts >= h.ts - :max_age_seconds ORDER BY w.ts DESC LIMIT 1)` | `pd.merge_asof(ahu, weather, left_on="ts", right_on="weather_ts", direction="backward", tolerance=...)` | `bisect_right(weather_times, ts) - 1` |
+| Stale handling | `AND w.ts >= h.ts - :max_age_seconds` | `tolerance=` argument | `if ts - weather_times[i] <= MAX_AGE_SECONDS` |
 
 **Complexity.** Let N be AHU rows and M weather rows.
 
 - A *nested loop* with no index: for each of N rows, scan all M weather rows. **O(N·M)**. SQLite does this when there
-  is no index on `wx(ts)`; so does a naive Python double loop.
+  is no index on the weather `ts`; so does a naive Python double loop.
 - *With an index* (SQLite) or a sorted list and binary search (Python's `bisect`): each lookup is O(log M), so
   **O(N log M)**.
 - `merge_asof` on two *sorted* inputs walks both once: **O(N + M)**. The price: the inputs must be sorted by the key,
@@ -50,110 +46,88 @@ uv run python lessons/course.py run 19
 ```
 
 That runs [`day19_pandas.py`](day19_pandas.py), then [`day19_sql.py`](day19_sql.py). `ts` is epoch seconds in both
-(`unixepoch(timestamp_utc)` in SQL, `pd.to_datetime(...)` as seconds in pandas). Both build the per-row join, the rule,
-the 1-hour variant and a growing-size benchmark on synthetic rows (`lab.synthetic_history`, one AHU, weather one hour
-per 12 rows). `RESULTS` holds the per-row join (`asof_join`), the rule's `oat_meteo_hours`, `rows_without_weather` and
-the number of matches per benchmark size (`timing_matches`).
+tables. The pandas script prints:
 
 ```
-71,072 AHU rows, 2,592 weather rows (of 2,961 hours)
-rows with no usable weather: 1250
+AHU rows: 100000 | weather rows: 36586
+Rows with no usable weather: 1372
+Average weather temperature on the matched rows (C): 9.967
+bisect loop matched the same rows: True
+
+Sensor vs weather rule (fan on, more than 3 C apart for 30 minutes):
+  raw rows: 5089 | confirmed rows: 3892 | hours: 324.33
+
+Microseconds per AHU row (times vary by machine):
+  nested loop: 908.34
+  bisect loop: 0.23
+  merge_asof:  0.06
 ```
 
-**The as-of join in SQL.** The inner query is run once *per AHU row*, which is what makes it "correlated". The weather
-value is then looked up by that timestamp. In pandas, `merge_asof` needs both sides sorted by the key. Our table has two
-AHUs interleaved by time, so we sort by `ts` for the merge, and copy `ts` into a `wx_ts` column so we can see which
-weather row matched. A detail worth knowing: both treat the 2-hour limit as inclusive, so a reading exactly 7,200 s old
-still counts. (The unit test would fail if they disagreed.)
-
-**How the database does it: `EXPLAIN QUERY PLAN`** (Day 12). `day19_sql.py` prints the plan for the indexed and the
-unindexed weather table:
+and the SQL script the same numbers, with its own timings and two query plans:
 
 ```
-EXPLAIN QUERY PLAN with wx:
-   CORRELATED SCALAR SUBQUERY 1
-   SEARCH w USING COVERING INDEX wx_ts (ts>? AND ts<?)
-
-EXPLAIN QUERY PLAN with wx_plain:
-   CORRELATED SCALAR SUBQUERY 1
-   SCAN w
-   USE TEMP B-TREE FOR ORDER BY
+Microseconds per AHU row (times vary by machine):
+  no index:   900.47
+  with index: 0.34
+Plan on synthetic_weather: SEARCH synthetic_weather USING COVERING INDEX synthetic_weather_idx (ts>? AND ts<?)
+Plan on weather_copy: SCAN weather_copy | USE TEMP B-TREE FOR ORDER BY
 ```
 
-(Abridged.) With the index, each probe is a B-tree range seek; without it, a full scan of the weather table (plus a
-temporary sort for the `ORDER BY`) per AHU row. SQLite also builds a throwaway "automatic index" for the final `LEFT JOIN`
-on the unindexed copy, but not for the subquery's range condition, which is the expensive part.
+`RESULTS` holds `rows_without_weather`, `average_weather_c` and the rule's counts; the unit test checks that both
+scripts agree.
 
-**Plain Python, two ways.** In the pandas script. The nested loop is what SQLite does with no index. The `bisect` version
-is the same idea as the index: keep the weather timestamps sorted and binary-search them. The pandas script prints
-`bisect loop finds the same weather row as merge_asof: True`.
+**The as-of join in SQL** (steps 1-2). The inner query is run once *per AHU row*, which is what makes it
+"correlated". The weather value is then looked up by that timestamp with an ordinary join. In pandas, `merge_asof`
+needs both sides sorted by the key (they are). A detail worth knowing: both treat the 2-hour limit as inclusive, so a
+reading exactly 7,200 s old still counts. (The unit test would fail if they disagreed.)
 
-**Timing, growing the data.** The two O(N·M) methods stop at 10,000 rows; at a million rows they would run for hours.
-`NaN` means "not run". On the machine this was written on (seconds):
+**How the database does it: `EXPLAIN QUERY PLAN`** (Day 11). With the index, each probe is a B-tree range seek
+(`SEARCH ... USING COVERING INDEX`). On `weather_copy`, a copy with no index, it is a full scan of the weather table
+plus a temporary sort for the `ORDER BY`, for every AHU row. That is why the SQL script runs the no-index version on
+200 rows only.
 
-```
-      N     M  nested_s  bisect_s    asof_s          (day19_pandas.py)
-   1000    70  0.002315 0.0001861 0.0009288
-  10000   726      0.25   0.00239  0.001678
- 100000  7322       NaN   0.03476  0.008587
-1000000 73532       NaN    0.4317   0.06423
+**Plain Python, two ways** (steps 3-4 of the pandas script). The nested loop is what SQLite does with no index. The
+`bisect` version is the same idea as the index: keep the weather timestamps sorted and binary-search them. The script
+prints `bisect loop matched the same rows: True`.
 
-      N     M  sql_noindex_s  sql_index_s             (day19_sql.py)
-   1000    70        0.00362    0.0002054
-  10000   726         0.3633     0.002943
- 100000  7322            NaN      0.02833
-1000000 73532            NaN       0.3345
-```
-
-Read it in three parts. **The unindexed methods** (`nested_s`, `sql_noindex_s`) grow by about 100x for every 10x of data
-(N grows 10x and so does M, so N·M grows 100x): 10,000 rows takes 0.25 s and 0.36 s, and a million would take hours.
-SQLite's unindexed subquery is a compiled nested loop, but it follows the same curve as the Python one (and here is not
-even faster). **With an index** (`sql_index_s`, and `bisect_s`, the Python equivalent) the growth is about 10x per 10x:
-N lookups, each O(log M). **`merge_asof`** is the quickest because it does the whole job as one O(N + M) merge in
-compiled code. It has almost no per-row overhead. Both scripts print the number of matched rows at every size
-(`timing_matches`), and the unit test checks that they are the same.
+**Timing.** The timings are per AHU row, in microseconds, so different row counts compare fairly. The two O(N·M)
+methods take about 900 µs per row: at 100,000 rows that would be 90 seconds, which is why they only get 200. With an
+index (or `bisect`, its Python twin) a lookup is a fraction of a microsecond: thousands of times faster, and the gap
+grows with M. `merge_asof` is the quickest because it does the whole job as one O(N + M) merge in compiled code, with
+almost no per-row overhead. SQLite's unindexed subquery is a compiled nested loop, but it is no faster than the Python
+one: the curve, not the language, decides.
 
 The lesson that carries over to all of Week 4: an index (or a sort) changes the *shape* of the curve. Vectorizing only
 changes the slope.
 
-**A sensor-versus-weather rule.** In the spirit of `OAT-METEO`: while the fan runs, flag the AHU when its outdoor
-sensor differs from the weather by more than 3 °C, confirmed for 6 rows (30 minutes). No weather (stale or missing)
-means *unknown*, so no fault. In SQL, the join result is a CTE under the streak machinery from Day 14; in pandas, the
-same `shift` / `cumsum` / `cumcount` trick.
-
-```
-equipment_id  fault_rows  raw_rows  fault_hours
-       AHU_1          27       111         2.25
-       AHU_2         196       526        16.33
-```
-
-AHU_2's sensor is found: 16.3 confirmed hours against 2.3 for AHU_1, whose sensor the weather was derived from (it
-isn't silent, because the weather has 0.5 °C of noise and the rule's tolerance is finite). In real data there would be
-more false alarms, which is why the rule has a 3 °C tolerance, a confirmation time and a stale-weather guard. Note what
-the 2-hour tolerance bought: when the weather feed is down, the rule says nothing, instead of comparing a live sensor to
-yesterday's weather.
+**A sensor-versus-weather rule** (step 5). In the spirit of `OAT-METEO`: while the fan runs, flag the AHU when its
+outdoor sensor differs from the weather by more than 3 °C, confirmed for 6 rows (30 minutes). No weather (stale or
+missing) means *unknown*, so no fault. In SQL, the join result is a temp table under Day 14's streak steps; in pandas,
+the same `shift` / `cumsum` / `cumcount` trick. It finds 3,892 confirmed rows, 324 hours: the "sun on the sensor"
+stretches. In real data there would be more false alarms, which is why the rule has a 3 °C tolerance, a confirmation
+time and a stale-weather guard. Note what the 2-hour limit bought: when the weather feed is down, the rule says
+nothing, instead of comparing a live sensor to yesterday's weather.
 
 ## Try it
 
-1. Tighten the tolerance to 1 hour. How many AHU rows lose their weather?
-2. Replace "latest at or before" with "nearest *after*": SQL `w.ts >= h.ts ... ORDER BY w.ts ASC`, pandas
-   `direction="forward"`. When would you ever want that, and when is it a bug?
+1. Tighten the limit to 1 hour (`MAX_AGE_SECONDS = 3600`, `"max_age_seconds"` in SQL). How many AHU rows lose their
+   weather?
+2. Replace "latest at or before" with "nearest *after*": SQL `w.ts >= h.ts AND w.ts <= h.ts + :max_age_seconds ...
+   ORDER BY w.ts ASC`, pandas `direction="forward"`. When would you ever want that, and when is it a bug?
 
 <details><summary>Answers</summary>
 
-1. `rows_without_weather` in each script's `RESULTS` already answers it: 1,250 rows with a 2-hour tolerance, 8,252 with
-   one hour. Rows lose weather in the hours after a feed outage: with a 1-hour limit, a row whose latest reading is 1-2
-   hours old becomes unknown. The two implementations agree row for row. In SQL, `tol` is a parameter:
-   `query(NO_WEATHER_SQL, tol=3600)`; in pandas, `join_pandas(ahu, wx, 3600)`.
-2. In pandas, `pd.merge_asof(left, wx.assign(wx_ts=wx.ts), on="ts", direction="forward", tolerance=TOL_S)`. In SQL,
-   swap the condition and the sort in the subquery:
+1. 11,530 rows have no usable weather, against 1,372 with 2 hours. With a 1-hour limit, every AHU row in the hour
+   after a missing weather hour becomes unknown (12% of hours are missing, so about 12% of rows). The rule's
+   confirmed hours drop to 259.5. The two implementations still agree.
+2. In SQL, swap the condition and the sort in the subquery:
 
    ```sql
-   WHERE w.ts >= h.ts AND w.ts <= h.ts + :tol
+   WHERE w.ts >= h.ts AND w.ts <= h.ts + :max_age_seconds
    ORDER BY w.ts ASC LIMIT 1
    ```
 
-   Every matched weather timestamp is then at or after the row's (1,272 rows end up with no match, the ones before a
+   Every matched weather timestamp is then at or after the row's (1,372 rows again have no match, the ones before a
    gap this time). The forward join pairs each row with a *future* weather reading. That is legitimate for offline
    analysis when a value is stamped at the *end* of its interval (a mean over the previous hour). It is a **look-ahead
    bug** in anything that claims to run live, or in a backtest of a live rule: the rule would "know" something it
