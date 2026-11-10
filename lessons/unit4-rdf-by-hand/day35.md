@@ -22,6 +22,12 @@ checks what is actually in the graph. The rules are themselves triples, in
 | `sh:minLength` | text at least this long | catches the blank label |
 | `sh:severity` | how bad: `sh:Violation` (default), `sh:Warning`, `sh:Info` | missing labels are warnings |
 | `sh:message` | what to tell the person | "A fryer needs a temperature point." |
+| `sh:in ( ... )` / `sh:hasValue` | the value must be one of this list / exactly this | Day 38's named cook methods |
+
+`sh:targetClass` isn't the only way to pick what to check. A class can *also be* a node shape
+(`bb:Fryer a owl:Class, rdfs:Class, sh:NodeShape ; sh:property [ ... ]`), and then SHACL checks every instance of
+that class: an *implicit class target*. Brick and ASHRAE 223P ship most of their rules that way. Today's file uses
+`sh:targetClass`; Day 39 puts the two side by side and says when to pick each.
 
 **Reading a validation report.** `pyshacl.validate(data, shacl_graph=rules)` returns `conforms` (True only if there
 are no results at all, warnings included), plus a **report graph**: one `sh:ValidationResult` per problem, with

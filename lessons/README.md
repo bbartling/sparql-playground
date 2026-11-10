@@ -185,13 +185,15 @@ Further reading: W3C [RDF Schema 1.1](https://www.w3.org/TR/rdf-schema/), [OWL 2
 |---|---|
 | 36 | [Scope, competency questions and reuse](unit4-rdf-by-hand/day36.md) |
 | 37 | [Steps 4–5: classes, hierarchy and properties](unit4-rdf-by-hand/day37.md) |
-| 38 | [Steps 6–7: restrictions and instances](unit4-rdf-by-hand/day38.md) |
-| 39 | [Step 8: test with competency questions (SPARQL) and SHACL](unit4-rdf-by-hand/day39.md) |
+| 38 | [Steps 6–7: restrictions, instances and enumerations as named values](unit4-rdf-by-hand/day38.md) |
+| 39 | [Step 8: test with competency questions (SPARQL) and SHACL; separate shapes vs class-as-shape](unit4-rdf-by-hand/day39.md) |
 | 40 | [Reuse, part two: aligning your terms with Brick](unit4-rdf-by-hand/day40.md) |
 
 Further reading: Noy and McGuinness, [Ontology Development 101](https://protege.stanford.edu/publications/ontology_development/ontology101.pdf);
 METHONTOLOGY (a life-cycle method for building ontologies like software) and the NeOn methodology (building
-ontologies by reusing others) for more formal approaches; [Extending Brick](https://docs.brickschema.org/extra/extending.html).
+ontologies by reusing others) for more formal approaches; [Extending Brick](https://docs.brickschema.org/extra/extending.html);
+the [csml2rdf BACnet ontology](https://github.com/JoelBender/csml2rdf/blob/main/bacnet.ttl) as a real-world example of
+enumerations and class-as-shape.
 
 **Week 9: publishing your own ontology**
 

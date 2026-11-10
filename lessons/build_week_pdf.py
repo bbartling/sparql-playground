@@ -68,6 +68,10 @@ REFERENCES = {
         ("W3C: Shapes Constraint Language (SHACL)", "https://www.w3.org/TR/shacl/"),
         ("W3C: SPARQL 1.1 Query Language", "https://www.w3.org/TR/sparql11-query/"),
         (
+            "csml2rdf bacnet.ttl: enumerations and class-as-shape in a real ontology",
+            "https://github.com/JoelBender/csml2rdf/blob/main/bacnet.ttl",
+        ),
+        (
             "W3C: SKOS reference (definitions, exactMatch, closeMatch)",
             "https://www.w3.org/TR/skos-reference/",
         ),

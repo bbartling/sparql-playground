@@ -91,6 +91,8 @@ and give you a test for "done".
 - W3C, [OWL 2 Primer](https://www.w3.org/TR/owl2-primer/), [SHACL](https://www.w3.org/TR/shacl/),
   [SPARQL 1.1 Query](https://www.w3.org/TR/sparql11-query/)
 - [Brick: extending Brick](https://docs.brickschema.org/extra/extending.html)
+- [csml2rdf `bacnet.ttl`](https://github.com/JoelBender/csml2rdf/blob/main/bacnet.ttl): a real ontology that uses
+  named enumeration values and classes that are their own SHACL shapes (Days 38–39).
 
 ## Try it
 
