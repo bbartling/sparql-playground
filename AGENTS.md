@@ -1,11 +1,10 @@
-# AGENTS.md — sparql-playground (bldgts)
+# AGENTS.md — sparql-playground (brickts)
 
-This repo is a **tutorial + near-production pattern**: a **Haystack** application RDF model describes the building;
-timeseries are reached **only through the model** via opaque `ref:TimeseriesReference` links.
+This repo is a **tutorial + near-production pattern**: Brick RDF describes the building;
+timeseries are reached **only through the model** ([Brick timeseries storage](https://docs.brickschema.org/metadata/timeseries-storage.html)).
 Here: FastAPI + read-only SPARQL + SQLite stand-in TSDB + Swagger at `/docs`. Lessons: `scripts/lesson_0*.py`.
 
 - **Locked decisions:** [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md)
-- **Normal Framework (edge OT / BACnet / portal):** [`agent_spec/NORMAL_FRAMEWORK.md`](agent_spec/NORMAL_FRAMEWORK.md) — **bosspi** Pi live edge + OptiPlex standby, BACnet 5007, portal switch notes, CF tunnel + API keys; blog Part 2; no secrets
 - **Build plan (if rebuilding from scratch):** [`.cursor/plans/sparql_playground_build.plan.md`](.cursor/plans/sparql_playground_build.plan.md)
 
 ```
@@ -19,21 +18,21 @@ HTTP ──▶ SPARQL / points / timeseries
 
 ```bash
 uv sync
-uv run bldgts model build
-uv run bldgts bootstrap
-uv run bldgts validate [--shacl]
-uv run bldgts serve                      # http://127.0.0.1:8000/docs
+uv run brickts model build
+uv run brickts bootstrap
+uv run brickts validate [--shacl]
+uv run brickts serve                      # http://127.0.0.1:8000/docs
 uv run python scripts/lesson_01_mech_summary.py
 uv run pytest -q && uv run ruff check .
 ```
 
 ## Invariants (do not break)
 
-1. Every historized point has exactly one `ref:hasExternalReference` → `ref:TimeseriesReference` with exactly one `ref:hasTimeseriesId` and a `ref:storedAt` Database.
+1. Every `brick:Point` has exactly one `ref:hasExternalReference` → `ref:TimeseriesReference` with exactly one `ref:hasTimeseriesId` and a `ref:storedAt` Database.
 2. Every timeseries id in the model exists in the store; every mapped column is in the model.
 3. No hardcoded CSV column names in API/services/graph/client code.
-4. No hardcoded equipment ids in product code — select by Haystack markers, refs, or Open-FDD roles.
-5. SPARQL **query** is read-only (no UPDATE/LOAD/SERVICE/FROM); row cap + timeout + length limit. Agent writes use scoped `/api/agent/plan` + `/api/agent/apply` (A19), never `/api/sparql`.
+4. No hardcoded equipment ids in product code — select by Brick class, tags, or roles.
+5. SPARQL is read-only (no UPDATE/LOAD/SERVICE/FROM); row cap + timeout + length limit.
 6. Parameterized SQL only; graph mutations via locked copy-on-write; atomic TTL writes.
 7. No secrets in the graph, repo, or logs — Database nodes hold env-var *names*, not credentials.
 
@@ -41,7 +40,7 @@ uv run pytest -q && uv run ruff check .
 
 - Read-only reference: `/home/ben/Desktop/open-fdd` — never edit it.
 - Don’t commit `var/`, `*.sqlite`, `.venv`, secrets. No Git LFS. Data files under 50 MB each.
-- No auth, no CDN for the core API — Swagger at `/docs`. Optional Vite UI under the live part’s `checkpoint/web/` (Part 3). Live Turtle export: repo-root `building.ttl`.
+- No auth, no CDN, no Node UI — Swagger only for interactive API.
 
 ---
 
@@ -146,29 +145,4 @@ the existing production store via the opaque id — same pattern as Brick timese
 2. `model/points/<BUILDING>__<EQUIP>.csv` — freeze `timeseries_id` (UUIDv5 rule in ARCHITECTURE A3).
 3. New equipment/parts/zones → `model/site.ttl`.
 4. Register in `data/datasets.json`.
-5. `uv run bldgts model build && uv run bldgts validate --shacl && uv run bldgts bootstrap && uv run pytest -q`.
-
-## Blog series checkpoints
-
-[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/) — **no repo-root `src/`/`web/`**. Each part freezes an app base under `checkpoint/`. Live package = Part 3 Haystack CRUD (`pyproject.toml` `module-root`). Part 2 = NF edge sensor client. Parts 4–6 are empty placeholders (data-viz/Timescale, Open-FDD Postgres, security). The daily lessons stay **independent**.
-
-## Daily lessons (rewritten 2026-11-05, operator requested)
-
-`lessons/README.md` is a 16-week course of daily mini lessons for CS graduates: Unit 1 SQLite on Building 50
-(written, `lessons/unit1-sqlite/day01-15.md`), then Python data structures for graphs, RDF with rdflib, SPARQL + this
-API, and BACnet / bacpypes3 RDF scanning (outlined in the README, written as the course goes). The old
-PostgreSQL/Timescale course (`lessons/sql/`) was removed; it's in git history.
-
-- Unit 1 queries the API's own database, `var/timeseries.sqlite` (built by `bldgts bootstrap`), in DB Browser for
-  SQLite. The course only adds `lab_*` tables/views; the app ignores them. `lessons/course.py reset` drops them.
-- Every ```sql block is executed by `uv run python lessons/course.py check` (on a temporary copy), and
-  `-- expect: a | b` / `-- expect rows: N` lines are asserted. The `lessons` CI job runs it after bootstrapping.
-- Numbers quoted in lesson prose must come from a real run; pin them with an `expect` line.
-- Weekly PDF packs live in `lessons/pdf/`; rebuild with `uv run python lessons/build_week_pdf.py --all`
-  (needs pandoc) after editing a lesson.
-- Keep student work under ignored `student-work/` or `var/`.
-
-```bash
-uv run python lessons/course.py doctor
-uv run python lessons/course.py check
-```
+5. `uv run brickts model build && uv run brickts validate --shacl && uv run brickts bootstrap && uv run pytest -q`.

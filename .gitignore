@@ -221,14 +221,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-
-# Personal course attempts, screenshots and connection notes
-student-work/
-
-# Vite UI (lives under blog part checkpoints; never at repo-root web/)
-**/node_modules/
-**/dist/
-blog/**/checkpoint/web/.vite/
-
-# Optional local revision sidecar next to building.ttl
-building.meta.json

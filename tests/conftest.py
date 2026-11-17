@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from bldgts.graph.render import render_model, write_turtle
-from bldgts.settings import Settings
+
+from brickts.graph.render import render_model, write_turtle
+from brickts.settings import Settings
 
 
 @pytest.fixture(scope="session")
@@ -48,8 +49,6 @@ def settings(project_root: Path, tmp_path: Path, sample_csv: Path) -> Settings:
         points_dir=project_root / "model/points",
         datasets_path=datasets,
         snapshot_path=snap,
-        tutorial_ttl_path=tmp_path / "building.ttl",
-        sparql_examples_dir=project_root / "scripts/sparql",
         bootstrap_on_startup=False,
         serialize_interval_s=0,
     )

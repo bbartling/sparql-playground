@@ -1,6 +1,6 @@
-# bldgts
+# brickts
 
-![bldgts Swagger API](docs/swagger.jpg)
+![brickts Swagger API](docs/swagger.jpg)
 
 A small tutorial API for **building data**:
 
@@ -17,42 +17,23 @@ This repo uses SQLite as a stand-in historian. A real site would use Timescale, 
 
 Copy a `.rq` from the tutorial, wake with **GET** `/health`, then **POST** `/api/sparql/upload` (Choose File) or paste into **POST** `/api/sparql`.
 
-Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only). That request also writes repo-root **`building.ttl`** on a background thread — easy to open, commit, and push for tutorials.
-
-Optional UI (live Part 3 checkpoint [`web/`](blog/if-the-analyst-could-create-an-api/part-03-model-crud-ui/checkpoint/web/)): Haystack model tag-tree + **in-browser SPARQL editor** + coverage. Mutations need `BLDGTS_ALLOW_MUTATIONS=true`. There is **no** repo-root `src/` or `web/` — each blog part owns its app base under `checkpoint/`.
+Download the Brick graph as Turtle: **GET** `/api/model/ttl` (full building model) or `?scope=site` (site skeleton only).
 
 ```
 CSV history  ──bootstrap──▶  SQLite (long/narrow samples)
-site.ttl + point maps  ──build──▶  model Turtle  ──▶  SPARQL API
+site.ttl + point maps  ──build──▶  Brick Turtle  ──▶  SPARQL API
 Browser → /docs (Swagger)     Laptop → scripts/lesson_0*.py
-Model UI → part-03/…/checkpoint/web/   Live export → ./building.ttl
 ```
 
-Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md). Edge OT: [`agent_spec/NORMAL_FRAMEWORK.md`](agent_spec/NORMAL_FRAMEWORK.md).
-
-## Blog series — If the analyst could create an API
-
-Checkpoint folders for the LinkedIn / blog arc (Part 1 bare API → Part 2 NF edge sensors → Part 3 CRUD UI → later parts):
-[`blog/if-the-analyst-could-create-an-api/`](blog/if-the-analyst-could-create-an-api/).
-
-## Daily lessons *(independent)*
-
-[**A 21-week course of daily mini lessons**](lessons/README.md) for CS grads. It starts from Building 50's CSV
-exports, with every day done twice, a pandas script and a SQL script that print the same answers (summary stats,
-joins, time buckets, window functions, a fault rule checked against Open-FDD), then compares loops, pandas and SQL at
-scale, and introduces data modeling: Haystack tags in RDF, UUIDs and external timeseries references, so rules stop
-hard-coding column names. Weeks 6–9 teach RDF and ontologies from scratch on a made-up burger restaurant (triples
-by hand, RDFS, OWL, SHACL, building and publishing your own ontology), each day mapped to Brick, ASHRAE 223P and
-Project Haystack. Later units cover graphs, RDF at scale, SPARQL, this API, and BACnet and bacpypes3 RDF scans of
-live buildings.
+Details for agents: [`AGENTS.md`](AGENTS.md). Locked choices: [`agent_spec/ARCHITECTURE.md`](agent_spec/ARCHITECTURE.md).
 
 ## Run locally
 
 ```bash
 uv sync
-uv run bldgts model build
-uv run bldgts bootstrap
-uv run bldgts serve          # http://127.0.0.1:8000/docs
+uv run brickts model build
+uv run brickts bootstrap
+uv run brickts serve          # http://127.0.0.1:8000/docs
 ```
 
 ## Tutorial scripts (no CLI args)
