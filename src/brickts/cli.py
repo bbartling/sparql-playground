@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     p_boot.add_argument("--force", action="store_true")
     p_boot.set_defaults(func=cmd_bootstrap)
 
-    p_serve = sub.add_parser("serve", help="run HTTP API + UI")
+    p_serve = sub.add_parser("serve", help="run HTTP API (Swagger at /docs)")
     p_serve.add_argument("--host", default=None)
     p_serve.add_argument("--port", type=int, default=None)
     p_serve.set_defaults(func=cmd_serve)
