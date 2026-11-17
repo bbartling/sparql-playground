@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -39,7 +40,16 @@ def settings(project_root: Path, tmp_path: Path, sample_csv: Path) -> Settings:
     write_turtle(render_model(site, mapping), model)
     datasets = tmp_path / "datasets.json"
     datasets.write_text(
-        f'[{{"building":"BUILDING_50","equipment":"AHU_1","csv":"{sample_csv}","mapping":"{mapping}"}}]'
+        json.dumps(
+            [
+                {
+                    "building": "BUILDING_50",
+                    "equipment": "AHU_1",
+                    "csv": str(sample_csv),
+                    "mapping": str(mapping),
+                }
+            ]
+        )
     )
     return Settings(
         data_dir=project_root / "data",
